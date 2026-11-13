@@ -56,7 +56,6 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
 
   const me = useDB((s) => s.me)
   const matters = useDB((s) => s.matters)
-  const health = useDB((s) => s.health)
   const conn = useDB((s) => s.conn)
   const error = useDB((s) => s.error)
 

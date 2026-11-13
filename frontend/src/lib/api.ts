@@ -70,8 +70,11 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   async bootstrap(): Promise<void> {
     try {
-      const [me, matters, health] = await Promise.all([
-        req<Me>('/me'),
+      const meRes = await fetch(`${BASE}/me`, { headers: { 'X-Actor': getDB().me.user_id } })
+      if (!meRes.ok) throw new Error(`${meRes.status} /me`)
+      const me = (await meRes.json()) as Me
+      patchStore({ me })
+      const [matters, health] = await Promise.all([
         req<Matter[]>('/matters'),
         req<DeepHealth>('/health/deep'),
       ])
@@ -94,10 +97,11 @@ export const api = {
   },
 
   setRole: async (role: Role) => {
-    await req<{ role: Role }>('/me/role', {
+    const res = await req<{ role: Role }>('/me/role', {
       method: 'POST',
       body: JSON.stringify({ role }),
     })
+    patchStore({ me: { ...getDB().me, role: res.role } })
     const m = await req<Me>('/me')
     patchStore({ me: m })
     bumpRev()

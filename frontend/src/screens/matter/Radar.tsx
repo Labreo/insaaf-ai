@@ -24,12 +24,15 @@ export default function Radar({ id }: TabProps) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
-  const doScan = async () => {
+  const doScan = async (overrideText?: string, overrideDate?: string) => {
+    const t = (overrideText ?? text).trim()
+    const d = overrideDate ?? date
+    if (!t) return
     setBusy(true)
     setErr(null)
     sfx.tick()
     try {
-      setScan(await api.scanLaw(text, date))
+      setScan(await api.scanLaw(t, d))
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
@@ -91,20 +94,37 @@ export default function Radar({ id }: TabProps) {
 
           {err && <ErrorBanner error={err} />}
 
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() =>
-                setText('FIR registered for cheating under IPC 420, criminal breach of trust IPC 406, and bail sought under CrPC 438.')
-              }
-              className="text-[11px] font-medium text-navy hover:underline"
-            >
-              Insert sample IPC/CrPC clause
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const sample = 'FIR registered on 14 Feb 2025 under IPC 420, IPC 406 and anticipatory bail under CrPC 438.'
+                  setText(sample)
+                  setDate('2025-02-14')
+                  doScan(sample, '2025-02-14')
+                }}
+                className="rounded-[4px] border border-line bg-sunken px-2.5 py-1 text-[11px] font-medium text-ink-2 hover:border-navy hover:text-navy"
+              >
+                2025 FIR (BNS applies)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const sample = 'Private complaint for offence committed on 10 Nov 2023 under IPC 420 and CrPC 438.'
+                  setText(sample)
+                  setDate('2023-11-10')
+                  doScan(sample, '2023-11-10')
+                }}
+                className="rounded-[4px] border border-line bg-sunken px-2.5 py-1 text-[11px] font-medium text-ink-2 hover:border-navy hover:text-navy"
+              >
+                2023 Complaint (Legacy IPC)
+              </button>
+            </div>
             <button
               type="button"
               disabled={busy || !text.trim()}
-              onClick={doScan}
+              onClick={() => doScan()}
               className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
             >
               <RadarIcon size={13} /> {busy ? 'Scanning…' : 'Scan Sections'}

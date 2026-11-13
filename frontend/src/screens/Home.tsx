@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Bell, FileText, FolderPlus, Hourglass, Trash2 } from 'lucide-react'
+import { ArrowRight, Bell, FileText, FolderPlus, Hourglass, Search, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useDB } from '@/lib/store'
 import type { Matter } from '@/lib/types'
@@ -42,12 +42,24 @@ export default function Home() {
   const me = useDB((s) => s.me)
   const mattersStore = useDB((s) => s.matters)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [docketSearch, setDocketSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | Matter['case_type']>('all')
 
   const q = useAsync(() => api.queue(), [])
   const m = useAsync(() => api.matters(), [])
   const a = useAsync(() => api.alerts(), [])
 
   const matters = m.data ?? mattersStore
+  const filteredMatters = matters.filter((mt) => {
+    if (typeFilter !== 'all' && mt.case_type !== typeFilter) return false
+    const needle = docketSearch.trim().toLowerCase()
+    if (!needle) return true
+    return (
+      mt.title.toLowerCase().includes(needle) ||
+      (mt.forum_hint ?? '').toLowerCase().includes(needle) ||
+      mt.id.toLowerCase().includes(needle)
+    )
+  })
   const queue = q.data ?? []
   const alerts = (a.data ?? []).slice(0, 5)
 
@@ -225,11 +237,44 @@ export default function Home() {
           </Section>
 
           {/* Chamber Matters Register Table */}
-          <Section title="Chamber Matters Register" subtitle={`${matters.length} matters on record`}>
+          <Section
+            title="Chamber Matters Register"
+            subtitle={`${filteredMatters.length} of ${matters.length} matters on record`}
+            right={
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(['all', 'property', 'civil_recovery', 'criminal'] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setTypeFilter(k)}
+                    className={cn(
+                      'rounded-[4px] border px-2 py-1 text-[11px] font-medium transition-colors',
+                      typeFilter === k
+                        ? 'border-navy bg-navy text-white'
+                        : 'border-line bg-surface text-ink-2 hover:bg-hover',
+                    )}
+                  >
+                    {k === 'all' ? 'All Areas' : caseLabel[k]}
+                  </button>
+                ))}
+              </div>
+            }
+          >
+            <div className="relative">
+              <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+              <input
+                type="text"
+                value={docketSearch}
+                onChange={(e) => setDocketSearch(e.target.value)}
+                placeholder="Search party, forum, or case ID…"
+                className="field pl-8"
+              />
+            </div>
+
             {m.loading && !matters.length ? (
               <Skeleton className="h-44" />
-            ) : matters.length === 0 ? (
-              <Empty text="No matters registered yet." />
+            ) : filteredMatters.length === 0 ? (
+              <Empty text="No matching matters in Chamber Register." />
             ) : (
               <Card className="overflow-x-auto p-0">
                 <table className="tbl">
@@ -244,7 +289,7 @@ export default function Home() {
                     </tr>
                   </thead>
                   <tbody>
-                    {matters.map((mt) => (
+                    {filteredMatters.map((mt) => (
                       <tr key={mt.id} className="row-link">
                         <td>
                           <button

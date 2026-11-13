@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Download, Lock, LockOpen, ShieldCheck, Stamp } from 'lucide-react'
+import { Download, FileText, Lock, LockOpen, ShieldCheck, Stamp } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useDB } from '@/lib/store'
-import type { SourceRef } from '@/lib/types'
+import type { Draft, SourceRef } from '@/lib/types'
 import {
   Badge,
   Card,
@@ -19,19 +19,53 @@ import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 import type { TabProps } from '../Matter'
 
+const INSTRUMENTS: { k: 'legal_notice' | 'plaint' | 'plea_application'; label: string; header: string }[] = [
+  {
+    k: 'legal_notice',
+    label: 'Legal Notice',
+    header: 'STATUTORY LEGAL NOTICE UNDER REGISTERED POST A.D.',
+  },
+  {
+    k: 'plaint',
+    label: 'Suit Plaint (Order VII CPC)',
+    header: 'SUIT PLAINT (ORDER VII RULE 1 CPC)',
+  },
+  {
+    k: 'plea_application',
+    label: 'Sec. 290 BNSS Application',
+    header: 'APPLICATION UNDER CHAPTER XXIII BNSS (SEC. 290)',
+  },
+]
+
 /** F8 + Authority Lock: formal bond-paper pleading + live citation insertion gate. */
 export default function DraftTab({ id, onOpen, onReview }: TabProps) {
   const matter = useDB((d) => d.matters.find((m) => m.id === id))
   const role = useDB((d) => d.me.role)
   const d = useAsync(() => api.draft(id), [id])
+  const [liveDraft, setLiveDraft] = useState<Draft | null>(null)
+  const [switching, setSwitching] = useState(false)
   const [exporting, setExporting] = useState(false)
 
-  if (d.loading && !d.data) return <Skeleton className="h-96" />
-  if (d.error && !d.data) return <ErrorBanner error={d.error} onRetry={d.reload} />
-  if (!d.data) return null
+  const draft = liveDraft ?? d.data
+  if (d.loading && !draft) return <Skeleton className="h-96" />
+  if (d.error && !draft) return <ErrorBanner error={d.error} onRetry={d.reload} />
+  if (!draft) return null
 
-  const draft = d.data
   const approved = matter?.status === 'approved'
+  const currentInst = INSTRUMENTS.find((x) => x.k === draft.type) ?? INSTRUMENTS[0]
+
+  const switchInstrument = async (k: 'legal_notice' | 'plaint' | 'plea_application') => {
+    if (k === draft.type || switching) return
+    setSwitching(true)
+    sfx.tick()
+    try {
+      const next = await api.setDraftType(id, k)
+      setLiveDraft(next)
+      sfx.accept()
+    } finally {
+      setSwitching(false)
+    }
+  }
 
   const exportDocx = async () => {
     if (!matter) return
@@ -62,42 +96,66 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
     <div className="grid gap-6 lg:grid-cols-12">
       {/* Left 7 Cols: Formal Legal Pleading Document */}
       <div className="space-y-4 lg:col-span-7">
-        <Card className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Label>{draft.type.replace(/_/g, ' ')}</Label>
-              <Badge tone="info">{draft.model_version}</Badge>
+        <Card className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Label>{draft.type.replace(/_/g, ' ')}</Label>
+                <Badge tone={approved ? 'ok' : 'brass'}>{approved ? 'Counsel Sealed' : 'Chamber Draft'}</Badge>
+              </div>
+              <p className={cn('mt-1 flex items-center gap-1.5 text-[12px] font-medium', approved ? 'text-ok' : 'text-brass')}>
+                <ShieldCheck size={14} />
+                <span className="truncate">{draft.watermark}</span>
+              </p>
             </div>
-            <p className={cn('mt-1 flex items-center gap-1.5 text-[12px] font-medium', approved ? 'text-ok' : 'text-brass')}>
-              <ShieldCheck size={14} />
-              <span className="truncate">{draft.watermark}</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={exporting}
-              onClick={exportDocx}
-              className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink disabled:opacity-50"
-            >
-              <Download size={13} /> {exporting ? 'Exporting…' : 'Export DOCX'}
-            </button>
-            {!approved && (
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  onReview({
-                    target: 'draft',
-                    target_id: draft.type,
-                    title: `Approve ${draft.type.replace(/_/g, ' ')}`,
-                    action: 'approve',
-                  })
-                }
-                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
+                disabled={exporting}
+                onClick={exportDocx}
+                className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink disabled:opacity-50"
               >
-                <Stamp size={13} /> {role === 'senior' ? 'Approve & Seal' : 'Send to Senior'}
+                <Download size={13} /> {exporting ? 'Exporting…' : 'Export DOCX'}
               </button>
-            )}
+              {!approved && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onReview({
+                      target: 'draft',
+                      target_id: draft.type,
+                      title: `Approve ${draft.type.replace(/_/g, ' ')}`,
+                      action: 'approve',
+                    })
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
+                >
+                  <Stamp size={13} /> {role === 'senior' ? 'Approve & Seal' : 'Send to Senior'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-line pt-2.5">
+            <span className="mr-1 inline-flex items-center gap-1 text-[11px] font-medium text-ink-3">
+              <FileText size={11} /> Instrument format:
+            </span>
+            {INSTRUMENTS.map((inst) => (
+              <button
+                key={inst.k}
+                type="button"
+                disabled={switching}
+                onClick={() => switchInstrument(inst.k)}
+                className={cn(
+                  'rounded-[4px] border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                  draft.type === inst.k
+                    ? 'border-navy bg-navy text-white'
+                    : 'border-line bg-sunken text-ink-2 hover:bg-hover hover:text-ink',
+                )}
+              >
+                {inst.label}
+              </button>
+            ))}
           </div>
         </Card>
 
@@ -105,7 +163,7 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
         <article className="page-doc rounded-[4px] px-7 py-8 sm:px-10">
           <div className="border-b border-line pb-4 text-center">
             <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-3">
-              In the Court of {matter?.forum_hint || 'Competent Jurisdiction'} · {draft.type.replace(/_/g, ' ').toUpperCase()}
+              In the Court of {matter?.forum_hint || 'Competent Jurisdiction'} · {currentInst.header}
             </p>
             <h2 className="mt-1.5 text-[23px] font-medium text-ink">
               {matter?.title.replace(' (FICTIONAL)', '')}
@@ -145,6 +203,17 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
               </div>
             ))}
           </div>
+
+          {draft.type === 'plaint' && (
+            <div className="mt-6 border-t border-line pt-4 font-sans text-[12px] leading-relaxed text-ink-2">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-3">
+                Verification (Order VI Rule 15 CPC)
+              </p>
+              <p className="mt-1">
+                Verified at Mapusa, Goa that the contents of the paragraphs above are true and correct to the Plaintiff&rsquo;s knowledge and belief founded upon documents on record.
+              </p>
+            </div>
+          )}
         </article>
 
         {approved && (

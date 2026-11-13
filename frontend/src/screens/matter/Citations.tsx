@@ -1,4 +1,5 @@
-import { ShieldAlert, ShieldCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Search, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { CitationHealth } from '@/lib/types'
 import {
@@ -14,6 +15,7 @@ import {
   useAsync,
 } from '@/components/primitives'
 import { cn } from '@/lib/utils'
+import { sfx } from '@/lib/sound'
 import type { TabProps } from '../Matter'
 
 const badgeMap: Record<CitationHealth['badge'], { tone: Tone; label: string }> = {
@@ -22,21 +24,96 @@ const badgeMap: Record<CitationHealth['badge'], { tone: Tone; label: string }> =
   red: { tone: 'bad', label: 'Overruled' },
 }
 
+const CITATION_PRESETS = [
+  'ADM Jabalpur v. Shivkant Shukla (1976)',
+  'Suresh Kumar Koushal v. Naz Foundation (2013)',
+  'Patil Automation v. Rakheja Engineers (2022)',
+]
+
 /** F7: downstream citation health check (blocks overruled authorities until senior overrides). */
 export default function Citations({ id, onOpen, onReview }: TabProps) {
   const c = useAsync(() => api.citationHealth(id), [id])
-  if (c.loading && !c.data) return <Skeleton className="h-64" />
-  if (c.error) return <ErrorBanner error={c.error} onRetry={c.reload} />
-  if (!c.data?.length) return <Empty text="No cited authorities require downstream health review." />
+  const [liveList, setLiveList] = useState<CitationHealth[] | null>(null)
+  const [citQuery, setCitQuery] = useState('')
+  const [checking, setChecking] = useState(false)
+
+  useEffect(() => {
+    if (c.data) setLiveList(c.data)
+  }, [c.data])
+
+  const checkCase = async (q?: string) => {
+    const val = (q ?? citQuery).trim()
+    if (!val || checking) return
+    setCitQuery(val)
+    setChecking(true)
+    sfx.tick()
+    try {
+      const next = await api.checkCitation(id, val)
+      setLiveList(next)
+      sfx.accept()
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  const list = liveList ?? c.data ?? []
+  if (c.loading && !liveList) return <Skeleton className="h-64" />
+  if (c.error && !liveList) return <ErrorBanner error={c.error} onRetry={c.reload} />
 
   return (
     <div className="space-y-4">
-      <Well className="text-[12.5px] text-ink-2">
-        Each cited decision is checked against subsequent citing judgments (<code className="font-mono text-ink">citedby:</code>). Overruled authorities block draft sealing until a Senior Advocate records a reasoned override.
-      </Well>
+      <Card className="space-y-3">
+        <div>
+          <Label>Verify Case Authority · Downstream Citedby Check</Label>
+          <p className="mt-1 text-[12.5px] text-ink-2">
+            Each cited decision is checked against subsequent citing judgments (<code className="font-mono text-ink">citedby:</code>). Overruled authorities block draft sealing until a Senior Advocate records a reasoned override.
+          </p>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {c.data.map((it) => {
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            checkCase()
+          }}
+          className="flex flex-wrap gap-2"
+        >
+          <input
+            type="text"
+            value={citQuery}
+            onChange={(e) => setCitQuery(e.target.value)}
+            placeholder="Check any judgment (e.g. ADM Jabalpur v. Shivkant Shukla)…"
+            className="field min-w-[240px] flex-1"
+          />
+          <button
+            type="submit"
+            disabled={checking || !citQuery.trim()}
+            className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
+          >
+            <Search size={13} /> {checking ? 'Checking…' : 'Check Authority'}
+          </button>
+        </form>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[11px] font-medium text-ink-3">Quick authority checks:</span>
+          {CITATION_PRESETS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              disabled={checking}
+              onClick={() => checkCase(preset)}
+              className="rounded-[4px] border border-line bg-sunken px-2.5 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:border-navy hover:text-navy"
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {list.length === 0 ? (
+        <Empty text="No cited authorities require downstream health review." />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {list.map((it) => {
           const b = badgeMap[it.badge]
           return (
             <Card
@@ -102,7 +179,8 @@ export default function Citations({ id, onOpen, onReview }: TabProps) {
             </Card>
           )
         })}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

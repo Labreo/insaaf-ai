@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
-import { ShieldCheck, ShieldOff } from 'lucide-react'
+import { Building2, ShieldCheck, ShieldOff } from 'lucide-react'
 import { api } from '@/lib/api'
-import type { BiasFirewall, Identity } from '@/lib/types'
+import type { BiasFirewall, Identity, Score } from '@/lib/types'
 import {
   Badge,
   Card,
@@ -25,16 +25,42 @@ const identities: { k: Identity; label: string }[] = [
   { k: 'non_english_speaking', label: 'Non-English' },
 ]
 
+const FORUMS = [
+  'Civil Judge Senior Division, Mapusa',
+  'District Court, North Goa',
+  'Bombay High Court (Goa bench)',
+  'Supreme Court of India',
+]
+
 /** F9 + F10 + F2: Outcome band, court-aware pooling, and live 6-identity Bias Firewall. */
 export default function ScoreTab({ id, onReview }: TabProps) {
   const s = useAsync(() => api.score(id), [id])
   const b = useAsync(() => api.biasFirewall(id), [id])
+  const [liveScore, setLiveScore] = useState<Score | null>(null)
+  const [switchingCourt, setSwitchingCourt] = useState(false)
 
-  if (s.loading && !s.data) return <Skeleton className="h-96" />
-  if (s.error && !s.data) return <ErrorBanner error={s.error} onRetry={s.reload} />
-  if (!s.data) return null
+  useEffect(() => {
+    if (s.data) setLiveScore(s.data)
+  }, [s.data])
 
-  const sc = s.data
+  const sc = liveScore ?? s.data
+  if (s.loading && !sc) return <Skeleton className="h-96" />
+  if (s.error && !sc) return <ErrorBanner error={s.error} onRetry={s.reload} />
+  if (!sc) return null
+
+  const switchCourt = async (court: string) => {
+    if (switchingCourt || court === sc.court_aware.court) return
+    setSwitchingCourt(true)
+    sfx.tick()
+    try {
+      const next = await api.setCourt(id, court)
+      setLiveScore(next)
+      sfx.accept()
+    } finally {
+      setSwitchingCourt(false)
+    }
+  }
+
   const bandColor =
     sc.band === 'strong' ? 'text-ok' : sc.band === 'weak' ? 'text-bad' : 'text-warn'
   const maxAbs = Math.max(...sc.factors.map((f) => Math.abs(f.effect)), 0.01)
@@ -100,25 +126,59 @@ export default function ScoreTab({ id, onReview }: TabProps) {
         </Card>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <Label>F10 · Court-Aware Shrinkage</Label>
-            <p className="mt-1.5 text-[14px] font-semibold text-ink">{sc.court_aware.court}</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
+          <Card className="space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <Label>F10 · Court-Aware Shrinkage</Label>
+                <p className="mt-1.5 text-[14px] font-semibold text-ink">{sc.court_aware.court}</p>
+              </div>
+              {sc.court_aware.pooled_rate != null && (
+                <Badge tone="navy">p̂ = {(sc.court_aware.pooled_rate * 100).toFixed(1)}%</Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {FORUMS.map((court) => {
+                const active = sc.court_aware.court === court
+                return (
+                  <button
+                    key={court}
+                    type="button"
+                    disabled={switchingCourt}
+                    onClick={() => switchCourt(court)}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-[4px] border px-2 py-1 text-[11px] font-medium transition-colors',
+                      active
+                        ? 'border-navy bg-navy text-white'
+                        : 'border-line bg-sunken text-ink-2 hover:bg-hover hover:text-ink',
+                    )}
+                  >
+                    <Building2 size={10} /> {court}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-[12px] leading-relaxed text-ink-3">
               {sc.court_aware.n_judgments} local judgments pooled with {sc.court_aware.pooled_from} (k ={' '}
-              {sc.court_aware.shrinkage_k}). Court level only, never named judges.
+              {sc.court_aware.shrinkage_k}
+              {sc.court_aware.local_rate != null
+                ? ` · local ${(sc.court_aware.local_rate * 100).toFixed(0)}% / parent ${((sc.court_aware.parent_rate ?? 0) * 100).toFixed(0)}%`
+                : ''}
+              ). Court level only, never named judges.
             </p>
           </Card>
-          <Card>
+
+          <Card className="space-y-2.5">
             <Label>Held-Out Calibration Eval</Label>
-            <p className="tabular mt-1.5 font-mono text-[14px] font-semibold text-ink">
+            <p className="tabular mt-1 font-mono text-[14px] font-semibold text-ink">
               {sc.eval.heldout_total
                 ? `${sc.eval.heldout_correct} / ${sc.eval.heldout_total} unseen cases`
                 : 'Pending retrain'}
+              {sc.eval.brier != null ? ` · Brier ${sc.eval.brier}` : ''}
             </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-              {sc.eval.brier != null ? `Brier ${sc.eval.brier} · ` : ''}
-              {sc.eval.note}
-            </p>
+            {sc.eval.calibration ? (
+              <CalibrationPlot pred={sc.eval.calibration.prob_pred} actual={sc.eval.calibration.prob_true} />
+            ) : null}
+            <p className="text-[12px] leading-relaxed text-ink-3">{sc.eval.note}</p>
           </Card>
         </div>
       </div>
@@ -264,5 +324,25 @@ function Firewall({ id, data }: { id: string; data: BiasFirewall }) {
         <Badge tone="info">Counterfactual Re-Run Verified</Badge>
       </div>
     </Card>
+  )
+}
+
+function CalibrationPlot({ pred, actual }: { pred: number[]; actual: number[] }) {
+  const W = 220
+  const H = 90
+  const pad = 12
+  const mapX = (v: number) => pad + v * (W - pad * 2)
+  const mapY = (v: number) => H - pad - v * (H - pad * 2)
+  const pts = pred.map((x, i) => `${mapX(x)},${mapY(actual[i] ?? x)}`).join(' ')
+  return (
+    <div className="rounded-[5px] border border-line bg-sunken p-2">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-24 w-full overflow-visible" aria-label="Calibration reliability curve">
+        <line x1={mapX(0)} y1={mapY(0)} x2={mapX(1)} y2={mapY(1)} stroke="#c8c2b4" strokeDasharray="3 3" />
+        <polyline points={pts} fill="none" stroke="#1f3a5c" strokeWidth={2} />
+        {pred.map((x, i) => (
+          <circle key={i} cx={mapX(x)} cy={mapY(actual[i] ?? x)} r={3} fill="#b8893a" />
+        ))}
+      </svg>
+    </div>
   )
 }
