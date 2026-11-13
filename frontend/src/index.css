@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Insaaf design tokens
+   Palette is sampled from the two intro images: the pewter/graphite
+   statue of Justice and the black velvet with a soft grey light ray.
+   One warm metallic accent ("verdict brass") is the only coloured
+   action, the way Dala reserves a single violet for its CTA.
+   ------------------------------------------------------------------ */
+@theme {
+  /* surfaces */
+  --color-void: #050506;        /* page canvas — near-black velvet */
+  --color-velvet: #0b0b0d;      /* raised sheet / bottom nav */
+  --color-graphite: #141418;    /* input wells, rails */
+  --color-seam: #232329;        /* hairline separators only */
+
+  /* statue greys (text) */
+  --color-marble: #f2f1ee;      /* primary text, warm white */
+  --color-pewter: #a9a9ad;      /* secondary */
+  --color-smoke: #6f6f76;       /* tertiary / labels */
+
+  /* accents */
+  --color-brass: #c9a868;       /* the single action colour */
+  --color-brass-deep: #9c7f45;
+  --color-ray: #e9e7e1;         /* light-ray highlight */
+
+  /* legal states */
+  --color-followed: #6fae8d;    /* citation still good law */
+  --color-distinguished: #d9a441;
+  --color-overruled: #d95c54;
+  --color-steel: #8fa3bd;       /* informational */
+
+  /* type */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: "Instrument Serif", "Times New Roman", serif;
+  --font-devanagari: "Noto Sans Devanagari", "Inter", sans-serif;
+
+  --text-display: 64px;
+  --text-display--line-height: 0.95;
+  --text-display--letter-spacing: -0.04em;
+  --text-heading: 34px;
+  --text-heading--line-height: 1.05;
+  --text-heading--letter-spacing: -0.03em;
+  --text-title: 22px;
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.02em;
+  --text-label: 11px;
+  --text-label--line-height: 1.2;
+  --text-label--letter-spacing: 0.12em;
+
+  --radius-sheet: 28px;
+  --radius-card: 22px;
+
+  --ease-cine: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html { background: var(--color-void); color-scheme: dark; }
+  body {
+    @apply bg-void text-marble font-sans antialiased;
+    font-weight: 300;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection { background: color-mix(in oklab, var(--color-brass) 40%, transparent); }
+  button { cursor: pointer; }
+}
+
+@layer utilities {
+  .label { @apply text-label uppercase tracking-[0.12em] text-smoke font-medium; }
+  .serif { font-family: var(--font-serif); }
+  .devanagari { font-family: var(--font-devanagari); }
+  .hairline { box-shadow: inset 0 0 0 1px var(--color-seam); }
+  .safe-b { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+  .safe-t { padding-top: max(env(safe-area-inset-top), 12px); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  /* subtle film grain over the whole app, cheap */
+  .grain::after {
+    content: "";
+    pointer-events: none;
+    position: fixed; inset: 0; z-index: 60;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: soft-light;
+  }
+
+  .ray-text {
+    background: linear-gradient(110deg, var(--color-pewter) 0%, var(--color-marble) 45%, var(--color-pewter) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
