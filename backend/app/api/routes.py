@@ -384,8 +384,14 @@ async def get_advice(matter_id: str) -> dict[str, Any]:
 
 
 @router.get("/matters/{matter_id}/draft", response_model=Draft)
-async def get_draft(matter_id: str) -> dict[str, Any]:
+async def get_draft(
+    matter_id: str,
+    x_actor: Optional[str] = Header(default="junior_1"),
+    x_role: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
     _get_matter_or_404(matter_id)
+    actor, role = _actor_from_headers(x_actor, x_role)
+    log_access(actor, role, matter_id, f"GET /matters/{matter_id}/draft")
     return await ensure_stage(matter_id, "draft")
 
 
