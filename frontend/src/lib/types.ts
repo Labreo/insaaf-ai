@@ -15,6 +15,15 @@ export interface SourceRef {
 
 export type CaseType = 'property' | 'civil_recovery' | 'criminal'
 export type MatterStatus = 'draft' | 'running' | 'ready' | 'in_review' | 'approved'
+export type Role = 'senior' | 'junior' | 'clerk' | 'student'
+
+export interface MatterDocument {
+  id: string
+  name: string
+  kind: 'pdf' | 'docx' | 'voice' | 'other'
+  size: number
+  added_at: string
+}
 
 export interface Matter {
   id: string
@@ -26,6 +35,9 @@ export interface Matter {
   days_left: number | null
   created_by: string
   updated_at: string
+  client_language?: 'en' | 'kok' | 'mr' | 'hi'
+  documents?: MatterDocument[]
+  forum_hint?: string
 }
 
 export type Stage =
@@ -114,10 +126,21 @@ export interface Draft {
   paragraphs: { id: string; text: string; confidence: Confidence; sources: SourceRef[]; locked_out_claim?: string }[]
 }
 
+export type ReasonCode = 'wrong_fact' | 'wrong_law' | 'wrong_citation_treatment' | 'score_disagree' | 'bias_concern' | 'other'
+
+export interface ReviewInput {
+  action: 'approve' | 'edit' | 'override'
+  target: 'fact' | 'proof' | 'citation' | 'score' | 'draft' | 'advice'
+  target_id: string
+  reason_code: ReasonCode
+  note?: string
+  diff?: string
+}
+
 export interface LedgerEntry {
   id: string
   actor: string
-  role: string
+  role: Role
   matter_id: string
   action: 'approve' | 'edit' | 'override'
   target: string
@@ -140,4 +163,39 @@ export interface QueueItem {
   priority: number
   days_left: number | null
   flags: string[]
+}
+
+export interface LawChange {
+  found: string
+  replaced_by: string
+  effective: string
+  applies: boolean
+  reason: string
+  sources: SourceRef[]
+  location?: string
+}
+
+export interface ModelInfo {
+  version: string
+  trained_at: string
+  labels: number
+  metrics: { accuracy: number | null; brier: number | null }
+  history: { version: string; labels_added: number; accuracy: number | null; brier: number | null; at: string }[]
+}
+
+export interface Alert {
+  id: string
+  matter_id: string
+  title: string
+  kind: 'limitation' | 'mediation_window' | 'review_pending'
+  due: string
+  days_left: number
+  level: 'info' | 'warn' | 'urgent'
+}
+
+export interface Me {
+  user_id: string
+  name: string
+  role: Role
+  org: { id: string; name: string; plan: string; members: { name: string; role: Role; last_seen: string }[] }
 }

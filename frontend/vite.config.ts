@@ -12,5 +12,12 @@ export default defineConfig({
       '@mocks': path.resolve(import.meta.dirname, 'mocks'),
     },
   },
-  server: { host: true, port: 5173 },
+  server: {
+    host: true,
+    port: 5173,
+    proxy: {
+      '/v1': { target: 'http://localhost:8000', changeOrigin: true },
+      '/health': { target: 'http://localhost:8000', changeOrigin: true },
+    },
+  },
 })

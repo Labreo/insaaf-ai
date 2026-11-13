@@ -7,6 +7,7 @@ import Home from './screens/Home'
 import Matter from './screens/Matter'
 import LedgerScreen from './screens/LedgerScreen'
 import NewMatter from './screens/NewMatter'
+import Alerts from './screens/Alerts'
 import Me from './screens/Me'
 
 const KEY = 'insaaf.intro.seen'
@@ -31,6 +32,7 @@ export default function App() {
           <Route element={<Shell />}>
             <Route index element={<Home />} />
             <Route path="matters/:id" element={<Matter />} />
+            <Route path="alerts" element={<Alerts />} />
             <Route path="ledger" element={<LedgerScreen />} />
             <Route path="new" element={<NewMatter />} />
             <Route path="me" element={<Me onReplayIntro={() => setIntro(true)} />} />
