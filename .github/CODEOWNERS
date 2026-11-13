@@ -1,0 +1,14 @@
+# Default: repo owner reviews anything not matched below
+*                     @Labreo
+
+# Frontend (mobile app)
+/frontend/            @Shua-03 @sanidhyaLajurkar
+
+# Backend + ML
+/backend/             @Labreo
+/ml/                  @Labreo
+/rules/               @Labreo
+
+# Shared contract: one reviewer from each side
+/docs/API_CONTRACT.md @Labreo @Shua-03 @sanidhyaLajurkar
+/frontend/mocks/      @Labreo @Shua-03 @sanidhyaLajurkar

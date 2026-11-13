@@ -1,0 +1,38 @@
+# OS / editors
+.DS_Store
+._*
+.vscode/
+.idea/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.apk
+*.aab
+*.ipa
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Data & models (large / licensed — share via drive, not git)
+ml/data/raw/
+ml/data/cache/
+*.parquet
+*.pkl
+*.joblib
+*.onnx
+*.pt

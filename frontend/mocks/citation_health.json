@@ -1,0 +1,43 @@
+[
+  {
+    "cited": {
+      "source_id": "src_koushal",
+      "kind": "judgment",
+      "title": "Suresh Kumar Koushal v. Naz Foundation",
+      "court": "Supreme Court of India",
+      "date": "2013-12-11",
+      "paragraph": "—",
+      "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+      "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+    },
+    "badge": "red",
+    "treatment": "overruled",
+    "by": {
+      "source_id": "src_navtej",
+      "kind": "judgment",
+      "title": "Navtej Singh Johar v. Union of India",
+      "court": "Supreme Court of India",
+      "date": "2018-09-06",
+      "paragraph": "—",
+      "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+      "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+    },
+    "blocks_draft": true
+  },
+  {
+    "cited": {
+      "source_id": "src_suraj_lamp",
+      "kind": "judgment",
+      "title": "Suraj Lamp & Industries v. State of Haryana",
+      "court": "Supreme Court of India",
+      "date": "2011-10-11",
+      "paragraph": "—",
+      "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+      "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+    },
+    "badge": "green",
+    "treatment": "followed",
+    "by": null,
+    "blocks_draft": false
+  }
+]
