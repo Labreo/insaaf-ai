@@ -107,7 +107,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={!valid || busy}
-              className="rounded-[6px] bg-navy px-4 py-2 text-[13px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
+              className="rounded-[6px] bg-navy px-4 py-2 text-[13px] font-semibold text-night hover:bg-navy-600 disabled:opacity-50"
             >
               {busy ? 'Creating chamber…' : 'Create chamber & sign in'}
             </button>

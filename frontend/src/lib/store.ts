@@ -108,8 +108,18 @@ export function bumpRev() {
   emit()
 }
 
-export function playIntro() {
+export type AuthTransitionReason = 'login' | 'signup' | 'switch' | 'manual'
+
+export function playIntro(reason: AuthTransitionReason = 'login') {
   state = { ...state, introNonce: state.introNonce + 1 }
+  if (typeof window !== 'undefined') {
+    try {
+      window.sessionStorage.setItem('insaaf_intro_seen', '1')
+    } catch {
+      // ignore storage quota errors
+    }
+    window.dispatchEvent(new CustomEvent('insaaf:auth-transition', { detail: { reason, nonce: state.introNonce } }))
+  }
   emit()
 }
 

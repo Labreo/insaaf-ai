@@ -16,11 +16,20 @@ function tone(type: OscillatorType, from: number, to: number, dur: number, gain 
   } catch { /* audio blocked */ }
 }
 
+function vibrate(pattern: VibratePattern) {
+  try {
+    // Chrome logs a console intervention error if vibrate() runs before frame activation.
+    if (typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive) {
+      navigator.vibrate?.(pattern)
+    }
+  } catch { /* vibration unavailable */ }
+}
+
 export const sfx = {
   tap: () => tone('triangle', 180, 40, 0.04, 0.06),
   tick: () => tone('sine', 880, 660, 0.05, 0.03),
   stage: () => tone('sine', 520, 780, 0.12, 0.05),
-  reject: () => { tone('square', 140, 60, 0.18, 0.07); navigator.vibrate?.([40, 40, 40]) },
-  accept: () => { tone('sine', 660, 990, 0.16, 0.05); navigator.vibrate?.(20) },
-  seal: () => { tone('triangle', 300, 90, 0.22, 0.09); navigator.vibrate?.(30) },
+  reject: () => { tone('square', 140, 60, 0.18, 0.07); vibrate([40, 40, 40]) },
+  accept: () => { tone('sine', 660, 990, 0.16, 0.05); vibrate(20) },
+  seal: () => { tone('triangle', 300, 90, 0.22, 0.09); vibrate(30) },
 }

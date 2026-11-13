@@ -91,7 +91,7 @@ export default function Citations({ id, onOpen, onReview }: TabProps) {
             type="submit"
             disabled={checking || !citQuery.trim() || !canRun}
             title={canRun ? undefined : denied}
-            className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Search size={13} /> {checking ? 'Checking…' : 'Check Authority'}
           </button>
@@ -129,8 +129,11 @@ export default function Citations({ id, onOpen, onReview }: TabProps) {
               )}
             >
               <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <Badge tone={b.tone}>{b.label}</Badge>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone={b.tone}>{b.label}</Badge>
+                    {it.cited.url && <Badge tone="info">Verified Judgment Record</Badge>}
+                  </div>
                   <span className="font-mono text-[11px] text-ink-3">{it.cited.date}</span>
                 </div>
 

@@ -239,7 +239,7 @@ export default function ContextRail({
               <button
                 type="button"
                 onClick={() => onJump('pipeline')}
-                className="rounded-[5px] bg-navy px-3 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
+                className="rounded-[5px] bg-navy px-3 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
               >
                 Open pipeline
               </button>

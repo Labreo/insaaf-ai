@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Bell, FileText, FolderPlus, Hourglass, Search, Trash2 } from 'lucide-react'
+import { ArrowRight, Bell, BookOpenCheck, FileText, FolderPlus, Hourglass, Scale, Search, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { can, useDB } from '@/lib/store'
+import { DEMO_SHOWCASE_MATTERS } from '@/lib/demoData'
 import { confirmAction, run } from '@/lib/feedback'
+import { areaLabel, useMeta } from '@/lib/meta'
+import { can, useDB } from '@/lib/store'
 import type { Matter } from '@/lib/types'
 import {
   Badge,
@@ -21,12 +23,6 @@ import {
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 
-const caseLabel: Record<Matter['case_type'], string> = {
-  property: 'Property',
-  civil_recovery: 'Civil recovery',
-  criminal: 'Criminal',
-}
-
 const statusTone: Record<Matter['status'], Tone> = {
   draft: 'neutral',
   running: 'info',
@@ -42,15 +38,18 @@ export default function Home() {
   const nav = useNavigate()
   const me = useDB((s) => s.me)
   const mattersStore = useDB((s) => s.matters)
+  const meta = useMeta()
   const [deleting, setDeleting] = useState<string | null>(null)
   const [docketSearch, setDocketSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | Matter['case_type']>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | string>('all')
 
   const q = useAsync(() => api.queue(), [])
   const m = useAsync(() => api.matters(), [])
   const a = useAsync(() => api.alerts(), [])
 
   const matters = m.data ?? mattersStore
+  const availableTypes = Array.from(new Set(matters.map((mt) => mt.case_type)))
+  const leadMatterId = queueLeadId(matters, q.data ?? [])
   const filteredMatters = matters.filter((mt) => {
     if (typeFilter !== 'all' && mt.case_type !== typeFilter) return false
     const needle = docketSearch.trim().toLowerCase()
@@ -58,6 +57,7 @@ export default function Home() {
     return (
       mt.title.toLowerCase().includes(needle) ||
       (mt.forum_hint ?? '').toLowerCase().includes(needle) ||
+      areaLabel(meta, mt.case_type).toLowerCase().includes(needle) ||
       mt.id.toLowerCase().includes(needle)
     )
   })
@@ -67,6 +67,10 @@ export default function Home() {
   const under45 = matters.filter((x) => x.days_left != null && x.days_left <= 45).length
   const inReview = matters.filter((x) => x.status === 'in_review').length
   const nextLimitation = queue.find((x) => x.days_left != null)
+
+  function queueLeadId(all: Matter[], qItems: { matter_id: string }[]) {
+    return qItems[0]?.matter_id ?? all[0]?.id ?? null
+  }
 
   const removeMatter = async (mt: Matter) => {
     const ok = await confirmAction({
@@ -95,6 +99,16 @@ export default function Home() {
           <>
             <button
               type="button"
+              onClick={() => {
+                sfx.tap()
+                nav('/precedents')
+              }}
+              className="rounded-[5px] border border-navy/40 bg-navy-50 px-3 py-1.5 text-[12px] font-medium text-navy transition-colors hover:bg-navy/15"
+            >
+              Precedent Discovery
+            </button>
+            <button
+              type="button"
               onClick={() => nav('/ledger')}
               className="rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:bg-hover hover:text-ink"
             >
@@ -106,13 +120,98 @@ export default function Home() {
                 sfx.tap()
                 nav('/new')
               }}
-              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-navy-600"
+              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night transition-colors hover:bg-navy-600"
             >
               <FolderPlus size={14} /> New Matter Intake
             </button>
           </>
         }
       />
+
+      {/* PS 29 Core Capabilities Launcher Strip */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="flex flex-col justify-between gap-3 border-navy/35 bg-gradient-to-br from-surface via-surface to-navy-50/50">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-navy">
+                <BookOpenCheck size={12} /> PS 29 Core Engine 01
+              </span>
+              <Badge tone="navy">15 Practice Areas</Badge>
+            </div>
+            <h2 className="text-[16px] font-semibold tracking-[-0.015em] text-ink">
+              Semantic Legal Precedent Discovery
+            </h2>
+            <p className="text-[12.5px] leading-relaxed text-ink-2">
+              Search verified Supreme Court &amp; High Court judgments by semantic legal issues, statutory sections, local seat relevance, and empirical disposition breakdowns.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                sfx.tap()
+                nav('/precedents')
+              }}
+              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
+            >
+              Open Precedent Explorer <ArrowRight size={13} />
+            </button>
+            {leadMatterId && (
+              <button
+                type="button"
+                onClick={() => {
+                  sfx.tap()
+                  nav(`/matters/${leadMatterId}?tab=precedents`)
+                }}
+                className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink"
+              >
+                Inspect Matter Precedents
+              </button>
+            )}
+          </div>
+        </Card>
+
+        <Card className="flex flex-col justify-between gap-3 border-brass-200/70 bg-gradient-to-br from-surface via-surface to-brass-50/40">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-brass">
+                <Scale size={12} /> PS 29 Core Engine 02
+              </span>
+              <Badge tone="ok">ε = 0.02 Bias Firewall</Badge>
+            </div>
+            <h2 className="text-[16px] font-semibold tracking-[-0.015em] text-ink">
+              Evidence-Based Outcome Prediction &amp; Bias Firewall
+            </h2>
+            <p className="text-[12.5px] leading-relaxed text-ink-2">
+              Inspect empirical case outcome probabilities blending proof readiness, precedent disposition rates, court-pooled priors, and 6-identity counterfactual invariance tests.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                sfx.tap()
+                nav(leadMatterId ? `/matters/${leadMatterId}?tab=score` : '/new')
+              }}
+              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
+            >
+              {leadMatterId ? 'Open Outcome Prediction' : 'Start Intake to Predict'} <ArrowRight size={13} />
+            </button>
+            {leadMatterId && (
+              <button
+                type="button"
+                onClick={() => {
+                  sfx.tap()
+                  nav(`/matters/${leadMatterId}?tab=citations`)
+                }}
+                className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink"
+              >
+                Citation Gate &amp; Advice
+              </button>
+            )}
+          </div>
+        </Card>
+      </div>
 
       {(q.error || m.error) && (
         <ErrorBanner
@@ -166,7 +265,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => nav('/new')}
-                    className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white"
+                    className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
                   >
                     Create first matter
                   </button>
@@ -248,7 +347,7 @@ export default function Home() {
             subtitle={`${filteredMatters.length} of ${matters.length} matters on record`}
             right={
               <div className="flex flex-wrap items-center gap-1.5">
-                {(['all', 'property', 'civil_recovery', 'criminal'] as const).map((k) => (
+                {(['all', ...availableTypes] as const).map((k) => (
                   <button
                     key={k}
                     type="button"
@@ -256,11 +355,11 @@ export default function Home() {
                     className={cn(
                       'rounded-[4px] border px-2 py-1 text-[11px] font-medium transition-colors',
                       typeFilter === k
-                        ? 'border-navy bg-navy text-white'
+                        ? 'border-navy bg-navy text-night font-semibold'
                         : 'border-line bg-surface text-ink-2 hover:bg-hover',
                     )}
                   >
-                    {k === 'all' ? 'All Areas' : caseLabel[k]}
+                    {k === 'all' ? 'All Areas' : areaLabel(meta, k)}
                   </button>
                 ))}
               </div>
@@ -272,13 +371,52 @@ export default function Home() {
                 type="text"
                 value={docketSearch}
                 onChange={(e) => setDocketSearch(e.target.value)}
-                placeholder="Search party, forum, or case ID…"
+                placeholder="Search party, forum, area, or case ID…"
                 className="field pl-8"
               />
             </div>
 
             {m.loading && !matters.length ? (
               <Skeleton className="h-44" />
+            ) : matters.length === 0 ? (
+              <div className="space-y-3">
+                <Empty
+                  text="No active chamber matters registered yet. Explore illustrative Indian showcase previews below or start intake."
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => nav('/new')}
+                      className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
+                    >
+                      Load Demo Intake Sample
+                    </button>
+                  }
+                />
+                <div className="grid gap-3 md:grid-cols-3">
+                  {DEMO_SHOWCASE_MATTERS.map((demo) => (
+                    <Card key={demo.id} className="space-y-2 border-dashed border-brass-200 bg-sunken">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge tone="warn">{demo.badge}</Badge>
+                        {demo.days_left != null && (
+                          <span className="font-mono text-[10px] text-ink-3">{demo.days_left}d</span>
+                        )}
+                      </div>
+                      <p className="text-[13px] font-medium text-ink">{demo.title}</p>
+                      <p className="text-[11px] text-ink-3">
+                        {demo.forum_hint} · {areaLabel(meta, demo.case_type)}
+                      </p>
+                      <p className="text-[11.5px] text-ink-2">{demo.summary}</p>
+                      <button
+                        type="button"
+                        onClick={() => nav('/new')}
+                        className="text-[11px] font-medium text-navy hover:underline"
+                      >
+                        Create similar matter →
+                      </button>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ) : filteredMatters.length === 0 ? (
               <Empty text="No matching matters in Chamber Register." />
             ) : (
@@ -306,16 +444,21 @@ export default function Home() {
                             }}
                             className="text-left"
                           >
-                            <p className="font-medium text-ink hover:text-navy">
-                              {mt.title.replace(' (FICTIONAL)', '')}
-                            </p>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <p className="font-medium text-ink hover:text-navy">
+                                {mt.title.replace(' (FICTIONAL)', '')}
+                              </p>
+                              <Badge tone={mt.moot ? 'warn' : 'brass'}>
+                                {mt.moot ? 'DEMO / MOOT' : 'CHAMBER'}
+                              </Badge>
+                            </div>
                             <p className="mt-0.5 text-[11px] text-ink-3">
                               {mt.forum_hint || 'District Court'} · {mt.id}
                             </p>
                           </button>
                         </td>
                         <td className="whitespace-nowrap text-[12px] text-ink-2">
-                          {caseLabel[mt.case_type]}
+                          {areaLabel(meta, mt.case_type)}
                         </td>
                         <td className="tabular font-mono text-[12px] text-ink-2">
                           {mt.documents?.length ?? 0}
@@ -338,7 +481,7 @@ export default function Home() {
                             <button
                               type="button"
                               onClick={() => nav(`/matters/${mt.id}`)}
-                              className="rounded-[4px] bg-navy px-2.5 py-1 text-[11px] font-medium text-white hover:bg-navy-600"
+                              className="rounded-[4px] bg-navy px-2.5 py-1 text-[11px] font-semibold text-night hover:bg-navy-600"
                             >
                               Open
                             </button>
@@ -420,7 +563,7 @@ export default function Home() {
                   sfx.tap()
                   nav('/new')
                 }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-[5px] bg-navy px-3.5 py-2 text-[12px] font-medium text-white hover:bg-navy-600"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[5px] bg-navy px-3.5 py-2 text-[12px] font-semibold text-night hover:bg-navy-600"
               >
                 Start New Matter Intake <ArrowRight size={13} />
               </button>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Bell, ChevronRight, Send } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '@/lib/api'
+import { DEMO_ALERTS_PREVIEW } from '@/lib/demoData'
 import { can, setPushEnabled, useDB } from '@/lib/store'
 import { Badge, Card, Empty, ErrorBanner, PageHeader, Skeleton, type Tone, useAsync } from '@/components/primitives'
 import { sfx } from '@/lib/sound'
@@ -63,7 +64,7 @@ export default function Alerts() {
               disabled={sending || !push || !can('alerts.test')}
               title={can('alerts.test') ? undefined : `The ${me.role} role cannot dispatch test alerts`}
               onClick={triggerTelegramAlert}
-              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3 py-2 text-[12px] font-medium text-white hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3 py-2 text-[12px] font-semibold text-night hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send size={13} /> {sending ? 'Dispatching…' : 'Send Live Telegram Alert'}
             </button>
@@ -84,7 +85,7 @@ export default function Alerts() {
                 className={`relative h-5 w-9 rounded-full transition-colors ${push ? 'bg-navy' : 'bg-line-strong'}`}
               >
                 <span
-                  className={`block h-4 w-4 rounded-full bg-white shadow transition-transform ${push ? 'translate-x-4.5' : 'translate-x-0.5'}`}
+                  className={`block h-4 w-4 rounded-full bg-bone shadow transition-transform ${push ? 'translate-x-4.5' : 'translate-x-0.5'}`}
                 />
               </button>
             </Card>
@@ -109,7 +110,39 @@ export default function Alerts() {
       {res.error && <ErrorBanner error={res.error} onRetry={res.reload} />}
 
       {items.length === 0 ? (
-        <Empty text="No upcoming deadlines across open chamber matters." />
+        <div className="space-y-4">
+          <Empty
+            text="No upcoming deadlines across open chamber matters."
+            action={
+              <button
+                type="button"
+                onClick={() => nav('/new')}
+                className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
+              >
+                Create Matter Intake
+              </button>
+            }
+          />
+          <Card className="space-y-3 border-dashed border-brass-200 bg-sunken">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="eyebrow">How Limitation &amp; Mediation Windows Appear</p>
+              <Badge tone="warn">ILLUSTRATIVE DEMO PREVIEW</Badge>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-3">
+              {DEMO_ALERTS_PREVIEW.map((a) => (
+                <Card key={a.id} className={`flex items-center justify-between gap-3 py-3 ${toneMap[a.level].accent}`}>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-medium text-ink">{a.title}</p>
+                    <p className="mt-1 truncate font-mono text-[11px] text-ink-3">
+                      {a.kind.replace(/_/g, ' ')} · due {a.due}
+                    </p>
+                  </div>
+                  <Badge tone={toneMap[a.level].badge}>{a.days_left}d</Badge>
+                </Card>
+              ))}
+            </div>
+          </Card>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {(['urgent', 'warn', 'info'] as const).map((lvl) => (

@@ -29,7 +29,14 @@ export default function Intro({ onDone }: { onDone: () => void }) {
     const t2 = setTimeout(() => setPhase('title'), 4200)
     const t3 = setTimeout(() => setPhase('zoom'), 5600)
     const t4 = setTimeout(finish, 6700)
-    return () => [t1, t2, t3, t4].forEach(clearTimeout)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') finish()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      ;[t1, t2, t3, t4].forEach(clearTimeout)
+      window.removeEventListener('keydown', onKey)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

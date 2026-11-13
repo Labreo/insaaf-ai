@@ -28,6 +28,15 @@ export default function AuthModal({ required = false }: { required?: boolean }) 
   const pwRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    if (!open || required) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeAuth()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, required])
+
+  useEffect(() => {
     if (!open) return
     let alive = true
     api
@@ -245,7 +254,7 @@ export default function AuthModal({ required = false }: { required?: boolean }) 
             <button
               type="submit"
               disabled={busy || !identifier.trim() || !password}
-              className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
+              className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600 disabled:opacity-50"
             >
               {busy ? 'Signing in…' : authed ? 'Switch account' : 'Sign in'}
             </button>

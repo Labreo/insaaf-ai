@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
 import { api } from './lib/api'
-import { useDB } from './lib/store'
+import { getDB, useDB } from './lib/store'
 import Signup from './screens/Signup'
 import Intro from './intro/Intro'
 import AuthModal from './components/AuthModal'
@@ -13,28 +13,42 @@ import Home from './screens/Home'
 import Matter from './screens/Matter'
 import LedgerScreen from './screens/LedgerScreen'
 import NewMatter from './screens/NewMatter'
+import PrecedentSearch from './screens/PrecedentSearch'
 import Alerts from './screens/Alerts'
 import Me from './screens/Me'
 
 export default function App() {
-  // Plays once per browser session on first load, then after every sign-in / sign-up / account switch.
-  const [intro, setIntro] = useState(() => {
-    try {
-      if (sessionStorage.getItem('insaaf_intro_seen')) return false
-      sessionStorage.setItem('insaaf_intro_seen', '1')
-    } catch {
-      /* storage blocked: just play it */
-    }
-    return true
-  })
+  // Triggers automatically on login, sign-up, account switch (introNonce / insaaf:auth-transition)
+  // or explicit replay, while never replaying during ordinary route navigation.
+  const [introRunId, setIntroRunId] = useState(0)
+  const [introVisible, setIntroVisible] = useState(false)
+
   const introNonce = useDB((s) => s.introNonce)
   const lastNonce = useRef(introNonce)
+
+  const triggerIntro = useCallback(() => {
+    setIntroRunId((n) => n + 1)
+    setIntroVisible(true)
+  }, [])
+
   useEffect(() => {
-    if (introNonce !== lastNonce.current) {
+    if (introNonce > lastNonce.current) {
       lastNonce.current = introNonce
-      setIntro(true)
+      triggerIntro()
     }
-  }, [introNonce])
+  }, [introNonce, triggerIntro])
+
+  useEffect(() => {
+    const onAuthTransition = () => {
+      // Ensure listeners of custom auth events stay synchronized if triggered outside hook cycle.
+      if (getDB().introNonce > lastNonce.current) {
+        lastNonce.current = getDB().introNonce
+        triggerIntro()
+      }
+    }
+    window.addEventListener('insaaf:auth-transition', onAuthTransition)
+    return () => window.removeEventListener('insaaf:auth-transition', onAuthTransition)
+  }, [triggerIntro])
 
   useEffect(() => {
     api.bootstrap()
@@ -43,21 +57,22 @@ export default function App() {
   return (
     <>
       <AnimatePresence>
-        {intro && <Intro key="intro" onDone={() => setIntro(false)} />}
+        {introVisible && <Intro key={`intro-${introRunId}`} onDone={() => setIntroVisible(false)} />}
       </AnimatePresence>
 
       <AuthModal />
       <Feedback />
       <Routes>
-        <Route path="/" element={<Landing onReplayIntro={() => setIntro(true)} />} />
+        <Route path="/" element={<Landing onReplayIntro={triggerIntro} />} />
         <Route path="/signup" element={<Signup />} />
-        <Route element={<Shell onReplayIntro={() => setIntro(true)} />}>
+        <Route element={<Shell onReplayIntro={triggerIntro} />}>
           <Route path="docket" element={<Home />} />
+          <Route path="precedents" element={<PrecedentSearch />} />
           <Route path="matters/:id" element={<Matter />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="ledger" element={<LedgerScreen />} />
           <Route path="new" element={<NewMatter />} />
-          <Route path="me" element={<Me onReplayIntro={() => setIntro(true)} />} />
+          <Route path="me" element={<Me onReplayIntro={triggerIntro} />} />
         </Route>
       </Routes>
     </>
