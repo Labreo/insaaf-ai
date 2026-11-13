@@ -89,8 +89,8 @@ export default function Pipeline({ id, onJump, autorun }: TabProps & { autorun?:
     <div className="space-y-4">
       {err && <ErrorBanner error={err} />}
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="min-w-0 lg:col-span-8">
           <Card className="overflow-x-auto p-0">
             <table className="tbl">
               <thead>
@@ -154,7 +154,7 @@ export default function Pipeline({ id, onJump, autorun }: TabProps & { autorun?:
           </Card>
         </div>
 
-        <div className="space-y-4 lg:col-span-4">
+        <div className="min-w-0 space-y-4 lg:col-span-4">
           <Card className="space-y-4">
             <div className="flex items-center gap-4">
               <Ring value={completedCount / total} size={76} stroke={5} tone={completedCount === total ? '#2e7350' : '#1f3a5c'}>
@@ -163,7 +163,7 @@ export default function Pipeline({ id, onJump, autorun }: TabProps & { autorun?:
                 </span>
               </Ring>
               <div className="min-w-0">
-                <Label>F1 · Pipeline State Machine</Label>
+                <Label>Pipeline State Machine</Label>
                 <p className="mt-1 text-[16px] font-semibold text-ink">{headline}</p>
                 <p className="mt-0.5 text-[11px] text-ink-3">SSE stream · resumable stages</p>
               </div>

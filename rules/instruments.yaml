@@ -1,0 +1,194 @@
+# Instrument templates. One renderer (backend/app/drafting.py) turns these into the on-screen
+# preview, the DOCX and the PDF, so all three always match.
+# kind: notice | pleading | application
+# {forum} {district} {state} {title} {client} {opposite} {date} are filled from the matter.
+instruments:
+  legal_notice:
+    label: Legal notice
+    kind: notice
+    title: "LEGAL NOTICE"
+    subtitle: "By Registered Post A.D. / Speed Post / Email"
+    parties: [Sender (through counsel), Noticee]
+    opening: "Under instructions from and on behalf of our client, {client}, we hereby serve you with the following notice:"
+    prayer: "You are hereby called upon to comply with the above within 15 days of receipt of this notice, failing which our client shall be constrained to initiate appropriate legal proceedings against you at your risk as to costs and consequences."
+    verification: false
+
+  plaint:
+    label: Plaint (Order VII Rule 1 CPC)
+    kind: pleading
+    court: "IN THE COURT OF THE {forum}, AT {district}"
+    title: "SUIT UNDER ORDER VII RULE 1 OF THE CODE OF CIVIL PROCEDURE, 1908"
+    parties: [Plaintiff, Defendant]
+    opening: "The Plaintiff above named most respectfully submits as under:"
+    prayer: "The Plaintiff therefore prays that this Hon'ble Court be pleased to (a) decree the suit as prayed; (b) award costs of the suit; and (c) grant such further relief as this Hon'ble Court deems fit in the interest of justice."
+    verification: "VERIFICATION (Order VI Rule 15 CPC): I, the Plaintiff above named, do hereby verify that the contents of paragraphs 1 to {last} are true to my knowledge and belief. Verified at {district} on this {date}."
+
+  written_statement:
+    label: Written statement (Order VIII CPC)
+    kind: pleading
+    court: "IN THE COURT OF THE {forum}, AT {district}"
+    title: "WRITTEN STATEMENT ON BEHALF OF THE DEFENDANT UNDER ORDER VIII CPC"
+    parties: [Plaintiff, Defendant]
+    opening: "The Defendant above named most respectfully submits as under, denying every allegation in the plaint save what is specifically admitted:"
+    prayer: "The Defendant therefore prays that the suit be dismissed with costs."
+    verification: "VERIFICATION: I, the Defendant above named, verify that the contents of paragraphs 1 to {last} are true to my knowledge and belief. Verified at {district} on this {date}."
+
+  summary_suit:
+    label: Summary suit (Order XXXVII CPC)
+    kind: pleading
+    court: "IN THE COURT OF THE {forum}, AT {district}"
+    title: "SUMMARY SUIT UNDER ORDER XXXVII OF THE CODE OF CIVIL PROCEDURE, 1908"
+    parties: [Plaintiff, Defendant]
+    opening: "This suit is filed under Order XXXVII CPC. No relief not falling within the ambit of that Order has been claimed. The Plaintiff submits as under:"
+    prayer: "The Plaintiff prays for a decree for the liquidated sum claimed with interest and costs."
+    verification: "VERIFICATION: Verified at {district} on this {date} that paragraphs 1 to {last} are true to my knowledge and belief."
+
+  commercial_plaint:
+    label: Commercial suit (Commercial Courts Act)
+    kind: pleading
+    court: "IN THE {forum}, AT {district}"
+    title: "COMMERCIAL SUIT UNDER THE COMMERCIAL COURTS ACT, 2015"
+    parties: [Plaintiff, Defendant]
+    opening: "The Plaintiff states that pre-institution mediation under Section 12A of the Commercial Courts Act, 2015 has been exhausted / urgent interim relief is sought, and submits as under:"
+    prayer: "The Plaintiff prays for a decree for the sum claimed with pendente lite and future interest, costs, and such further relief as this Hon'ble Court deems fit."
+    verification: "STATEMENT OF TRUTH (Order VI Rule 15A CPC as applicable to commercial disputes): I verify that the contents of paragraphs 1 to {last} are true. Verified at {district} on this {date}."
+
+  s138_notice:
+    label: Demand notice (NI Act s.138)
+    kind: notice
+    title: "STATUTORY DEMAND NOTICE UNDER SECTION 138(b) OF THE NEGOTIABLE INSTRUMENTS ACT, 1881"
+    subtitle: "By Registered Post A.D. and Speed Post"
+    parties: [Payee (through counsel), Drawer]
+    opening: "Under instructions from our client, {client}, we serve this statutory notice upon you:"
+    prayer: "You are called upon to pay the cheque amount within 15 days of receipt of this notice, failing which our client shall file a complaint under Section 138 read with Section 142 of the Negotiable Instruments Act, 1881 at your risk as to costs and consequences."
+    verification: false
+
+  s138_complaint:
+    label: Complaint (NI Act s.138)
+    kind: pleading
+    court: "IN THE COURT OF THE {forum}, AT {district}"
+    title: "COMPLAINT UNDER SECTION 138 READ WITH SECTION 142 OF THE NEGOTIABLE INSTRUMENTS ACT, 1881"
+    parties: [Complainant, Accused]
+    opening: "The Complainant above named most respectfully submits as under:"
+    prayer: "The Complainant prays that this Hon'ble Court be pleased to take cognizance, issue process against the Accused, try and punish the Accused under Section 138 of the Act, and direct compensation under Section 357 CrPC / Section 395 BNSS equal to twice the cheque amount."
+    verification: "VERIFICATION: Verified at {district} on this {date} that the contents of paragraphs 1 to {last} are true to my knowledge."
+
+  consumer_complaint:
+    label: Consumer complaint (CPA 2019, s.35)
+    kind: pleading
+    court: "BEFORE THE {forum}, {district}"
+    title: "CONSUMER COMPLAINT UNDER SECTION 35 OF THE CONSUMER PROTECTION ACT, 2019"
+    parties: [Complainant, Opposite Party]
+    opening: "The Complainant is a 'consumer' within the meaning of Section 2(7) of the Act and submits as under:"
+    prayer: "The Complainant prays that the Opposite Party be directed to refund the amount paid with interest, pay compensation for deficiency in service and mental agony, and pay the costs of this complaint."
+    verification: "AFFIDAVIT IN SUPPORT: Verified at {district} on this {date} that the contents of paragraphs 1 to {last} are true and correct."
+
+  eviction_petition:
+    label: Eviction petition (Rent Controller)
+    kind: pleading
+    court: "BEFORE THE {forum}, AT {district}"
+    title: "PETITION FOR EVICTION OF TENANT UNDER THE APPLICABLE RENT CONTROL ACT"
+    parties: [Petitioner (Landlord), Respondent (Tenant)]
+    opening: "The Petitioner, the landlord of the premises described below, submits as under:"
+    prayer: "The Petitioner prays for an order of eviction of the Respondent from the premises, arrears of rent, and costs."
+    verification: "VERIFICATION: Verified at {district} on this {date} that paragraphs 1 to {last} are true to my knowledge."
+
+  divorce_petition:
+    label: Divorce petition (HMA)
+    kind: pleading
+    court: "IN THE {forum}, AT {district}"
+    title: "PETITION UNDER THE HINDU MARRIAGE ACT, 1955"
+    parties: [Petitioner, Respondent]
+    opening: "The Petitioner most respectfully submits as under:"
+    prayer: "The Petitioner prays that the marriage between the parties be dissolved by a decree of divorce and for such other relief as this Hon'ble Court deems fit."
+    verification: "VERIFICATION: Verified at {district} on this {date} that paragraphs 1 to {last} are true to my knowledge and belief."
+
+  maintenance_petition:
+    label: Maintenance petition (BNSS s.144)
+    kind: application
+    court: "IN THE COURT OF THE {forum}, AT {district}"
+    title: "APPLICATION FOR MAINTENANCE UNDER SECTION 144 OF THE BHARATIYA NAGARIK SURAKSHA SANHITA, 2023"
+    parties: [Applicant, Respondent]
+    opening: "The Applicant most respectfully submits as under:"
+    prayer: "The Applicant prays for monthly maintenance from the date of application, interim maintenance pending disposal, and costs. An affidavit of assets and liabilities in the format prescribed in Rajnesh v. Neha (2020) is annexed."
+    verification: "VERIFICATION: Verified at {district} on this {date}."
+
+  mact_claim:
+    label: Claim petition (MV Act s.166)
+    kind: application
+    court: "BEFORE THE {forum}, AT {district}"
+    title: "CLAIM PETITION UNDER SECTION 166 OF THE MOTOR VEHICLES ACT, 1988"
+    parties: [Claimant(s), Respondents (Driver, Owner, Insurer)]
+    opening: "The Claimant(s) most respectfully submit as under:"
+    prayer: "The Claimant(s) pray for compensation with interest from the date of the petition, to be paid jointly and severally by the Respondents, together with costs."
+    verification: "VERIFICATION: Verified at {district} on this {date}."
+
+  labour_claim:
+    label: Statement of claim (ID Act)
+    kind: pleading
+    court: "BEFORE THE {forum}, AT {district}"
+    title: "STATEMENT OF CLAIM ON BEHALF OF THE WORKMAN UNDER SECTION 2A OF THE INDUSTRIAL DISPUTES ACT, 1947"
+    parties: [Workman, Management]
+    opening: "The Workman most respectfully submits as under:"
+    prayer: "The Workman prays that the termination be declared illegal, and that he/she be reinstated with continuity of service and full back wages."
+    verification: "VERIFICATION: Verified at {district} on this {date}."
+
+  writ_petition:
+    label: Writ petition (Art. 226)
+    kind: pleading
+    court: "IN THE {high_court}"
+    title: "WRIT PETITION UNDER ARTICLE 226 OF THE CONSTITUTION OF INDIA"
+    parties: [Petitioner, Respondents]
+    opening: "The Petitioner most respectfully submits as under:"
+    prayer: "The Petitioner prays for a writ of certiorari or any other appropriate writ quashing the impugned order, and for such further relief as this Hon'ble Court deems fit."
+    verification: "AFFIDAVIT: Solemnly affirmed at {district} on this {date}."
+
+  plea_application:
+    label: Plea bargaining application (BNSS s.290)
+    kind: application
+    court: "IN THE COURT OF THE {forum}, AT {district}"
+    title: "APPLICATION FOR PLEA BARGAINING UNDER SECTION 290 OF THE BHARATIYA NAGARIK SURAKSHA SANHITA, 2023"
+    parties: [Applicant / Accused, State]
+    opening: "The Applicant voluntarily files this application, supported by affidavit, and submits as under:"
+    prayer: "The Applicant prays that this Hon'ble Court examine the Applicant in camera, permit a mutually satisfactory disposition under Section 292 BNSS, and dispose of the case accordingly."
+    verification: "AFFIDAVIT: The Applicant affirms that this application is filed voluntarily, after understanding the nature and extent of punishment provided. Affirmed at {district} on this {date}."
+
+  bail_application:
+    label: Bail application (BNSS s.480/483)
+    kind: application
+    court: "IN THE COURT OF THE {forum}, AT {district}"
+    title: "APPLICATION FOR REGULAR BAIL UNDER SECTION 480 / 483 OF THE BHARATIYA NAGARIK SURAKSHA SANHITA, 2023"
+    parties: [Applicant / Accused, State]
+    opening: "The Applicant most respectfully submits as under:"
+    prayer: "The Applicant prays to be released on bail on such terms as this Hon'ble Court deems fit, and undertakes to abide by all conditions imposed."
+    verification: "AFFIDAVIT: Affirmed at {district} on this {date}."
+
+  s11_application:
+    label: Application (Arbitration Act s.11)
+    kind: application
+    court: "IN THE {high_court}"
+    title: "APPLICATION UNDER SECTION 11 OF THE ARBITRATION AND CONCILIATION ACT, 1996"
+    parties: [Applicant, Respondent]
+    opening: "The Applicant most respectfully submits as under:"
+    prayer: "The Applicant prays that a sole arbitrator be appointed to adjudicate the disputes between the parties under the arbitration agreement."
+    verification: "AFFIDAVIT: Affirmed at {district} on this {date}."
+
+  probate_petition:
+    label: Probate petition
+    kind: application
+    court: "IN THE COURT OF THE {forum}, AT {district}"
+    title: "PETITION FOR GRANT OF PROBATE UNDER THE INDIAN SUCCESSION ACT, 1925"
+    parties: [Petitioner, Respondents / Heirs]
+    opening: "The Petitioner, the executor named in the Will, submits as under:"
+    prayer: "The Petitioner prays for grant of probate of the Will with a copy annexed."
+    verification: "VERIFICATION: Verified at {district} on this {date}."
+
+  ip_plaint:
+    label: IP infringement suit
+    kind: pleading
+    court: "IN THE {forum}, AT {district}"
+    title: "COMMERCIAL SUIT FOR INFRINGEMENT AND PASSING OFF"
+    parties: [Plaintiff, Defendant]
+    opening: "The Plaintiff submits as under:"
+    prayer: "The Plaintiff prays for a permanent injunction restraining infringement and passing off, delivery up of infringing goods, rendition of accounts or damages, and costs."
+    verification: "STATEMENT OF TRUTH: Verified at {district} on this {date}."

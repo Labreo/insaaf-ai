@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, ShieldAlert, X } from 'lucide-react'
 import { api } from '@/lib/api'
-import { useDB } from '@/lib/store'
+import { useDB, can, openAuth } from '@/lib/store'
 import type { Fact, ReasonCode, ReviewInput } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
@@ -47,7 +47,8 @@ export default function ReviewDrawer({
   const [err, setErr] = useState<string | null>(null)
 
   const action = req?.action ?? 'override'
-  const canDecide = role === 'senior' || (action === 'edit' && role === 'junior')
+  // Mirrors the backend permission matrix (review.* in backend/app/auth.py); the server enforces it.
+  const canDecide = can(`review.${action}`)
 
   useEffect(() => {
     if (!req) return
@@ -87,7 +88,7 @@ export default function ReviewDrawer({
         action,
         target: req.target,
         target_id: req.target_id,
-        reason_code: action === 'approve' ? 'other' : reason,
+        reason_code: action === 'approve' || action === 'submit' ? 'other' : reason,
         note,
         diff,
       })
@@ -150,7 +151,7 @@ export default function ReviewDrawer({
                   <div className="flex items-start gap-2">
                     <ShieldAlert size={16} className="mt-0.5 shrink-0" />
                     <p>
-                      A <strong className="font-semibold">Senior Advocate</strong> is required to {action} this item. You are currently signed in as{' '}
+                      {action === 'edit' || action === 'submit' ? 'A senior or junior advocate' : <>A <strong className="font-semibold">Senior Advocate</strong></>} is required to {action} this item. You are currently signed in as{' '}
                       <span className="font-medium capitalize">{role}</span>.
                     </p>
                   </div>
@@ -158,11 +159,11 @@ export default function ReviewDrawer({
                     type="button"
                     onClick={() => {
                       sfx.tick()
-                      api.setRole('senior')
+                      openAuth({ prefill: 'senior_1', notice: 'Sign in as a senior advocate to approve or override.' })
                     }}
                     className="rounded-[5px] border border-warn-200 bg-surface px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-hover"
                   >
-                    Switch Role to Senior Counsel (Adv. Dhanshri)
+                    Sign in as Senior Counsel
                   </button>
                 </div>
               )}
@@ -193,7 +194,7 @@ export default function ReviewDrawer({
                 </div>
               )}
 
-              {action !== 'approve' && (
+              {action !== 'approve' && action !== 'submit' && (
                 <div className="space-y-2">
                   <p className="eyebrow">Reason Code (Used for ML Calibration)</p>
                   <div className="grid grid-cols-2 gap-2">
@@ -228,8 +229,8 @@ export default function ReviewDrawer({
                   onChange={(e) => setNote(e.target.value)}
                   rows={4}
                   placeholder={
-                    action === 'approve'
-                      ? 'Optional sign-off note for chamber record…'
+                    action === 'approve' || action === 'submit'
+                      ? 'Optional note for the chamber record…'
                       : 'State why the finding is edited or overridden…'
                   }
                   className="field"
@@ -266,6 +267,8 @@ export default function ReviewDrawer({
                   ? 'Sealing…'
                   : action === 'approve'
                     ? 'Approve & Seal to Ledger'
+                    : action === 'submit'
+                      ? 'Submit for Senior Review'
                     : action === 'edit'
                       ? 'Save Edit & Seal'
                       : 'Record Override & Seal'}

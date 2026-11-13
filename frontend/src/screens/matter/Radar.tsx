@@ -44,7 +44,7 @@ export default function Radar({ id }: TabProps) {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       <div className="lg:col-span-6">
         <Card className="h-full space-y-3">
-          <Label>F14 · Law Change Radar (Detected in Matter)</Label>
+          <Label>Law Change Radar (Detected in Matter)</Label>
           <p className="text-[12.5px] text-ink-2">
             Deterministic IPC / CrPC / IEA to BNS / BNSS / BSA statutory crosswalk evaluated against offence date.
           </p>

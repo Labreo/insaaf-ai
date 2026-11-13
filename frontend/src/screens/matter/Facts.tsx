@@ -23,7 +23,7 @@ const tone: Record<Fact['status'], Tone> = {
 }
 
 /** F4: bilingual fact cards. Allegations never silently become documented facts. */
-export default function Facts({ id, onReview }: TabProps) {
+export default function Facts({ id, onReview, onJump }: TabProps) {
   const f = useAsync(() => api.facts(id), [id])
   if (f.loading && !f.data) {
     return (
@@ -34,7 +34,21 @@ export default function Facts({ id, onReview }: TabProps) {
     )
   }
   if (f.error) return <ErrorBanner error={f.error} onRetry={f.reload} />
-  if (!f.data?.length) return <Empty text="No facts extracted yet. Run the pipeline." />
+  if (!f.data?.length)
+    return (
+      <Empty
+        text="No facts extracted yet. Attach the client's documents or voice note in the Case record, then run the pipeline."
+        action={
+          <button
+            type="button"
+            onClick={() => onJump('pipeline')}
+            className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
+          >
+            Open pipeline
+          </button>
+        }
+      />
+    )
 
   const counts = f.data.reduce(
     (a, x) => ({ ...a, [x.status]: (a[x.status] ?? 0) + 1 }),

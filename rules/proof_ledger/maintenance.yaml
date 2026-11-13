@@ -1,0 +1,57 @@
+case_type: maintenance
+description: Maintenance under BNSS s.144 / HAMA s.18 / DV Act
+rules:
+- id: maintenance.1
+  requirement: Marriage proof or relationship proof
+  severity: critical
+  why: Status as wife/child/parent is the threshold.
+  detect:
+    present_any:
+    - marriage certificate
+    - birth certificate
+    - marriage proof
+  sources: []
+- id: maintenance.2
+  requirement: Neglect or refusal to maintain
+  severity: critical
+  why: Statutory condition under s.144 BNSS.
+  detect:
+    present_any:
+    - neglect
+    - refused to maintain
+    - stopped paying
+    - deserted
+  sources: []
+- id: maintenance.3
+  requirement: Income of respondent
+  severity: high
+  why: Quantum is fixed on the respondent's means (Rajnesh v. Neha, 2020).
+  detect:
+    present_any:
+    - salary
+    - income of respondent
+    - itr
+    - business income
+    - property
+  sources: []
+- id: maintenance.4
+  requirement: Income and asset affidavit (Rajnesh format)
+  severity: high
+  why: Mandatory disclosure affidavit for both parties.
+  detect:
+    present_any:
+    - income affidavit
+    - affidavit of assets
+    - disclosure affidavit
+  sources: []
+- id: maintenance.5
+  requirement: Expenses proof
+  severity: medium
+  why: School fees, rent, medical expenses support the claim.
+  detect:
+    present_any:
+    - school fees
+    - medical bills
+    - rent receipt
+    - expenses
+  sources: []

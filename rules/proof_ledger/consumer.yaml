@@ -1,0 +1,67 @@
+case_type: consumer
+description: Consumer complaint under the Consumer Protection Act, 2019
+rules:
+- id: consumer.1
+  requirement: Purchase invoice or service contract
+  severity: critical
+  why: Establishes the complainant as a 'consumer' (s.2(7)).
+  detect:
+    present_any:
+    - invoice
+    - bill
+    - booking receipt
+    - service agreement
+    - policy document
+    weak_any:
+    - quotation
+  sources: []
+- id: consumer.2
+  requirement: Deficiency evidence (defect / service failure)
+  severity: critical
+  why: Proves deficiency or defect (ss.2(10), 2(11)).
+  detect:
+    present_any:
+    - defect
+    - deficiency
+    - job card
+    - expert report
+    - photographs
+    - delay in possession
+    weak_any:
+    - complaint
+  sources: []
+- id: consumer.3
+  requirement: Complaint to seller / service provider
+  severity: high
+  why: Shows opportunity given to remedy; supports compensation.
+  detect:
+    present_any:
+    - complaint to seller
+    - customer care
+    - ticket number
+    - email to company
+    - legal notice
+  sources: []
+- id: consumer.4
+  requirement: Warranty / terms relied on
+  severity: medium
+  why: Warranty terms define the obligation breached.
+  detect:
+    present_any:
+    - warranty
+    - guarantee
+    - terms and conditions
+    - brochure
+  sources: []
+- id: consumer.5
+  requirement: Payment proof
+  severity: high
+  why: Quantum of refund / compensation.
+  detect:
+    present_any:
+    - payment receipt
+    - bank statement
+    - upi
+    - card statement
+    - emi
+  sources: []

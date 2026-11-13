@@ -1,35 +1,417 @@
-cutoff_date: "2024-07-01"
+cutoff_date: '2024-07-01'
+note: IPC, CrPC and the Evidence Act were replaced for offences / proceedings on or after 1 July 2024.
 mappings:
-  - old: "IPC 302"
-    aliases: ["section 302 ipc", "302 ipc", "ipc 302", "s.302 ipc", "s. 302 ipc"]
-    new: "BNS 103"
-    reason: "Offence date after 1 July 2024 — Bharatiya Nyaya Sanhita, 2023 replaced IPC."
-  - old: "IPC 420"
-    aliases: ["section 420 ipc", "420 ipc", "ipc 420", "s.420 ipc"]
-    new: "BNS 318(4)"
-    reason: "Cheating and dishonestly inducing delivery of property now under BNS s.318(4)."
-  - old: "IPC 406"
-    aliases: ["section 406 ipc", "406 ipc", "ipc 406", "s.406 ipc"]
-    new: "BNS 316(2)"
-    reason: "Criminal breach of trust now governed by BNS s.316(2)."
-  - old: "IPC 379"
-    aliases: ["section 379 ipc", "379 ipc", "ipc 379", "s.379 ipc"]
-    new: "BNS 303(2)"
-    reason: "Punishment for theft now governed by BNS s.303(2) for post-1 July 2024 offences."
-  - old: "CrPC 438"
-    aliases: ["section 438 crpc", "438 crpc", "crpc 438", "s.438 crpc"]
-    new: "BNSS 482"
-    reason: "Anticipatory bail now governed by BNSS s.482."
-  - old: "CrPC 265A"
-    aliases: ["265a crpc", "crpc 265a", "chapter xxia crpc"]
-    new: "BNSS 289"
-    reason: "Plea bargaining chapter moved from CrPC Ch. XXIA (s.265A) to BNSS Ch. XXIII (s.289)."
-  - old: "IEA 65B"
-    aliases: ["65b", "section 65b", "iea 65b", "evidence act 65b"]
-    new: "BSA 63"
-    reason: "Admissibility of electronic records is now under Bharatiya Sakshya Adhiniyam, 2023 s.63."
-  - old: "IEA 126"
-    aliases: ["section 126 evidence act", "126 evidence act", "iea 126"]
-    new: "BSA 132"
-    reason: "Advocate-client privilege is now codified in Bharatiya Sakshya Adhiniyam, 2023 s.132."
-
+- old: IPC 34
+  code: IPC
+  section: '34'
+  new: BNS 3(5)
+  subject: Acts done by several persons in furtherance of common intention.
+  reason: Acts done by several persons in furtherance of common intention. Now BNS 3(5) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 120B
+  code: IPC
+  section: 120B
+  new: BNS 61(2)
+  subject: Punishment of criminal conspiracy.
+  reason: Punishment of criminal conspiracy. Now BNS 61(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 147
+  code: IPC
+  section: '147'
+  new: BNS 191(2)
+  subject: Punishment for rioting.
+  reason: Punishment for rioting. Now BNS 191(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 149
+  code: IPC
+  section: '149'
+  new: BNS 190
+  subject: Every member of an unlawful assembly guilty of offence committed in prosecution of common object.
+  reason: Every member of an unlawful assembly guilty of offence committed in prosecution of common object. Now BNS 190 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 302
+  code: IPC
+  section: '302'
+  new: BNS 103
+  subject: Punishment for murder.
+  reason: Punishment for murder. Now BNS 103 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 304
+  code: IPC
+  section: '304'
+  new: BNS 105
+  subject: Culpable homicide not amounting to murder.
+  reason: Culpable homicide not amounting to murder. Now BNS 105 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 304A
+  code: IPC
+  section: 304A
+  new: BNS 106
+  subject: Causing death by negligence.
+  reason: Causing death by negligence. Now BNS 106 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 304B
+  code: IPC
+  section: 304B
+  new: BNS 80
+  subject: Dowry death.
+  reason: Dowry death. Now BNS 80 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 306
+  code: IPC
+  section: '306'
+  new: BNS 108
+  subject: Abetment of suicide.
+  reason: Abetment of suicide. Now BNS 108 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 307
+  code: IPC
+  section: '307'
+  new: BNS 109
+  subject: Attempt to murder.
+  reason: Attempt to murder. Now BNS 109 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 323
+  code: IPC
+  section: '323'
+  new: BNS 115(2)
+  subject: Voluntarily causing hurt.
+  reason: Voluntarily causing hurt. Now BNS 115(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 324
+  code: IPC
+  section: '324'
+  new: BNS 118(1)
+  subject: Voluntarily causing hurt by dangerous weapons or means.
+  reason: Voluntarily causing hurt by dangerous weapons or means. Now BNS 118(1) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 325
+  code: IPC
+  section: '325'
+  new: BNS 117(2)
+  subject: Voluntarily causing grievous hurt.
+  reason: Voluntarily causing grievous hurt. Now BNS 117(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 341
+  code: IPC
+  section: '341'
+  new: BNS 126(2)
+  subject: Wrongful restraint.
+  reason: Wrongful restraint. Now BNS 126(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 342
+  code: IPC
+  section: '342'
+  new: BNS 127(2)
+  subject: Wrongful confinement.
+  reason: Wrongful confinement. Now BNS 127(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 354
+  code: IPC
+  section: '354'
+  new: BNS 74
+  subject: Assault or criminal force to woman with intent to outrage her modesty.
+  reason: Assault or criminal force to woman with intent to outrage her modesty. Now BNS 74 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 354A
+  code: IPC
+  section: 354A
+  new: BNS 75
+  subject: Sexual harassment.
+  reason: Sexual harassment. Now BNS 75 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 354D
+  code: IPC
+  section: 354D
+  new: BNS 78
+  subject: Stalking.
+  reason: Stalking. Now BNS 78 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 363
+  code: IPC
+  section: '363'
+  new: BNS 137(2)
+  subject: Kidnapping.
+  reason: Kidnapping. Now BNS 137(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 376
+  code: IPC
+  section: '376'
+  new: BNS 64
+  subject: Rape.
+  reason: Rape. Now BNS 64 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 379
+  code: IPC
+  section: '379'
+  new: BNS 303(2)
+  subject: Theft.
+  reason: Theft. Now BNS 303(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 380
+  code: IPC
+  section: '380'
+  new: BNS 305
+  subject: Theft in a dwelling house.
+  reason: Theft in a dwelling house. Now BNS 305 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 384
+  code: IPC
+  section: '384'
+  new: BNS 308(2)
+  subject: Extortion.
+  reason: Extortion. Now BNS 308(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 392
+  code: IPC
+  section: '392'
+  new: BNS 309(4)
+  subject: Robbery.
+  reason: Robbery. Now BNS 309(4) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 395
+  code: IPC
+  section: '395'
+  new: BNS 310(2)
+  subject: Dacoity.
+  reason: Dacoity. Now BNS 310(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 403
+  code: IPC
+  section: '403'
+  new: BNS 314
+  subject: Dishonest misappropriation of property.
+  reason: Dishonest misappropriation of property. Now BNS 314 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 406
+  code: IPC
+  section: '406'
+  new: BNS 316(2)
+  subject: Criminal breach of trust.
+  reason: Criminal breach of trust. Now BNS 316(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 409
+  code: IPC
+  section: '409'
+  new: BNS 316(5)
+  subject: Criminal breach of trust by public servant, banker, merchant or agent.
+  reason: Criminal breach of trust by public servant, banker, merchant or agent. Now BNS 316(5) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 411
+  code: IPC
+  section: '411'
+  new: BNS 317(2)
+  subject: Dishonestly receiving stolen property.
+  reason: Dishonestly receiving stolen property. Now BNS 317(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 417
+  code: IPC
+  section: '417'
+  new: BNS 318(2)
+  subject: Cheating.
+  reason: Cheating. Now BNS 318(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 420
+  code: IPC
+  section: '420'
+  new: BNS 318(4)
+  subject: Cheating and dishonestly inducing delivery of property.
+  reason: Cheating and dishonestly inducing delivery of property. Now BNS 318(4) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 427
+  code: IPC
+  section: '427'
+  new: BNS 324(4)
+  subject: Mischief causing damage.
+  reason: Mischief causing damage. Now BNS 324(4) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 447
+  code: IPC
+  section: '447'
+  new: BNS 329(3)
+  subject: Criminal trespass.
+  reason: Criminal trespass. Now BNS 329(3) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 448
+  code: IPC
+  section: '448'
+  new: BNS 329(4)
+  subject: House-trespass.
+  reason: House-trespass. Now BNS 329(4) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 465
+  code: IPC
+  section: '465'
+  new: BNS 336(2)
+  subject: Forgery.
+  reason: Forgery. Now BNS 336(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 467
+  code: IPC
+  section: '467'
+  new: BNS 338
+  subject: Forgery of valuable security, will, etc.
+  reason: Forgery of valuable security, will, etc. Now BNS 338 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 468
+  code: IPC
+  section: '468'
+  new: BNS 336(3)
+  subject: Forgery for purpose of cheating.
+  reason: Forgery for purpose of cheating. Now BNS 336(3) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 471
+  code: IPC
+  section: '471'
+  new: BNS 340(2)
+  subject: Using as genuine a forged document.
+  reason: Using as genuine a forged document. Now BNS 340(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 498A
+  code: IPC
+  section: 498A
+  new: BNS 85
+  subject: Husband or relative of husband subjecting a woman to cruelty.
+  reason: Husband or relative of husband subjecting a woman to cruelty. Now BNS 85 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 500
+  code: IPC
+  section: '500'
+  new: BNS 356(2)
+  subject: Defamation.
+  reason: Defamation. Now BNS 356(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 504
+  code: IPC
+  section: '504'
+  new: BNS 352
+  subject: Intentional insult with intent to provoke breach of peace.
+  reason: Intentional insult with intent to provoke breach of peace. Now BNS 352 under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 506
+  code: IPC
+  section: '506'
+  new: BNS 351(2)
+  subject: Criminal intimidation.
+  reason: Criminal intimidation. Now BNS 351(2) under the Bharatiya Nyaya Sanhita, 2023.
+- old: IPC 509
+  code: IPC
+  section: '509'
+  new: BNS 79
+  subject: Word, gesture or act intended to insult the modesty of a woman.
+  reason: Word, gesture or act intended to insult the modesty of a woman. Now BNS 79 under the Bharatiya Nyaya Sanhita, 2023.
+- old: CrPC 41A
+  code: CrPC
+  section: 41A
+  new: BNSS 35(3)
+  subject: Notice of appearance before police officer.
+  reason: Notice of appearance before police officer. Now BNSS 35(3) under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 125
+  code: CrPC
+  section: '125'
+  new: BNSS 144
+  subject: Order for maintenance of wives, children and parents.
+  reason: Order for maintenance of wives, children and parents. Now BNSS 144 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 144
+  code: CrPC
+  section: '144'
+  new: BNSS 163
+  subject: Urgent orders in nuisance or apprehended danger.
+  reason: Urgent orders in nuisance or apprehended danger. Now BNSS 163 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 154
+  code: CrPC
+  section: '154'
+  new: BNSS 173
+  subject: Information in cognizable cases (FIR); BNSS adds e-FIR and zero FIR.
+  reason: Information in cognizable cases (FIR); BNSS adds e-FIR and zero FIR. Now BNSS 173 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 156
+  code: CrPC
+  section: '156'
+  new: BNSS 175
+  subject: Police officer's power to investigate; magistrate's direction now under s.175(3).
+  reason: Police officer's power to investigate; magistrate's direction now under s.175(3). Now BNSS 175 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 161
+  code: CrPC
+  section: '161'
+  new: BNSS 180
+  subject: Examination of witnesses by police.
+  reason: Examination of witnesses by police. Now BNSS 180 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 164
+  code: CrPC
+  section: '164'
+  new: BNSS 183
+  subject: Recording of confessions and statements.
+  reason: Recording of confessions and statements. Now BNSS 183 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 167
+  code: CrPC
+  section: '167'
+  new: BNSS 187
+  subject: Procedure when investigation cannot be completed in 24 hours (remand).
+  reason: Procedure when investigation cannot be completed in 24 hours (remand). Now BNSS 187 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 173
+  code: CrPC
+  section: '173'
+  new: BNSS 193
+  subject: Report of police officer on completion of investigation.
+  reason: Report of police officer on completion of investigation. Now BNSS 193 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 197
+  code: CrPC
+  section: '197'
+  new: BNSS 218
+  subject: Prosecution of judges and public servants (sanction).
+  reason: Prosecution of judges and public servants (sanction). Now BNSS 218 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 200
+  code: CrPC
+  section: '200'
+  new: BNSS 223
+  subject: Examination of complainant.
+  reason: Examination of complainant. Now BNSS 223 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 265A
+  code: CrPC
+  section: 265A
+  new: BNSS 289
+  subject: Plea bargaining (Chapter XXIA CrPC to Chapter XXIII BNSS).
+  reason: Plea bargaining (Chapter XXIA CrPC to Chapter XXIII BNSS). Now BNSS 289 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 313
+  code: CrPC
+  section: '313'
+  new: BNSS 351
+  subject: Power to examine the accused.
+  reason: Power to examine the accused. Now BNSS 351 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 320
+  code: CrPC
+  section: '320'
+  new: BNSS 359
+  subject: Compounding of offences.
+  reason: Compounding of offences. Now BNSS 359 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 437
+  code: CrPC
+  section: '437'
+  new: BNSS 480
+  subject: Bail in non-bailable offence (Magistrate).
+  reason: Bail in non-bailable offence (Magistrate). Now BNSS 480 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 438
+  code: CrPC
+  section: '438'
+  new: BNSS 482
+  subject: Anticipatory bail.
+  reason: Anticipatory bail. Now BNSS 482 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 439
+  code: CrPC
+  section: '439'
+  new: BNSS 483
+  subject: Special powers of High Court or Sessions Court regarding bail.
+  reason: Special powers of High Court or Sessions Court regarding bail. Now BNSS 483 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 468
+  code: CrPC
+  section: '468'
+  new: BNSS 514
+  subject: Bar to taking cognizance after lapse of the period of limitation.
+  reason: Bar to taking cognizance after lapse of the period of limitation. Now BNSS 514 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: CrPC 482
+  code: CrPC
+  section: '482'
+  new: BNSS 528
+  subject: Saving of inherent powers of the High Court.
+  reason: Saving of inherent powers of the High Court. Now BNSS 528 under the Bharatiya Nagarik Suraksha Sanhita, 2023.
+- old: IEA 25
+  code: IEA
+  section: '25'
+  new: BSA 23
+  subject: Confession to police officer not to be proved.
+  reason: Confession to police officer not to be proved. Now BSA 23 under the Bharatiya Sakshya Adhiniyam, 2023.
+- old: IEA 32
+  code: IEA
+  section: '32'
+  new: BSA 26
+  subject: Statements of persons who cannot be called as witnesses (dying declaration).
+  reason: Statements of persons who cannot be called as witnesses (dying declaration). Now BSA 26 under the Bharatiya Sakshya Adhiniyam, 2023.
+- old: IEA 45
+  code: IEA
+  section: '45'
+  new: BSA 39
+  subject: Opinions of experts.
+  reason: Opinions of experts. Now BSA 39 under the Bharatiya Sakshya Adhiniyam, 2023.
+- old: IEA 65B
+  code: IEA
+  section: 65B
+  new: BSA 63
+  subject: Admissibility of electronic records.
+  reason: Admissibility of electronic records. Now BSA 63 under the Bharatiya Sakshya Adhiniyam, 2023.
+- old: IEA 106
+  code: IEA
+  section: '106'
+  new: BSA 109
+  subject: Burden of proving fact especially within knowledge.
+  reason: Burden of proving fact especially within knowledge. Now BSA 109 under the Bharatiya Sakshya Adhiniyam, 2023.
+- old: IEA 113B
+  code: IEA
+  section: 113B
+  new: BSA 118
+  subject: Presumption as to dowry death.
+  reason: Presumption as to dowry death. Now BSA 118 under the Bharatiya Sakshya Adhiniyam, 2023.
+- old: IEA 114
+  code: IEA
+  section: '114'
+  new: BSA 119
+  subject: Court may presume existence of certain facts.
+  reason: Court may presume existence of certain facts. Now BSA 119 under the Bharatiya Sakshya Adhiniyam, 2023.

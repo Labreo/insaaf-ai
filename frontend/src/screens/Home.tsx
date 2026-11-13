@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Bell, FileText, FolderPlus, Hourglass, Search, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { useDB } from '@/lib/store'
+import { can, useDB } from '@/lib/store'
+import { confirmAction, run } from '@/lib/feedback'
 import type { Matter } from '@/lib/types'
 import {
   Badge,
@@ -67,14 +68,17 @@ export default function Home() {
   const inReview = matters.filter((x) => x.status === 'in_review').length
   const nextLimitation = queue.find((x) => x.days_left != null)
 
-  const removeMatter = async (id: string) => {
-    setDeleting(id)
-    try {
-      await api.deleteMatter(id)
-      sfx.tick()
-    } finally {
-      setDeleting(null)
-    }
+  const removeMatter = async (mt: Matter) => {
+    const ok = await confirmAction({
+      title: 'Delete this matter?',
+      body: `"${mt.title.replace(' (FICTIONAL)', '')}" and its ${mt.documents?.length ?? 0} document(s), analysis and drafts will be permanently removed. This cannot be undone.`,
+      confirmLabel: 'Delete matter',
+    })
+    if (!ok) return
+    setDeleting(mt.id)
+    const done = await run('Delete matter', () => api.deleteMatter(mt.id), 'Matter deleted')
+    if (done !== undefined) sfx.tick()
+    setDeleting(null)
   }
 
   return (
@@ -145,10 +149,11 @@ export default function Home() {
       </div>
 
       {/* Main 12-Column Workbench Layout */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        <div className="space-y-6 lg:col-span-8">
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="min-w-0 space-y-6 xl:col-span-8">
           {/* Nyaya Priority Queue Table */}
           <Section
+            id="queue"
             title="Nyaya Priority Queue"
             subtitle="ranked by deadline × merit × proof gaps"
           >
@@ -238,6 +243,7 @@ export default function Home() {
 
           {/* Chamber Matters Register Table */}
           <Section
+            id="matters"
             title="Chamber Matters Register"
             subtitle={`${filteredMatters.length} of ${matters.length} matters on record`}
             right={
@@ -338,10 +344,11 @@ export default function Home() {
                             </button>
                             <button
                               type="button"
-                              disabled={deleting === mt.id}
+                              disabled={deleting === mt.id || !can('matter.delete')}
+                              title={can('matter.delete') ? 'Delete matter' : `The ${me.role} role cannot delete matters`}
                               aria-label={`Delete ${mt.title}`}
-                              onClick={() => removeMatter(mt.id)}
-                              className="rounded-[4px] border border-transparent p-1 text-ink-3 hover:border-bad-200 hover:bg-bad-50 hover:text-bad"
+                              onClick={() => removeMatter(mt)}
+                              className="rounded-[4px] border border-transparent p-1 text-ink-3 hover:border-bad-200 hover:bg-bad-50 hover:text-bad disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-transparent disabled:hover:bg-transparent disabled:hover:text-ink-3"
                             >
                               <Trash2 size={13} />
                             </button>
@@ -357,7 +364,7 @@ export default function Home() {
         </div>
 
         {/* Right 4-Col Rail: Statutory Deadlines & Intake */}
-        <div className="space-y-6 lg:col-span-4">
+        <div className="min-w-0 space-y-6 xl:col-span-4">
           <Section
             title="Statutory Watchlist"
             right={

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Bug, Cpu, RotateCw } from 'lucide-react'
 import { api } from '@/lib/api'
+import { can } from '@/lib/store'
+import { confirmAction, toast } from '@/lib/feedback'
 import type { RetrainResult } from '@/lib/types'
 import {
   Badge,
@@ -35,6 +37,7 @@ export default function LedgerScreen() {
       const r = await api.retrain()
       setResult(r)
       sfx.seal()
+      toast('ok', 'Model retrained', `Now ${r.new_version}`)
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
@@ -43,12 +46,24 @@ export default function LedgerScreen() {
   }
 
   const toggleTamper = async () => {
+    const ok = isTampered || await confirmAction({
+      title: 'Run tamper simulation?',
+      body: 'This alters a stored ledger entry on the server to demonstrate hash-chain detection. Use it only for the demonstration; click again to restore.',
+      confirmLabel: 'Simulate tamper',
+      tone: 'primary',
+    })
+    if (!ok) return
     setTampering(true)
     setErr(null)
     try {
       const res = await api.tamperLedger()
-      if (res.tampered) sfx.reject()
-      else sfx.accept()
+      if (res.tampered) {
+        sfx.reject()
+        toast('bad', 'Ledger tampered', `Verification now fails at ${res.broken_at ?? 'an entry'}.`)
+      } else {
+        sfx.accept()
+        toast('ok', 'Ledger restored', 'Hash chain verifies again.')
+      }
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
@@ -65,9 +80,10 @@ export default function LedgerScreen() {
         right={
           <button
             type="button"
-            disabled={tampering}
+            disabled={tampering || !can('ledger.tamper')}
+            title={can('ledger.tamper') ? undefined : 'Only a senior advocate can run the tamper simulation'}
             onClick={toggleTamper}
-            className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:border-bad-200 hover:bg-bad-50 hover:text-bad"
+            className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:border-bad-200 hover:bg-bad-50 hover:text-bad disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Bug size={13} /> {isTampered ? 'Restore Intact Chain' : 'Simulate Tamper'}
           </button>
@@ -79,7 +95,7 @@ export default function LedgerScreen() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-4">
           <div className="flex items-center justify-between">
-            <Label>F13 · Disagreement → Retraining Loop</Label>
+            <Label>Disagreement → Retraining Loop</Label>
             <Badge tone="info">
               <Cpu size={11} /> {model.data?.version ?? '…'}
             </Badge>
@@ -115,9 +131,10 @@ export default function LedgerScreen() {
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !can('ml.retrain')}
+                  title={can('ml.retrain') ? undefined : 'Only a senior advocate can retrain the model'}
                   onClick={retrain}
-                  className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-navy-600 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <RotateCw size={13} className={busy ? 'animate-spin' : ''} />
                   {busy ? 'Training…' : 'Retrain Model Now'}

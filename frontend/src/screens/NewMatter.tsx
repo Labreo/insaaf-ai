@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileText, FileUp, Mic, PenLine, Play, Sparkles, Square, Trash2, Upload } from 'lucide-react'
 import { api } from '@/lib/api'
+import { toast } from '@/lib/feedback'
 import type { CaseType, Matter } from '@/lib/types'
 import { Badge, Card, ErrorBanner, Label, PageHeader, Section } from '@/components/primitives'
 import { cn } from '@/lib/utils'
@@ -78,6 +79,7 @@ export default function NewMatter() {
   const [docText, setDocText] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [titleTouched, setTitleTouched] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const addFiles = (files: FileList | null) => {
@@ -108,7 +110,11 @@ export default function NewMatter() {
   }
 
   const launchPipeline = async () => {
-    if (!title.trim() || busy) return
+    if (!title.trim()) {
+      setTitleTouched(true)
+      return
+    }
+    if (busy) return
     setBusy(true)
     setErr(null)
     sfx.tap()
@@ -119,10 +125,18 @@ export default function NewMatter() {
         client_language: lang,
         forum_hint: forum.trim() || undefined,
       })
+      // The matter now exists: a failed upload must not strand the user on this form (a retry would duplicate it).
+      const failed: string[] = []
       for (const item of staged) {
-        await api.addDocument(m.id, item.file)
+        try {
+          await api.addDocument(m.id, item.file)
+        } catch (e) {
+          failed.push(`${item.file.name}: ${e instanceof Error ? e.message : String(e)}`)
+        }
       }
-      nav(`/matters/${m.id}?tab=pipeline&run=1`)
+      if (failed.length) toast('bad', `${failed.length} document(s) did not upload`, `${failed.join(' · ')}. The matter was created — attach them from its Case record.`)
+      else toast('ok', 'Matter created')
+      nav(`/matters/${m.id}?tab=pipeline${failed.length < staged.length || staged.length === 0 ? '&run=1' : ''}`)
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
@@ -139,7 +153,7 @@ export default function NewMatter() {
         right={
           <button
             type="button"
-            disabled={busy || !title.trim()}
+            disabled={busy}
             onClick={launchPipeline}
             className="inline-flex items-center gap-2 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -195,10 +209,19 @@ export default function NewMatter() {
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  onBlur={() => setTitleTouched(true)}
                   placeholder="Desai v. Naik — Plot possession, Mapusa"
-                  className="field"
+                  className={cn('field', titleTouched && !title.trim() && 'border-bad')}
+                  aria-required="true"
+                  aria-invalid={titleTouched && !title.trim()}
+                  aria-describedby="title-err"
                   autoFocus
                 />
+                {titleTouched && !title.trim() && (
+                  <p id="title-err" role="alert" className="mt-1 text-[11px] text-bad">
+                    Enter the parties and subject, e.g. “Desai v. Naik — plot possession”. Required to open a matter.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -403,7 +426,7 @@ export default function NewMatter() {
                 </p>
                 <button
                   type="button"
-                  disabled={busy || !title.trim()}
+                  disabled={busy}
                   onClick={launchPipeline}
                   className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
                 >

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import { Building2, ShieldCheck, ShieldOff } from 'lucide-react'
 import { api } from '@/lib/api'
+import { toast } from '@/lib/feedback'
+import { can } from '@/lib/store'
 import type { BiasFirewall, Identity, Score } from '@/lib/types'
 import {
   Badge,
@@ -56,6 +58,7 @@ export default function ScoreTab({ id, onReview }: TabProps) {
       const next = await api.setCourt(id, court)
       setLiveScore(next)
       sfx.accept()
+      toast('ok', `Forum set to ${court}`, `Court-aware prior recomputed (pooled ${next.court_aware.pooled_rate != null ? Math.round(next.court_aware.pooled_rate * 1000) / 10 + '%' : 'n/a'}).`)
     } finally {
       setSwitchingCourt(false)
     }
@@ -129,7 +132,7 @@ export default function ScoreTab({ id, onReview }: TabProps) {
           <Card className="space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <Label>F10 · Court-Aware Shrinkage</Label>
+                <Label>Court-Aware Shrinkage</Label>
                 <p className="mt-1.5 text-[14px] font-semibold text-ink">{sc.court_aware.court}</p>
               </div>
               {sc.court_aware.pooled_rate != null && (
@@ -143,7 +146,8 @@ export default function ScoreTab({ id, onReview }: TabProps) {
                   <button
                     key={court}
                     type="button"
-                    disabled={switchingCourt}
+                    disabled={switchingCourt || !can('analysis.run')}
+                    title={can('analysis.run') ? undefined : 'Your role cannot change the forum'}
                     onClick={() => switchCourt(court)}
                     className={cn(
                       'inline-flex items-center gap-1 rounded-[4px] border px-2 py-1 text-[11px] font-medium transition-colors',
@@ -232,7 +236,7 @@ function Firewall({ id, data }: { id: string; data: BiasFirewall }) {
     <Card className="space-y-4">
       <div className="flex items-center justify-between border-b border-line pb-3">
         <div>
-          <Label>F2 · Counterfactual Bias Firewall (ε = {data.epsilon})</Label>
+          <Label>Counterfactual Bias Firewall (ε = {data.epsilon})</Label>
           <p className="mt-0.5 text-[12px] text-ink-3">6-identity invariance gate before score release</p>
         </div>
         <Badge tone={passed ? 'ok' : 'bad'}>

@@ -53,8 +53,13 @@ def append_ledger_entry(
     target_id: str,
     reason_code: str,
     note: str,
+    *,
+    org_id: str,
     diff: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Append a review to the chain, attributed to the authenticated actor's organisation."""
+    if not org_id:
+        raise ValueError("append_ledger_entry requires the actor's org_id")
     now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     with db_session() as conn:
         last = conn.execute(
@@ -79,10 +84,11 @@ def append_ledger_entry(
         conn.execute(
             """
             INSERT INTO ledger_entries (id, org_id, actor, role, matter_id, action, target, target_id, reason_code, note, diff_json, at, hash, prev_hash)
-            VALUES (?, 'org_chamber_a', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 entry_id,
+                org_id,
                 actor,
                 role,
                 matter_id,
@@ -99,6 +105,7 @@ def append_ledger_entry(
         )
     return {
         "id": entry_id,
+        "org_id": org_id,
         "actor": actor,
         "role": role,
         "matter_id": matter_id,

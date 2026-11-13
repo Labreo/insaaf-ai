@@ -1,0 +1,59 @@
+case_type: intellectual_property
+description: Trade mark / copyright infringement and passing off
+rules:
+- id: intellectual_property.1
+  requirement: Registration certificate
+  severity: high
+  why: Registration gives statutory rights (s.28 TM Act).
+  detect:
+    present_any:
+    - registration certificate
+    - registered trade mark
+    - trademark registration
+    - copyright registration
+    weak_any:
+    - application filed
+  sources: []
+- id: intellectual_property.2
+  requirement: Prior use evidence
+  severity: critical
+  why: Prior user prevails even over registration (s.34; Neon Laboratories).
+  detect:
+    present_any:
+    - prior use
+    - since the year
+    - first use
+    - invoices from
+  sources: []
+- id: intellectual_property.3
+  requirement: Infringing material
+  severity: critical
+  why: Samples, screenshots, trap purchase.
+  detect:
+    present_any:
+    - infringing
+    - counterfeit
+    - screenshot
+    - trap purchase
+    - sample
+  sources: []
+- id: intellectual_property.4
+  requirement: Sales figures and goodwill
+  severity: medium
+  why: Goodwill is essential for passing off.
+  detect:
+    present_any:
+    - sales figures
+    - turnover
+    - advertisement expenses
+    - goodwill
+  sources: []
+- id: intellectual_property.5
+  requirement: Cease and desist notice
+  severity: medium
+  why: Shows knowledge and bad faith after notice.
+  detect:
+    present_any:
+    - cease and desist
+    - legal notice
+  sources: []

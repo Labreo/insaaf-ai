@@ -67,6 +67,22 @@ COURT_HIERARCHY = {
         "parent_rate": 0.52,
         "shrinkage_k": 30,
     },
+    # Sparse trial court: pooled toward its district parent (whose own pooled rate ≈ 0.467).
+    "Civil Judge Senior Division, Mapusa": {
+        "n_judgments": 9,
+        "local_rate": 0.44,
+        "pooled_from": "District Court, North Goa",
+        "parent_rate": 0.467,
+        "shrinkage_k": 30,
+    },
+    # Apex court: no parent; shrinks toward its own long-run rate.
+    "Supreme Court of India": {
+        "n_judgments": 210,
+        "local_rate": 0.50,
+        "pooled_from": "Supreme Court of India (apex, self-pooled)",
+        "parent_rate": 0.50,
+        "shrinkage_k": 30,
+    },
 }
 
 

@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import Rays from '@/intro/Rays'
-import { useDB } from '@/lib/store'
+import { openAuth, useDB } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 
@@ -24,7 +24,7 @@ const ease = [0.16, 1, 0.3, 1] as const
 const GUARANTEES = [
   {
     id: 'authority',
-    kicker: 'F8 · Authority Lock',
+    kicker: 'Authority Lock',
     title: 'Zero fabricated citations. Ever.',
     summary:
       'Every legal proposition in a generated pleading must bind to an indexed paragraph in Indian Kanoon or a statutory rule on record. Any unsupported assertion is quarantined and replaced with "No verified authority found."',
@@ -40,7 +40,7 @@ const GUARANTEES = [
   },
   {
     id: 'bias',
-    kicker: 'F2 · Counterfactual Bias Firewall',
+    kicker: 'Counterfactual Bias Firewall',
     title: 'Identity can never move the score.',
     summary:
       'Before scoring a matter, NER masks names, caste-coded surnames, religion, gender, tribe, and language markers. The model then re-runs across six protected counterfactual identities. If |S − S_swap| exceeds ε = 0.02, the score is withheld.',
@@ -56,7 +56,7 @@ const GUARANTEES = [
   },
   {
     id: 'rules',
-    kicker: 'F5 / F11 · Deterministic Rules & Ledger',
+    kicker: 'Deterministic Rules & Ledger',
     title: 'Rules calculate law. Ledgers seal every override.',
     summary:
       'Limitation deadlines (including Supreme Court COVID-19 suo motu exclusions), evidentiary proof checklists, and IPC → BNS / BNSS statutory crosswalks execute deterministically from YAML rule packs. Every advocate edit is SHA-256 hash-chained.',
@@ -91,30 +91,32 @@ const BENCHMARKS = [
     caseName: 'Mata v. Avianca',
     court: 'S.D.N.Y. (2023)',
     failure: 'LLM brief cited six non-existent judicial opinions; counsel sanctioned $5,000.',
-    defence: 'Authority Lock (F8) refuses to emit any legal proposition lacking a stored Indian Kanoon SourceRef.',
+    defence: 'Authority Lock refuses to emit any legal proposition lacking a stored Indian Kanoon SourceRef.',
   },
   {
     caseName: 'Suraj Lamp & Industries v. State of Haryana',
     court: 'Supreme Court of India (2011)',
     failure: 'Litigants file suits claiming ownership via unregistered GPA / Agreement of Sale.',
-    defence: 'Deterministic Proof Ledger (F5) flags missing s.17 Registration Act deed on day one.',
+    defence: 'Deterministic Proof Ledger flags missing s.17 Registration Act deed on day one.',
   },
   {
     caseName: 'IndoCentric AI Bias Benchmark',
     court: 'Empirical Legal Eval',
     failure: 'Standard reasoning models flipped outcomes on marginalised identities up to 41.67% of the time.',
-    defence: '6-Identity Bias Firewall (F2) masks markers and withholds scores if Δ > 0.02.',
+    defence: '6-Identity Bias Firewall masks markers and withholds scores if Δ > 0.02.',
   },
   {
     caseName: 'BNS / BNSS / BSA Transition',
     court: 'Effective 1 July 2024',
     failure: 'Drafts cite repealed IPC / CrPC / IEA sections after the statutory cut-over date.',
-    defence: 'Law Change Radar (F14) maps offence dates deterministically against statutory crosswalk tables.',
+    defence: 'Law Change Radar maps offence dates deterministically against statutory crosswalk tables.',
   },
 ]
 
 export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }) {
   const nav = useNavigate()
+  const me = useDB((s) => s.me)
+  const authed = useDB((s) => s.authed)
   const matters = useDB((s) => s.matters)
   const health = useDB((s) => s.health)
   const conn = useDB((s) => s.conn)
@@ -164,9 +166,19 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
               type="button"
               onClick={() => {
                 sfx.tap()
-                onReplayIntro()
+                openAuth()
               }}
               className="hidden items-center gap-1.5 rounded-[5px] border border-white/15 bg-white/5 px-3 py-1.5 text-[12px] font-medium text-fog transition-colors hover:border-gold/50 hover:text-bone sm:inline-flex"
+            >
+              <Lock size={12} className="text-gold" /> {authed ? `${me.name} · Account` : 'Sign in'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sfx.tap()
+                onReplayIntro()
+              }}
+              className="hidden items-center gap-1.5 rounded-[5px] border border-white/15 bg-white/5 px-3 py-1.5 text-[12px] font-medium text-fog transition-colors hover:border-gold/50 hover:text-bone md:inline-flex"
             >
               <Sparkles size={13} className="text-gold" /> Replay Intro
             </button>
@@ -291,7 +303,7 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-mono uppercase tracking-[0.08em] text-gold">Authority-Locked Output</span>
                   <span className="font-mono text-smoke">
-                    Kanoon Cache {health ? `${Math.round(health.cache_hit_rate * 100)}%` : '—'}
+                    Precedent Index {health ? health.index_size.toLocaleString('en-IN') : '—'}
                   </span>
                 </div>
                 <p className="mt-1.5 text-[12px] leading-snug text-fog">
@@ -410,7 +422,7 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
         <div className="mx-auto max-w-[1280px] px-5 lg:px-8">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-gold">F1 · Orchestrated State Machine</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-gold">Orchestrated State Machine</p>
               <h2 className="display mt-1 text-[34px] leading-tight text-bone">
                 11 stages from client documents to sealed DOCX
               </h2>

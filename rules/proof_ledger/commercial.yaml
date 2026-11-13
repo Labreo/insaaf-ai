@@ -1,0 +1,67 @@
+case_type: commercial
+description: Commercial disputes under the Commercial Courts Act, 2015
+rules:
+- id: commercial.1
+  requirement: Written contract or purchase order
+  severity: high
+  why: Fixes obligations, price and breach terms.
+  detect:
+    present_any:
+    - written contract
+    - purchase order
+    - signed agreement
+    - work order
+    - master services agreement
+    weak_any:
+    - email confirmation
+    - whatsapp
+  sources: []
+- id: commercial.2
+  requirement: Tax invoices and delivery proof
+  severity: critical
+  why: Proves performance and the quantum claimed.
+  detect:
+    present_any:
+    - tax invoice
+    - gst invoice
+    - delivery challan
+    - eway bill
+    weak_any:
+    - proforma invoice
+  sources: []
+- id: commercial.3
+  requirement: Pre-institution mediation (s.12A) compliance
+  severity: critical
+  why: Suit not seeking urgent interim relief is liable to rejection without s.12A mediation (Patil Automation, 2022).
+  detect:
+    present_any:
+    - 12a mediation
+    - non-starter report
+    - mediation certificate
+    weak_any:
+    - mediation
+  sources: []
+- id: commercial.4
+  requirement: Business correspondence / admissions
+  severity: medium
+  why: Admissions in emails or letters strengthen liability.
+  detect:
+    present_any:
+    - admitted
+    - acknowledge
+    - email dated
+    - letter dated
+    weak_any:
+    - reminder
+  sources: []
+- id: commercial.5
+  requirement: Part-payment or balance confirmation
+  severity: high
+  why: Extends limitation under ss.18–19 Limitation Act.
+  detect:
+    present_any:
+    - part payment
+    - part-payment
+    - balance confirmation
+    - ledger extract
+  sources: []

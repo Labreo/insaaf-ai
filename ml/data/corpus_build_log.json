@@ -1,0 +1,755 @@
+{
+ "queries": {
+  "site:indiankanoon.org/doc registered sale deed unregistered agreement possession title suit Bombay High Court Goa": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:33:09"
+  },
+  "site:indiankanoon.org/doc adverse possession Article 65 limitation title Bombay High Court Goa": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:33:15"
+  },
+  "site:indiankanoon.org/doc Form I and XIV mutation possession Goa Bombay High Court Goa": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:33:22"
+  },
+  "site:indiankanoon.org/doc money recovery suit part payment acknowledgment section 18 limitation Bombay High Court Goa": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:33:27"
+  },
+  "site:indiankanoon.org/doc summary suit Order XXXVII leave to defend recovery Bombay High Court Goa": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:33:32"
+  },
+  "site:indiankanoon.org/doc recovery of price of goods invoices decree Bombay High Court Goa": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:33:37"
+  },
+  "site:indiankanoon.org/doc section 12A commercial courts act pre-institution mediation mandatory Bombay High Court Goa": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:33:44"
+  },
+  "site:indiankanoon.org/doc commercial suit damages breach of contract section 73 Bombay High Court Goa": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:33:49"
+  },
+  "site:indiankanoon.org/doc commercial court specified value jurisdiction Bombay High Court Goa": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:33:54"
+  },
+  "site:indiankanoon.org/doc section 138 negotiable instruments act dishonour cheque legally enforceable debt Bombay High Court Goa": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:33:58"
+  },
+  "site:indiankanoon.org/doc section 139 presumption rebuttal cheque security Bombay High Court Goa": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:34:03"
+  },
+  "site:indiankanoon.org/doc demand notice section 138 limitation complaint section 142 Bombay High Court Goa": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:34:06"
+  },
+  "site:indiankanoon.org/doc section 147 compounding cheque dishonour Bombay High Court Goa": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:34:13"
+  },
+  "site:indiankanoon.org/doc deficiency in service consumer protection act 2019 compensation Bombay High Court Goa": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:34:18"
+  },
+  "site:indiankanoon.org/doc delay in possession flat consumer commission refund interest Bombay High Court Goa": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:34:22"
+  },
+  "site:indiankanoon.org/doc medical negligence consumer commission compensation Bombay High Court Goa": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:34:26"
+  },
+  "site:indiankanoon.org/doc eviction bona fide requirement landlord rent controller Bombay High Court Goa": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:34:31"
+  },
+  "site:indiankanoon.org/doc arrears of rent eviction default tenant Bombay High Court Goa": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:34:37"
+  },
+  "site:indiankanoon.org/doc sub-letting eviction tenant rent act Bombay High Court Goa": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:34:42"
+  },
+  "site:indiankanoon.org/doc mutual consent divorce section 13B cooling period waiver Bombay High Court Goa": {
+   "area": "family_matrimonial",
+   "hits": 0,
+   "at": "2026-11-14T02:34:45"
+  },
+  "site:indiankanoon.org/doc cruelty divorce section 13(1)(ia) hindu marriage act Bombay High Court Goa": {
+   "area": "family_matrimonial",
+   "hits": 10,
+   "at": "2026-11-14T02:34:49"
+  },
+  "site:indiankanoon.org/doc desertion divorce family court appeal Bombay High Court Goa": {
+   "area": "family_matrimonial",
+   "hits": 10,
+   "at": "2026-11-14T02:34:54"
+  },
+  "site:indiankanoon.org/doc maintenance section 125 crpc wife income husband Bombay High Court Goa": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:34:59"
+  },
+  "site:indiankanoon.org/doc interim maintenance Rajnesh affidavit of assets Bombay High Court Goa": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:35:03"
+  },
+  "site:indiankanoon.org/doc maintenance section 144 BNSS Bombay High Court Goa": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:35:08"
+  },
+  "site:indiankanoon.org/doc motor accident compensation multiplier future prospects Bombay High Court Goa": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:35:13"
+  },
+  "site:indiankanoon.org/doc MACT claim insurance company liability section 149 Bombay High Court Goa": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:35:20"
+  },
+  "site:indiankanoon.org/doc motor accident disability compensation loss of earning capacity Bombay High Court Goa": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:35:27"
+  },
+  "site:indiankanoon.org/doc termination workman section 25F retrenchment compensation reinstatement Bombay High Court Goa": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:35:32"
+  },
+  "site:indiankanoon.org/doc back wages reinstatement industrial dispute labour court Bombay High Court Goa": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:35:36"
+  },
+  "site:indiankanoon.org/doc gratuity payment of gratuity act controlling authority Bombay High Court Goa": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:35:42"
+  },
+  "site:indiankanoon.org/doc writ petition article 226 service promotion seniority Bombay High Court Goa": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:35:46"
+  },
+  "site:indiankanoon.org/doc natural justice show cause notice writ quashed Bombay High Court Goa": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:35:50"
+  },
+  "site:indiankanoon.org/doc regularisation of service writ petition Bombay High Court Goa": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:35:54"
+  },
+  "site:indiankanoon.org/doc bail section 439 parity custody period Bombay High Court Goa": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:35:59"
+  },
+  "site:indiankanoon.org/doc anticipatory bail section 438 economic offence Bombay High Court Goa": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:36:03"
+  },
+  "site:indiankanoon.org/doc plea bargaining section 265A Bombay High Court Goa": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:36:07"
+  },
+  "site:indiankanoon.org/doc bail BNSS section 483 Bombay High Court Goa": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:36:10"
+  },
+  "site:indiankanoon.org/doc section 11 appointment of arbitrator existence of arbitration agreement Bombay High Court Goa": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:36:14"
+  },
+  "site:indiankanoon.org/doc section 34 arbitration award patent illegality set aside Bombay High Court Goa": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:36:18"
+  },
+  "site:indiankanoon.org/doc section 9 arbitration interim measures Bombay High Court Goa": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:36:23"
+  },
+  "site:indiankanoon.org/doc probate will suspicious circumstances attesting witness section 63 Bombay High Court Goa": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:36:27"
+  },
+  "site:indiankanoon.org/doc daughter coparcenary right section 6 hindu succession Bombay High Court Goa": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:36:32"
+  },
+  "site:indiankanoon.org/doc letters of administration succession certificate Bombay High Court Goa": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:36:35"
+  },
+  "site:indiankanoon.org/doc trademark infringement passing off deceptive similarity injunction Bombay High Court Goa": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:36:40"
+  },
+  "site:indiankanoon.org/doc prior user trademark registration passing off Bombay High Court Goa": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:36:45"
+  },
+  "site:indiankanoon.org/doc copyright infringement interim injunction Bombay High Court Goa": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:36:49"
+  },
+  "site:indiankanoon.org/doc registered sale deed unregistered agreement possession title suit Supreme Court": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:36:52"
+  },
+  "site:indiankanoon.org/doc adverse possession Article 65 limitation title Supreme Court": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:36:56"
+  },
+  "site:indiankanoon.org/doc Form I and XIV mutation possession Goa Supreme Court": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:37:00"
+  },
+  "site:indiankanoon.org/doc money recovery suit part payment acknowledgment section 18 limitation Supreme Court": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:37:04"
+  },
+  "site:indiankanoon.org/doc summary suit Order XXXVII leave to defend recovery Supreme Court": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:37:09"
+  },
+  "site:indiankanoon.org/doc recovery of price of goods invoices decree Supreme Court": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:37:13"
+  },
+  "site:indiankanoon.org/doc section 12A commercial courts act pre-institution mediation mandatory Supreme Court": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:37:17"
+  },
+  "site:indiankanoon.org/doc commercial suit damages breach of contract section 73 Supreme Court": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:37:21"
+  },
+  "site:indiankanoon.org/doc commercial court specified value jurisdiction Supreme Court": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:37:26"
+  },
+  "site:indiankanoon.org/doc section 138 negotiable instruments act dishonour cheque legally enforceable debt Supreme Court": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:37:31"
+  },
+  "site:indiankanoon.org/doc section 139 presumption rebuttal cheque security Supreme Court": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:37:35"
+  },
+  "site:indiankanoon.org/doc demand notice section 138 limitation complaint section 142 Supreme Court": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:37:38"
+  },
+  "site:indiankanoon.org/doc section 147 compounding cheque dishonour Supreme Court": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:37:44"
+  },
+  "site:indiankanoon.org/doc deficiency in service consumer protection act 2019 compensation Supreme Court": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:37:49"
+  },
+  "site:indiankanoon.org/doc delay in possession flat consumer commission refund interest Supreme Court": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:37:53"
+  },
+  "site:indiankanoon.org/doc medical negligence consumer commission compensation Supreme Court": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:37:57"
+  },
+  "site:indiankanoon.org/doc eviction bona fide requirement landlord rent controller Supreme Court": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:38:01"
+  },
+  "site:indiankanoon.org/doc arrears of rent eviction default tenant Supreme Court": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:38:05"
+  },
+  "site:indiankanoon.org/doc sub-letting eviction tenant rent act Supreme Court": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:38:09"
+  },
+  "site:indiankanoon.org/doc mutual consent divorce section 13B cooling period waiver Supreme Court": {
+   "area": "family_matrimonial",
+   "hits": 10,
+   "at": "2026-11-14T02:38:13"
+  },
+  "site:indiankanoon.org/doc cruelty divorce section 13(1)(ia) hindu marriage act Supreme Court": {
+   "area": "family_matrimonial",
+   "hits": 10,
+   "at": "2026-11-14T02:38:18"
+  },
+  "site:indiankanoon.org/doc desertion divorce family court appeal Supreme Court": {
+   "area": "family_matrimonial",
+   "hits": 10,
+   "at": "2026-11-14T02:38:22"
+  },
+  "site:indiankanoon.org/doc maintenance section 125 crpc wife income husband Supreme Court": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:38:26"
+  },
+  "site:indiankanoon.org/doc interim maintenance Rajnesh affidavit of assets Supreme Court": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:38:30"
+  },
+  "site:indiankanoon.org/doc maintenance section 144 BNSS Supreme Court": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:38:37"
+  },
+  "site:indiankanoon.org/doc motor accident compensation multiplier future prospects Supreme Court": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:38:41"
+  },
+  "site:indiankanoon.org/doc MACT claim insurance company liability section 149 Supreme Court": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:38:46"
+  },
+  "site:indiankanoon.org/doc motor accident disability compensation loss of earning capacity Supreme Court": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:38:50"
+  },
+  "site:indiankanoon.org/doc termination workman section 25F retrenchment compensation reinstatement Supreme Court": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:38:53"
+  },
+  "site:indiankanoon.org/doc back wages reinstatement industrial dispute labour court Supreme Court": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:38:57"
+  },
+  "site:indiankanoon.org/doc gratuity payment of gratuity act controlling authority Supreme Court": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:39:02"
+  },
+  "site:indiankanoon.org/doc writ petition article 226 service promotion seniority Supreme Court": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:39:06"
+  },
+  "site:indiankanoon.org/doc natural justice show cause notice writ quashed Supreme Court": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:39:11"
+  },
+  "site:indiankanoon.org/doc regularisation of service writ petition Supreme Court": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:39:17"
+  },
+  "site:indiankanoon.org/doc bail section 439 parity custody period Supreme Court": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:39:21"
+  },
+  "site:indiankanoon.org/doc anticipatory bail section 438 economic offence Supreme Court": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:39:25"
+  },
+  "site:indiankanoon.org/doc plea bargaining section 265A Supreme Court": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:39:29"
+  },
+  "site:indiankanoon.org/doc bail BNSS section 483 Supreme Court": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:39:33"
+  },
+  "site:indiankanoon.org/doc section 11 appointment of arbitrator existence of arbitration agreement Supreme Court": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:39:37"
+  },
+  "site:indiankanoon.org/doc section 34 arbitration award patent illegality set aside Supreme Court": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:39:41"
+  },
+  "site:indiankanoon.org/doc section 9 arbitration interim measures Supreme Court": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:39:47"
+  },
+  "site:indiankanoon.org/doc probate will suspicious circumstances attesting witness section 63 Supreme Court": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:39:52"
+  },
+  "site:indiankanoon.org/doc daughter coparcenary right section 6 hindu succession Supreme Court": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:39:55"
+  },
+  "site:indiankanoon.org/doc letters of administration succession certificate Supreme Court": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:39:59"
+  },
+  "site:indiankanoon.org/doc trademark infringement passing off deceptive similarity injunction Supreme Court": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:40:04"
+  },
+  "site:indiankanoon.org/doc prior user trademark registration passing off Supreme Court": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:40:09"
+  },
+  "site:indiankanoon.org/doc copyright infringement interim injunction Supreme Court": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:40:12"
+  },
+  "site:indiankanoon.org/doc registered sale deed unregistered agreement possession title suit Karnataka High Court": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:40:16"
+  },
+  "site:indiankanoon.org/doc adverse possession Article 65 limitation title Karnataka High Court": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:40:20"
+  },
+  "site:indiankanoon.org/doc Form I and XIV mutation possession Goa Karnataka High Court": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:40:26"
+  },
+  "site:indiankanoon.org/doc money recovery suit part payment acknowledgment section 18 limitation Karnataka High Court": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:40:31"
+  },
+  "site:indiankanoon.org/doc summary suit Order XXXVII leave to defend recovery Karnataka High Court": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:40:35"
+  },
+  "site:indiankanoon.org/doc recovery of price of goods invoices decree Karnataka High Court": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:40:40"
+  },
+  "site:indiankanoon.org/doc section 12A commercial courts act pre-institution mediation mandatory Karnataka High Court": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:40:43"
+  },
+  "site:indiankanoon.org/doc commercial suit damages breach of contract section 73 Karnataka High Court": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:40:47"
+  },
+  "site:indiankanoon.org/doc commercial court specified value jurisdiction Karnataka High Court": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:40:57"
+  },
+  "site:indiankanoon.org/doc section 138 negotiable instruments act dishonour cheque legally enforceable debt Karnataka High Court": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:41:01"
+  },
+  "site:indiankanoon.org/doc section 139 presumption rebuttal cheque security Karnataka High Court": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:41:05"
+  },
+  "site:indiankanoon.org/doc demand notice section 138 limitation complaint section 142 Karnataka High Court": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:41:09"
+  },
+  "site:indiankanoon.org/doc section 147 compounding cheque dishonour Karnataka High Court": {
+   "area": "cheque_bounce",
+   "hits": 10,
+   "at": "2026-11-14T02:41:14"
+  },
+  "site:indiankanoon.org/doc deficiency in service consumer protection act 2019 compensation Karnataka High Court": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:41:18"
+  },
+  "site:indiankanoon.org/doc delay in possession flat consumer commission refund interest Karnataka High Court": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:41:23"
+  },
+  "site:indiankanoon.org/doc medical negligence consumer commission compensation Karnataka High Court": {
+   "area": "consumer",
+   "hits": 10,
+   "at": "2026-11-14T02:41:29"
+  },
+  "site:indiankanoon.org/doc eviction bona fide requirement landlord rent controller Karnataka High Court": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:41:33"
+  },
+  "site:indiankanoon.org/doc arrears of rent eviction default tenant Karnataka High Court": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:41:37"
+  },
+  "site:indiankanoon.org/doc sub-letting eviction tenant rent act Karnataka High Court": {
+   "area": "rent_tenancy",
+   "hits": 10,
+   "at": "2026-11-14T02:41:43"
+  },
+  "site:indiankanoon.org/doc mutual consent divorce section 13B cooling period waiver Karnataka High Court": {
+   "area": "family_matrimonial",
+   "hits": 10,
+   "at": "2026-11-14T02:41:47"
+  },
+  "site:indiankanoon.org/doc cruelty divorce section 13(1)(ia) hindu marriage act Karnataka High Court": {
+   "area": "family_matrimonial",
+   "hits": 10,
+   "at": "2026-11-14T02:41:53"
+  },
+  "site:indiankanoon.org/doc desertion divorce family court appeal Karnataka High Court": {
+   "area": "family_matrimonial",
+   "hits": 10,
+   "at": "2026-11-14T02:41:57"
+  },
+  "site:indiankanoon.org/doc maintenance section 125 crpc wife income husband Karnataka High Court": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:42:04"
+  },
+  "site:indiankanoon.org/doc interim maintenance Rajnesh affidavit of assets Karnataka High Court": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:42:09"
+  },
+  "site:indiankanoon.org/doc maintenance section 144 BNSS Karnataka High Court": {
+   "area": "maintenance",
+   "hits": 10,
+   "at": "2026-11-14T02:42:14"
+  },
+  "site:indiankanoon.org/doc motor accident compensation multiplier future prospects Karnataka High Court": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:42:19"
+  },
+  "site:indiankanoon.org/doc MACT claim insurance company liability section 149 Karnataka High Court": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:42:24"
+  },
+  "site:indiankanoon.org/doc motor accident disability compensation loss of earning capacity Karnataka High Court": {
+   "area": "motor_accident",
+   "hits": 10,
+   "at": "2026-11-14T02:42:28"
+  },
+  "site:indiankanoon.org/doc termination workman section 25F retrenchment compensation reinstatement Karnataka High Court": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:42:33"
+  },
+  "site:indiankanoon.org/doc back wages reinstatement industrial dispute labour court Karnataka High Court": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:42:37"
+  },
+  "site:indiankanoon.org/doc gratuity payment of gratuity act controlling authority Karnataka High Court": {
+   "area": "labour",
+   "hits": 10,
+   "at": "2026-11-14T02:42:41"
+  },
+  "site:indiankanoon.org/doc writ petition article 226 service promotion seniority Karnataka High Court": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:42:47"
+  },
+  "site:indiankanoon.org/doc natural justice show cause notice writ quashed Karnataka High Court": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:42:50"
+  },
+  "site:indiankanoon.org/doc regularisation of service writ petition Karnataka High Court": {
+   "area": "writ_service",
+   "hits": 10,
+   "at": "2026-11-14T02:42:55"
+  },
+  "site:indiankanoon.org/doc bail section 439 parity custody period Karnataka High Court": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:43:02"
+  },
+  "site:indiankanoon.org/doc anticipatory bail section 438 economic offence Karnataka High Court": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:43:06"
+  },
+  "site:indiankanoon.org/doc plea bargaining section 265A Karnataka High Court": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:43:10"
+  },
+  "site:indiankanoon.org/doc bail BNSS section 483 Karnataka High Court": {
+   "area": "criminal",
+   "hits": 10,
+   "at": "2026-11-14T02:43:14"
+  },
+  "site:indiankanoon.org/doc section 11 appointment of arbitrator existence of arbitration agreement Karnataka High Court": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:43:19"
+  },
+  "site:indiankanoon.org/doc section 34 arbitration award patent illegality set aside Karnataka High Court": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:43:24"
+  },
+  "site:indiankanoon.org/doc section 9 arbitration interim measures Karnataka High Court": {
+   "area": "arbitration",
+   "hits": 10,
+   "at": "2026-11-14T02:43:28"
+  },
+  "site:indiankanoon.org/doc probate will suspicious circumstances attesting witness section 63 Karnataka High Court": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:43:32"
+  },
+  "site:indiankanoon.org/doc daughter coparcenary right section 6 hindu succession Karnataka High Court": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:43:36"
+  },
+  "site:indiankanoon.org/doc letters of administration succession certificate Karnataka High Court": {
+   "area": "succession_probate",
+   "hits": 10,
+   "at": "2026-11-14T02:43:40"
+  },
+  "site:indiankanoon.org/doc trademark infringement passing off deceptive similarity injunction Karnataka High Court": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:43:45"
+  },
+  "site:indiankanoon.org/doc prior user trademark registration passing off Karnataka High Court": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:43:49"
+  },
+  "site:indiankanoon.org/doc copyright infringement interim injunction Karnataka High Court": {
+   "area": "intellectual_property",
+   "hits": 10,
+   "at": "2026-11-14T02:43:54"
+  },
+  "site:indiankanoon.org/doc registered sale deed unregistered agreement possession title suit": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:43:57"
+  },
+  "site:indiankanoon.org/doc adverse possession Article 65 limitation title": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:44:01"
+  },
+  "site:indiankanoon.org/doc Form I and XIV mutation possession Goa": {
+   "area": "property",
+   "hits": 10,
+   "at": "2026-11-14T02:44:04"
+  },
+  "site:indiankanoon.org/doc money recovery suit part payment acknowledgment section 18 limitation": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:44:07"
+  },
+  "site:indiankanoon.org/doc summary suit Order XXXVII leave to defend recovery": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:44:09"
+  },
+  "site:indiankanoon.org/doc recovery of price of goods invoices decree": {
+   "area": "civil_recovery",
+   "hits": 10,
+   "at": "2026-11-14T02:44:12"
+  },
+  "site:indiankanoon.org/doc section 12A commercial courts act pre-institution mediation mandatory": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:44:16"
+  },
+  "site:indiankanoon.org/doc commercial suit damages breach of contract section 73": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:44:19"
+  },
+  "site:indiankanoon.org/doc commercial court specified value jurisdiction": {
+   "area": "commercial",
+   "hits": 10,
+   "at": "2026-11-14T02:44:22"
+  }
+ },
+ "serper_calls": 150
+}

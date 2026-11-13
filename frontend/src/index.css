@@ -100,6 +100,7 @@
   }
   body { min-height: 100dvh; }
   ::selection { background: color-mix(in oklab, var(--color-navy) 18%, transparent); }
+  button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
   button:not(:disabled), [role="button"]:not([aria-disabled="true"]), a, label[for], select { cursor: pointer; }
   :focus-visible { outline: 2px solid color-mix(in oklab, var(--color-navy) 55%, transparent); outline-offset: 2px; border-radius: 4px; }
   input, textarea, select { font: inherit; color: inherit; }

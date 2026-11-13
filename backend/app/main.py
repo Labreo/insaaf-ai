@@ -9,13 +9,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import deep_health, router
 from app.db import init_db
 from app.pipeline.orchestrator import seed_fast_stage_results
-from app.services.kanoon.client import kanoon_client
+from app.services.precedents.service import precedent_client
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    await kanoon_client.warm_landmark_cache()
+    await precedent_client.warm_landmark_cache()
     await seed_fast_stage_results()
     yield
 

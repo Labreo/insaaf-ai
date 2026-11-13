@@ -18,16 +18,57 @@ META_PATH = ML_DIR / "training" / "artifacts" / "model_meta.json"
 IDENTITIES = [
     "baseline",
     "muslim",
+    "christian",
     "dalit",
     "tribal",
+    "obc",
     "female",
+    "transgender",
     "non_english_speaking",
+    "rural_migrant",
 ]
 
+IDENTITY_LABELS = {
+    "baseline": "Baseline (no identity marker)",
+    "muslim": "Religion: Muslim",
+    "christian": "Religion: Christian",
+    "dalit": "Caste: Scheduled Caste (Dalit)",
+    "tribal": "Scheduled Tribe (Adivasi)",
+    "obc": "Caste: Other Backward Class",
+    "female": "Gender: Woman",
+    "transgender": "Gender: Transgender",
+    "non_english_speaking": "Language: non-English speaker",
+    "rural_migrant": "Region: rural migrant worker",
+}
+
+# Logit offsets injected into the synthetic training labels of the *unprotected* comparison model.
+# They stand in for the disparities documented in Indian legal-AI bias studies; the model that
+# learns them is shown next to the firewalled model so the demo has a real contrast.
+SIMULATED_HISTORICAL_BIAS = {
+    "baseline": 0.0, "muslim": -0.85, "christian": -0.35, "dalit": -1.05, "tribal": -0.95, "obc": -0.4,
+    "female": -0.55, "transgender": -0.9, "non_english_speaking": -0.6, "rural_migrant": -0.7,
+}
+
 IDENTITY_MASK_PATTERNS = [
-    r"\b(Mr\.?|Mrs\.?|Ms\.?|Shri|Smt\.?)\s+[A-Z][a-z]+\b",
-    r"\b(muslim|hindu|christian|dalit|sc/st|tribal|adivasi|female|woman|konkani|marathi|hindi)\b",
+    r"\b(Mr\.?|Mrs\.?|Ms\.?|Shri|Smt\.?|Kum\.?|Begum|Sardar)\s+[A-Z][a-z]+\b",
+    # religion
+    r"\b(muslims?|islamic|hindus?|christians?|catholic|sikhs?|jains?|buddhists?|parsis?|jewish|jews?)\b",
+    # region / migration
+    r"\b(rural[\s_-]?migrants?|migrants?|rural)\b",
+    # caste / tribe
+    r"\b(dalits?|sc/st|scheduled\s+(?:caste|tribe)s?|obc|other\s+backward\s+class(?:es)?|tribals?|adivasis?|bahujan|brahmins?|harijans?)\b",
+    # gender
+    r"\b(female|male|woman|women|man|men|widow|transgender|gender)\b",
+    # language / literacy (incl. underscore and hyphen spellings used by the counterfactual profiles)
+    r"\b(non[\s_-]?english[\s_-]?speaking|non[\s_-]?english|konkani|marathi|hindi|kannada|urdu|illiterate)\b",
 ]
+
+
+def _identity_leaked(identity: str, masked_text: str) -> bool:
+    """True if any spelling of a counterfactual identity survived masking."""
+    lowered = masked_text.lower()
+    forms = {identity, identity.replace("_", " "), identity.replace("_", "-")}
+    return any(re.search(rf"\b{re.escape(f)}\b", lowered) for f in forms)
 
 
 def mask_identity_markers(text: str) -> str:
@@ -49,7 +90,22 @@ def _ensure_model_loaded() -> tuple[dict[str, Any], dict[str, Any]]:
         train_and_save()
     bundle = joblib.load(MODEL_PATH)
     meta = json.loads(META_PATH.read_text(encoding="utf-8"))
+    # F10: artifacts trained before a court was added lack its prior; merge the
+    # canonical hierarchy so every forum offered in the UI resolves to itself.
+    hierarchy = meta.setdefault("court_hierarchy", {})
+    for name, info in _canonical_court_hierarchy().items():
+        hierarchy.setdefault(name, info)
     return bundle, meta
+
+
+def _canonical_court_hierarchy() -> dict[str, Any]:
+    import sys
+
+    if str(ML_DIR / "training") not in sys.path:
+        sys.path.insert(0, str(ML_DIR / "training"))
+    from train_b_score import COURT_HIERARCHY
+
+    return COURT_HIERARCHY
 
 
 def extract_features_for_matter(
@@ -61,36 +117,28 @@ def extract_features_for_matter(
     meta: dict[str, Any],
     masked_text: str = "",
 ) -> dict[str, float]:
-    """Build deterministic legal feature vector solely from legal/evidentiary signals (never identity)."""
+    """Build deterministic legal feature vector solely from legal/evidentiary signals (never identity).
+
+    The five evidentiary slots are filled from the proof-ledger requirements named for the
+    practice area in rules/practice_areas.yaml (ml_slots); unknown requirements count as 0.5.
+    """
     _ = masked_text  # Explicitly never read identity tokens into feature vector
+    from app import registry
+
     items = {it["requirement"].lower(): it["state"] for it in proof_ledger.get("items", [])}
 
-    def _state_val(substr: str, default: float = 0.0) -> float:
+    def _state_val(substr: str, default: float = 0.5) -> float:
         for req, st in items.items():
             if substr in req:
                 return 1.0 if st == "present" else (0.5 if st == "weak" else 0.0)
         return default
 
-    if case_type == "property":
-        reg_deed = _state_val("registered sale deed", 0.0)
-        stamp_paid = _state_val("stamp duty", 0.5)
-        possession = _state_val("possession", 0.5)
-        form_1_14 = _state_val("form i", 0.5)
-        payment = _state_val("payment trail", 0.0)
-    elif case_type == "civil_recovery":
-        reg_deed = _state_val("tax invoices", 1.0)
-        stamp_paid = _state_val("written contract", 1.0)
-        possession = _state_val("mediation", 0.5)
-        form_1_14 = 1.0
-        payment = _state_val("part-payment", 1.0)
-    else:  # criminal plea eligibility
-        reg_deed = _state_val("punishment", 1.0)
-        stamp_paid = _state_val("not excluded", 1.0)
-        possession = _state_val("fir", 1.0)
-        form_1_14 = 1.0
-        payment = _state_val("no prior", 1.0)
+    slots = list(registry.area(case_type).get("ml_slots", []))[:5]
+    slots += [""] * (5 - len(slots))
+    reg_deed, stamp_paid, possession, form_1_14, payment = (_state_val(sl) if sl else 0.5 for sl in slots)
 
-    within_limitation = 1.0 if (statute_clock.get("days_left") is None or statute_clock.get("days_left", 1) > 0) else 0.0
+    dl = statute_clock.get("days_left")
+    within_limitation = 1.0 if (dl is None or dl > 0) else 0.0
 
     results = precedents.get("results", [])
     if results:
@@ -133,10 +181,15 @@ def compute_bias_firewall_and_score(
     model = bundle["model"]
     features_order = meta["features"]
     coeffs = meta["coefficients"]
-    court_name = court_override or statute_clock.get("forum", {}).get("court") or matter.get("forum_hint") or "District Court, North Goa"
+    display_court = court_override or statute_clock.get("forum", {}).get("court") or matter.get("forum_hint") or "District Court"
+    court_name = display_court
     hierarchy = meta.get("court_hierarchy", {})
     if court_name not in hierarchy:
-        if "Commercial" in court_name or "Panaji" in court_name:
+        if "Supreme" in court_name:
+            court_name = "Supreme Court of India"
+        elif "Civil Judge" in court_name:
+            court_name = "Civil Judge Senior Division, Mapusa"
+        elif "Commercial" in court_name or "Panaji" in court_name:
             court_name = "Commercial Court, Panaji"
         elif "High Court" in court_name or "Bombay" in court_name:
             court_name = "Bombay High Court (Goa bench)"
@@ -165,10 +218,14 @@ def compute_bias_firewall_and_score(
     rows: list[dict[str, Any]] = []
     baseline_prob: float | None = None
 
+    baseline_feats: dict[str, Any] | None = None
+    invariant = True
     for ident in IDENTITIES:
         # Inject counterfactual identity marker, then pass through Bias Firewall masker
         injected = f"[Claimant profile: {ident}] " + raw_text
         masked = mask_identity_markers(injected)
+        # F2: the flip is only meaningful if the marker never reaches the model. Fail closed on a leak.
+        leaked = ident != "baseline" and _identity_leaked(ident, masked)
         feat_dict = extract_features_for_matter(
             case_type=matter["case_type"],
             proof_ledger=proof_ledger,
@@ -178,16 +235,35 @@ def compute_bias_firewall_and_score(
             meta=meta,
             masked_text=masked,
         )
+        if baseline_feats is None:
+            baseline_feats = feat_dict
+        elif feat_dict != baseline_feats:
+            invariant = False  # any feature drift across identities is a firewall breach
         X = np.array([[feat_dict[f] for f in features_order]], dtype=float)
         raw_prob = float(model.predict_proba(X)[0, 1]) + (pooled_rate - 0.48) * 0.65
         prob = round(max(0.08, min(0.94, raw_prob)), 2)
         if baseline_prob is None:
             baseline_prob = prob
         delta = round(abs(prob - baseline_prob), 2)
-        rows.append({"identity": ident, "score": prob, "delta": delta})
+        un = _unprotected_score(feat_dict, features_order, ident, pooled_rate)
+        rows.append({
+            "identity": ident, "label": IDENTITY_LABELS.get(ident, ident), "score": prob, "delta": delta, "masked": not leaked,
+            "unprotected_score": un,
+        })
+    un_base = rows[0]["unprotected_score"]
+    for r in rows:
+        r["unprotected_delta"] = round(r["unprotected_score"] - un_base, 2)
+        r["blocked"] = abs(r["unprotected_delta"]) > epsilon  # what the firewall prevented
 
-    passed = all(abs(r["delta"]) <= epsilon for r in rows)
-    firewall = {"epsilon": epsilon, "passed": passed, "rows": rows}
+    passed = invariant and all(abs(r["delta"]) <= epsilon and r["masked"] for r in rows)
+    firewall = {
+        "epsilon": epsilon,
+        "passed": passed,
+        "rows": rows,
+        "max_unprotected_gap": round(max(abs(r["unprotected_delta"]) for r in rows), 2),
+        "comparison_model": "Simulated historical-bias model (demo): same features plus identity markers, trained on synthetic data with injected disparities.",
+        "masked_tokens_example": mask_identity_markers("[Claimant profile: Dalit woman, Konkani speaking] " + raw_text[:160]),
+    }
 
     # Compute factor explanations from logistic coefficients centered around neutral 0.5
     base_feats = extract_features_for_matter(
@@ -201,26 +277,32 @@ def compute_bias_firewall_and_score(
     )
 
     factor_items = []
-    # Map features to readable factor bars
-    labels = meta["feature_labels"]
-    for f_name in ("registered_deed_present", "possession_evidence", "precedent_support_ratio", "within_limitation"):
+    from app import registry
+
+    slot_names = list(registry.area(matter["case_type"]).get("ml_slots", []))[:5]
+    reqs = [it["requirement"] for it in proof_ledger.get("items", [])]
+
+    def _req_for(substr: str) -> str:
+        return next((r for r in reqs if substr and substr in r.lower()), substr.title() if substr else "Evidence")
+
+    slot_feats = ["registered_deed_present", "stamp_duty_paid", "possession_evidence", "revenue_record_form_1_14", "payment_trail"]
+    for f_name, slot in list(zip(slot_feats, slot_names))[:3]:
         val = base_feats[f_name]
         w = coeffs.get(f_name, 0.5)
-        # Centered contribution scaled to [-0.35, +0.35]
-        contrib = round((val - 0.5) * w * 0.28, 2)
-        lbl = labels[f_name]
-        if f_name == "registered_deed_present" and val == 0:
-            lbl = "No registered sale deed" if matter["case_type"] == "property" else "Missing primary invoice"
-        elif f_name == "possession_evidence" and val >= 0.5:
-            lbl = "Possession evidence present" if matter["case_type"] == "property" else "Contract & delivery proof"
-        elif f_name == "precedent_support_ratio":
-            lbl = "Similar precedents mostly against" if val < 0.5 else "Similar precedents support claim"
-        elif f_name == "within_limitation":
+        req = _req_for(slot)
+        lbl = f"{req}: on record" if val >= 1.0 else (f"{req}: weak" if val >= 0.5 else f"{req}: missing")
+        factor_items.append({"name": lbl, "effect": round((val - 0.5) * w * 0.28, 2)})
+    for f_name in ("precedent_support_ratio", "within_limitation"):
+        val = base_feats[f_name]
+        w = coeffs.get(f_name, 0.5)
+        if f_name == "precedent_support_ratio":
+            lbl = "Similar precedents mostly against" if val < 0.5 else "Similar precedents support the claim"
+        else:
             lbl = "Within limitation" if val >= 1.0 else "Limitation expired"
-        factor_items.append({"name": lbl, "effect": contrib})
+        factor_items.append({"name": lbl, "effect": round((val - 0.5) * w * 0.28, 2)})
 
     factor_items.append({
-        "name": f"Court baseline ({court_name})",
+        "name": f"Court baseline ({display_court})",
         "effect": round((pooled_rate - 0.48) * 1.4, 2),
     })
 
@@ -238,8 +320,10 @@ def compute_bias_firewall_and_score(
         "band": band,
         "model_version": meta["version"],
         "factors": factor_items,
+        "probability": round(p_score, 2),
         "court_aware": {
-            "court": court_name,
+            "court": display_court,
+            "prior_bucket": court_name,
             "n_judgments": n_j,
             "pooled_from": c_meta["pooled_from"],
             "shrinkage_k": k_sh,
@@ -257,6 +341,46 @@ def compute_bias_firewall_and_score(
         "bias_firewall_passed": passed,
     }
     return firewall, score_obj
+
+
+_UNPROTECTED: dict[str, Any] = {}
+
+
+def _unprotected_model():
+    """Logistic model trained on the synthetic judgment rows plus identity one-hots, with the
+    SIMULATED_HISTORICAL_BIAS offsets baked into its labels. Demo-only contrast for the firewall."""
+    if "model" in _UNPROTECTED:
+        return _UNPROTECTED["model"]
+    from sklearn.linear_model import LogisticRegression
+
+    data_path = ML_DIR / "data" / "judgments_dataset.json"
+    rows = json.loads(data_path.read_text(encoding="utf-8")) if data_path.exists() else []
+    feats = ["registered_deed_present", "stamp_duty_paid", "possession_evidence", "revenue_record_form_1_14",
+             "payment_trail", "within_limitation", "precedent_support_ratio", "court_prior_rate"]
+    rng = np.random.default_rng(29)
+    X, y = [], []
+    for r in rows:
+        base = np.array([float(r.get(f, 0.5)) for f in feats])
+        logit = (base[:6].sum() - 3.0) * 0.9 + (base[6] - 0.5) * 2.0 + (base[7] - 0.48) * 2.0
+        for ident in IDENTITIES:
+            onehot = [1.0 if ident == k else 0.0 for k in IDENTITIES[1:]]
+            pz = 1 / (1 + np.exp(-(logit + SIMULATED_HISTORICAL_BIAS[ident])))
+            X.append(list(base) + onehot)
+            y.append(int(rng.random() < pz))
+    model = LogisticRegression(C=2.0, max_iter=500).fit(np.array(X), np.array(y)) if X else None
+    _UNPROTECTED["model"] = model
+    _UNPROTECTED["feats"] = feats
+    return model
+
+
+def _unprotected_score(feat_dict: dict[str, float], features_order: list[str], identity: str, pooled_rate: float) -> float:
+    model = _unprotected_model()
+    if model is None:
+        return 0.5
+    base = [float(feat_dict.get(f, 0.5)) for f in _UNPROTECTED["feats"]]
+    onehot = [1.0 if identity == k else 0.0 for k in IDENTITIES[1:]]
+    prob = float(model.predict_proba(np.array([base + onehot]))[0, 1]) + (pooled_rate - 0.48) * 0.65
+    return round(max(0.05, min(0.95, prob)), 2)
 
 
 def run_single_identity_flip(

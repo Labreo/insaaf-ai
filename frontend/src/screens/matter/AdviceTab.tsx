@@ -33,7 +33,7 @@ export default function AdviceTab({ id, onOpen, onReview }: TabProps) {
     <div className="space-y-4">
       <Card className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Label>F6 · Settle or Fight Advisor (Deterministic Rules)</Label>
+          <Label>Settle or Fight Advisor (Deterministic Rules)</Label>
           <p className="mt-1 text-[24px] font-semibold capitalize text-ink">
             {d.recommendation.replace('_', ' ')}
           </p>

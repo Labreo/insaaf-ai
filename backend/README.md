@@ -13,7 +13,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 Test suite:
 ```bash
-pytest backend/tests/test_backend.py -v
+python3 -m pytest tests/ -q            # add --run-slow for live-analysis tests
 ```
 
 30-case golden suite:
@@ -26,6 +26,29 @@ Connect the frontend to the live backend:
 cd frontend
 VITE_USE_MOCKS=false VITE_API_BASE=http://localhost:8000/v1 npm run dev
 ```
+
+## Authentication & access control
+
+- **Sign-in**: `POST /v1/auth/login` with `{email | user_id, password}`. A password is always required; missing, empty, or wrong passwords return `401 invalid_credentials`. Five failed attempts per account in five minutes return `429`.
+- **Sessions**: login returns a signed token (`v1.<payload>.<HMAC-SHA256>`) with an expiry (8 h, `INSAAF_SESSION_TTL_SECONDS`) and a server-side session row. Every protected route needs `Authorization: Bearer <token>`; the session must exist, be unexpired and unrevoked. Role and chamber are read from the `users` table on each request, never from headers or token claims. `POST /v1/auth/logout` revokes the session.
+- **Signing key**: `INSAAF_AUTH_SECRET` (≥ 32 chars), otherwise a random key generated once into `backend/.auth_secret` (gitignored).
+- **Passwords**: PBKDF2-HMAC-SHA256 with per-user salt. Legacy salted-SHA-256 hashes are upgraded on the next successful login. Each demo account has its own password: set `INSAAF_DEMO_PASSWORDS` (JSON `{user_id: password}`) or let first start generate them into `backend/.demo_credentials` (gitignored).
+- **Tenant isolation**: every matter route checks the actor's chamber. Another chamber's matter returns the same `404` as a matter that does not exist.
+- **Permissions** (`app/auth.py`, `PERMISSIONS`):
+
+| Action | Senior | Junior | Clerk | Student |
+|---|---|---|---|---|
+| Read matters (role-filtered) | ✓ | ✓ | civil/property only | moot matter only |
+| Create matter, upload document, docket flags | ✓ | ✓ | ✓ | — |
+| Export draft DOCX | ✓ | ✓ | ✓ | — |
+| Run pipeline / search / recalculate / insert verified citation | ✓ | ✓ | — | — |
+| Edit fact, submit draft for review | ✓ | ✓ | — | — |
+| Approve draft, override findings | ✓ | — | — | — |
+| Delete matter | ✓ | — | — | — |
+| Delete document | ✓ | ✓ | — | — |
+| Retrain model, reset demo, ledger tamper demo | ✓ | — | — | — |
+
+Tests: `python3 -m pytest tests/ -q` (fast, offline). `--run-slow` adds six positive-path tests that compute live analysis stages.
 
 ## Layout
 | Folder | Holds | Features |

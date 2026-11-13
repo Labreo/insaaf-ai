@@ -1,0 +1,55 @@
+case_type: succession_probate
+description: Probate / letters of administration / partition among heirs
+rules:
+- id: succession_probate.1
+  requirement: Death certificate
+  severity: critical
+  why: Proves death of the testator / intestate.
+  detect:
+    present_any:
+    - death certificate
+  sources: []
+- id: succession_probate.2
+  requirement: Will or family tree
+  severity: critical
+  why: Testamentary instrument or heirship chart.
+  detect:
+    present_any:
+    - will dated
+    - last will
+    - family tree
+    - genealogy
+    - legal heir certificate
+  sources: []
+- id: succession_probate.3
+  requirement: Attesting witness availability
+  severity: high
+  why: s.63 Succession Act / s.68 Evidence (BSA s.67) require proof by an attesting witness.
+  detect:
+    present_any:
+    - attesting witness
+    - attested by
+    - witness to the will
+  sources: []
+- id: succession_probate.4
+  requirement: Property records
+  severity: high
+  why: Schedule of estate.
+  detect:
+    present_any:
+    - property card
+    - form i & xiv
+    - 7/12
+    - sale deed
+    - bank account
+  sources: []
+- id: succession_probate.5
+  requirement: No-objection / consent of heirs
+  severity: medium
+  why: Uncontested probate is faster.
+  detect:
+    present_any:
+    - no objection
+    - consent of heirs
+    - affidavit of heirs
+  sources: []

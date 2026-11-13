@@ -5,3 +5,5 @@ uploads/
 .pytest_cache/
 __pycache__/
 
+.auth_secret
+.demo_credentials

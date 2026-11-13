@@ -1,0 +1,568 @@
+[
+ {
+  "id": "mat_005",
+  "org_id": "org_chamber_a",
+  "title": "Kamat Steels v. Rane Constructions: cheque dishonour ₹6.8L",
+  "case_type": "cheque_bounce",
+  "status": "ready",
+  "district": "Margao",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Judicial Magistrate First Class, Margao",
+  "cause_date": "2026-09-21",
+  "client_language": "en",
+  "created_by": "junior_1",
+  "client_name": "Kamat Steels Pvt. Ltd.",
+  "opposite_party": "Rane Constructions",
+  "summary": "Two cheques issued against supply of TMT bars returned 'funds insufficient'.",
+  "documents": [
+   {
+    "filename": "dishonour_memo_and_notice.txt",
+    "text": "Cheque No. 004512 dated 02 August 2026 for Rs. 6,80,000 drawn on Bank of India, Margao was returned unpaid with the bank return memo stating funds insufficient on 22 August 2026.\nThe complainant sent a statutory demand notice under section 138 of the Negotiable Instruments Act by speed post on 05 September 2026, within 30 days of the dishonour memo.\nPostal tracking report shows the notice was delivered to the drawer on 08 September 2026.\nThe cheque was issued towards a legally enforceable debt for TMT bars supplied under tax invoices dated June 2026.\nNo payment was made within 15 days of receipt of the notice and the cause of action arose on 23 September 2026."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [
+   "interim_relief"
+  ],
+  "updated_at": "2026-11-13T08:40:00Z"
+ },
+ {
+  "id": "mat_006",
+  "org_id": "org_chamber_a",
+  "title": "Dsouza v. Coastal Motors: defective SUV, consumer complaint",
+  "case_type": "consumer",
+  "status": "in_review",
+  "district": "Panaji",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "District Consumer Disputes Redressal Commission, North Goa",
+  "cause_date": "2025-12-03",
+  "client_language": "kok",
+  "created_by": "junior_2",
+  "client_name": "Anthony Dsouza",
+  "opposite_party": "Coastal Motors Pvt. Ltd.",
+  "summary": "New SUV developed repeated gearbox failure within warranty; dealer refused replacement.",
+  "documents": [
+   {
+    "filename": "job_cards_and_invoice.txt",
+    "text": "The complainant purchased the vehicle under tax invoice dated 14 October 2025 for Rs. 14,20,000 and paid through bank loan EMI.\nJob cards dated 03 December 2025, 19 January 2026 and 02 April 2026 record the same gearbox defect within the warranty period.\nThe complainant raised a complaint to the seller by email and customer care ticket number CM-77821.\nThe dealer replied that the defect was due to driving habits, which the complainant disputes.\nAn independent expert report dated 10 May 2026 confirms a manufacturing defect in the transmission."
+   }
+  ],
+  "voice": {
+   "language": "kok",
+   "original_text": "हांव गाडी घेतली ती तीन फावट वर्कशॉपांत गेली, पूण गियरबॉक्स अजून बरो जावंक ना.",
+   "english_translation": "I bought the car and it went to the workshop three times, but the gearbox is still not fixed.",
+   "translation_confidence": "high"
+  },
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_007",
+  "org_id": "org_chamber_a",
+  "title": "Naik v. Naik: mutual consent divorce",
+  "case_type": "family_matrimonial",
+  "status": "draft",
+  "district": "Mapusa",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Family Court, North Goa at Mapusa",
+  "cause_date": "2025-03-15",
+  "client_language": "mr",
+  "created_by": "senior_1",
+  "client_name": "Sunita Naik",
+  "opposite_party": "Prakash Naik",
+  "summary": "Parties living separately since March 2025; settlement on alimony and custody reached in mediation.",
+  "documents": [
+   {
+    "filename": "settlement_terms.txt",
+    "text": "The marriage was solemnised on 12 May 2016 and registered; the marriage certificate is on record.\nThe parties have been living separately since 15 March 2025 and have not cohabited since.\nA mediation and counselling session at the court-annexed centre produced signed settlement terms on custody and a one-time alimony.\nBoth parties seek waiver of the six-month cooling period under Section 13B(2)."
+   }
+  ],
+  "voice": {
+   "language": "mr",
+   "original_text": "आम्ही दोघेही एक वर्षापासून वेगळे राहतो आणि मुलांच्या ताब्याबद्दल आमचे एकमत झाले आहे.",
+   "english_translation": "We have both been living separately for a year and we have agreed on custody of the children.",
+   "translation_confidence": "high"
+  },
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_008",
+  "org_id": "org_chamber_a",
+  "title": "Gauns v. Gauns: maintenance under BNSS s.144",
+  "case_type": "maintenance",
+  "status": "ready",
+  "district": "Ponda",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Judicial Magistrate First Class, Ponda",
+  "cause_date": "2026-04-01",
+  "client_language": "kok",
+  "created_by": "junior_1",
+  "client_name": "Rekha Gauns",
+  "opposite_party": "Suresh Gauns",
+  "summary": "Wife and minor child deserted; respondent earns from a mining transport business.",
+  "documents": [
+   {
+    "filename": "maintenance_brief.txt",
+    "text": "The applicant is the legally wedded wife of the respondent; the marriage proof and birth certificate of the child are on record.\nThe respondent stopped paying household expenses and deserted the applicant in April 2026, amounting to neglect or refusal to maintain.\nThe respondent's income from a truck transport business is about Rs. 85,000 per month as per bank statement extracts.\nSchool fees and medical bills for the child are annexed as expenses proof."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [
+   "interim_relief"
+  ],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_009",
+  "org_id": "org_chamber_a",
+  "title": "Fernandes (minor) v. Oriental Insurance: MACT claim",
+  "case_type": "motor_accident",
+  "status": "ready",
+  "district": "Margao",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Motor Accident Claims Tribunal, South Goa",
+  "cause_date": "2026-07-09",
+  "client_language": "en",
+  "created_by": "senior_1",
+  "client_name": "Joel Fernandes (through mother)",
+  "opposite_party": "Driver, Owner and Oriental Insurance Co.",
+  "summary": "17-year-old pillion rider suffered 40% permanent disability after a speeding bus hit the scooter.",
+  "documents": [
+   {
+    "filename": "mact_record.txt",
+    "text": "FIR No. 112/2026 was registered at Margao Town police station on 09 July 2026 against the bus driver for rash and negligent driving.\nMedical records and a discharge summary from Goa Medical College show compound fracture of the right femur.\nA disability certificate issued by the medical board assesses 40% permanent disability of the right lower limb.\nThe insurance policy of the offending bus with Oriental Insurance was valid on the date of accident.\nThe claimant was a student; income proof of the parents is filed."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_010",
+  "org_id": "org_chamber_a",
+  "title": "Velip v. Goa Ferro Alloys: illegal termination",
+  "case_type": "labour",
+  "status": "in_review",
+  "district": "Vasco da Gama",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Labour Court, Panaji",
+  "cause_date": "2025-08-30",
+  "client_language": "kok",
+  "created_by": "junior_2",
+  "client_name": "Ramesh Velip",
+  "opposite_party": "Goa Ferro Alloys Ltd.",
+  "summary": "Machine operator with 6 years' service terminated without notice or retrenchment compensation.",
+  "documents": [
+   {
+    "filename": "termination_papers.txt",
+    "text": "The workman was issued an appointment letter dated 01 June 2019 as machine operator.\nAttendance records show continuous service of more than 240 days in each of the last five years.\nA termination order dated 30 August 2025 was issued without one month's notice or retrenchment compensation under Section 25F.\nSalary slips and PF statements up to August 2025 are on record.\nConciliation before the Assistant Labour Commissioner failed and a failure report was issued."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_011",
+  "org_id": "org_chamber_a",
+  "title": "Prabhu v. State of Goa: promotion seniority writ",
+  "case_type": "writ_service",
+  "status": "draft",
+  "district": "Panaji",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Bombay High Court at Goa",
+  "cause_date": "2026-02-10",
+  "client_language": "en",
+  "created_by": "senior_1",
+  "client_name": "Dr. Asha Prabhu",
+  "opposite_party": "State of Goa & Directorate of Health Services",
+  "summary": "Medical officer superseded in promotion; junior officers promoted contrary to recruitment rules.",
+  "documents": [
+   {
+    "filename": "service_record.txt",
+    "text": "The impugned order dated 10 February 2026 promoted three officers junior to the petitioner.\nThe petitioner submitted a representation to the Secretary, Health on 25 February 2026 which remains undecided.\nThe service record and seniority list of 2024 show the petitioner at serial no. 4.\nThe recruitment rules require promotion on seniority-cum-merit.\nSimilarly placed comparator officers with lower ACR grading were promoted."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_012",
+  "org_id": "org_chamber_a",
+  "title": "State v. Mandrekar: anticipatory bail, cheating",
+  "case_type": "criminal",
+  "status": "ready",
+  "district": "Mapusa",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Sessions Court, North Goa at Panaji",
+  "cause_date": "2025-02-14",
+  "client_language": "en",
+  "created_by": "senior_1",
+  "client_name": "Vinay Mandrekar",
+  "opposite_party": "State of Goa",
+  "summary": "Real-estate agent apprehends arrest after complaint alleging cheating on a flat booking.",
+  "documents": [
+   {
+    "filename": "fir_extract.txt",
+    "text": "FIR registered on 14 Feb 2025 under IPC 420, IPC 406 and CrPC 438 relief is sought by the accused.\nThe complainant alleges that Rs. 12,00,000 paid as booking amount was not refunded.\nThe dispute is essentially civil and the accused has offered to deposit the amount.\nThe accused has no prior conviction for the same offence and has cooperated with the investigation.\nThe offence maximum punishment is up to 7 years."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_013",
+  "org_id": "org_chamber_a",
+  "title": "Comunidade de Taleigão v. Shirodkar: eviction of mundkar plot",
+  "case_type": "rent_tenancy",
+  "status": "in_review",
+  "district": "Panaji",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Rent Controller, Tiswadi",
+  "cause_date": "2024-01-05",
+  "client_language": "kok",
+  "created_by": "junior_1",
+  "client_name": "Comunidade de Taleigão",
+  "opposite_party": "Ganesh Shirodkar",
+  "summary": "Arrears of ground rent and sub-letting of a leased comunidade plot.",
+  "documents": [
+   {
+    "filename": "lease_and_arrears.txt",
+    "text": "The respondent holds the plot under a registered lease deed dated 1998 from the comunidade.\nA notice to quit under section 106 of the Transfer of Property Act was served on 05 January 2024.\nArrears of rent of Rs. 1,86,000 remain unpaid since 2021.\nThe respondent has sub-let part of the premises to a hardware shop without written consent.\nRent receipts up to 2020 are on record."
+   }
+  ],
+  "voice": {
+   "language": "kok",
+   "original_text": "भाटकाराक भाडें दिवंक ना आनी दुकान दुसऱ्याक भाड्यान दिलां.",
+   "english_translation": "He has not paid rent to the bhatkar and has let the shop to someone else.",
+   "translation_confidence": "medium"
+  },
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_014",
+  "org_id": "org_chamber_a",
+  "title": "Desai Exports v. Bharat Shipping: s.11 arbitrator appointment",
+  "case_type": "arbitration",
+  "status": "draft",
+  "district": "Panaji",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Bombay High Court at Goa",
+  "cause_date": "2025-11-20",
+  "client_language": "en",
+  "created_by": "senior_1",
+  "client_name": "Desai Exports",
+  "opposite_party": "Bharat Shipping Lines",
+  "summary": "Charter-party demurrage dispute; respondent ignored the notice invoking arbitration.",
+  "documents": [
+   {
+    "filename": "charter_party.txt",
+    "text": "Clause 32 of the charter party dated 04 March 2024 is an arbitration clause providing for a sole arbitrator seated at Panaji.\nA notice invoking arbitration under section 21 was served on 20 November 2025.\nThe respondent did not reply or concur in the name of an arbitrator within 30 days.\nThe statement of claim quantifies demurrage at Rs. 42,50,000.\nCorrespondence by email shows the dispute was raised in 2025."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_015",
+  "org_id": "org_chamber_a",
+  "title": "Estate of late A. Pereira: probate of will",
+  "case_type": "succession_probate",
+  "status": "ready",
+  "district": "Margao",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "District Court, South Goa (Probate)",
+  "cause_date": "2025-06-18",
+  "client_language": "en",
+  "created_by": "junior_2",
+  "client_name": "Maria Pereira (executor)",
+  "opposite_party": "Legal heirs of A. Pereira",
+  "summary": "Executor seeks probate; one heir alleges suspicious circumstances.",
+  "documents": [
+   {
+    "filename": "probate_papers.txt",
+    "text": "The death certificate records the death of Antonio Pereira on 18 June 2025 at Margao.\nThe last will dated 02 February 2023 bequeaths the Benaulim property to the petitioner.\nTwo attesting witnesses signed the will and one attesting witness is available to depose.\nProperty records including Form I & XIV and bank account statements are annexed.\nOne heir has not given a no-objection and alleges the testator was unwell."
+   }
+  ],
+  "voice": null,
+  "moot": true,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_016",
+  "org_id": "org_chamber_a",
+  "title": "Konkan Spice Co. v. Spyce Konkan: trademark passing off",
+  "case_type": "intellectual_property",
+  "status": "draft",
+  "district": "Panaji",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Commercial Court, Panaji",
+  "cause_date": "2026-05-02",
+  "client_language": "en",
+  "created_by": "senior_1",
+  "client_name": "Konkan Spice Co.",
+  "opposite_party": "Spyce Konkan Foods",
+  "summary": "Deceptively similar mark and trade dress on masala packets sold in Goa and Karnataka.",
+  "documents": [
+   {
+    "filename": "ip_evidence.txt",
+    "text": "The plaintiff holds a registration certificate for the word mark KONKAN SPICE in Class 30.\nInvoices from 2009 onward establish prior use and goodwill in Goa.\nA trap purchase on 02 May 2026 produced infringing packets with a deceptively similar mark.\nAnnual sales figures exceed Rs. 3 crore with advertisement expenses on record.\nA cease and desist notice was sent on 10 May 2026 and ignored."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_017",
+  "org_id": "org_chamber_a",
+  "title": "Salgaonkar v. Ghanekar: unregistered agreement, possession suit",
+  "case_type": "property",
+  "status": "ready",
+  "district": "Bicholim",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Civil Judge Senior Division, Bicholim",
+  "cause_date": "2014-05-12",
+  "client_language": "mr",
+  "created_by": "junior_2",
+  "client_name": "Dattaram Salgaonkar",
+  "opposite_party": "Mahesh Ghanekar",
+  "summary": "Plaintiff in possession under an unregistered agreement of sale with payment trail.",
+  "documents": [
+   {
+    "filename": "property_record.txt",
+    "text": "The plaintiff entered possession on 12 May 2014 under an agreement of sale which is not registered.\nStamp duty was paid on the agreement as per the stamp office receipt.\nElectricity bills and house tax receipts in the plaintiff's name show possession since 2014.\nThe Form I & XIV extract still shows the defendant's father as occupant.\nPayment trail to seller of Rs. 9,00,000 through bank transfers is on record."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_018",
+  "org_id": "org_chamber_a",
+  "title": "Shetty Hardware v. Kunkolienkar: recovery of price of goods",
+  "case_type": "civil_recovery",
+  "status": "ready",
+  "district": "Ponda",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Civil Judge Senior Division, Ponda",
+  "cause_date": "2024-03-30",
+  "client_language": "en",
+  "created_by": "clerk_1",
+  "client_name": "Shetty Hardware",
+  "opposite_party": "Kunkolienkar Builders",
+  "summary": "Unpaid invoices for building material; part-payment and balance confirmation on record.",
+  "documents": [
+   {
+    "filename": "invoices.txt",
+    "text": "Tax invoices dated January to March 2024 record supply of cement and steel worth Rs. 3,40,000.\nDelivery challans are acknowledged by the defendant's site supervisor.\nA part payment of Rs. 60,000 was made by NEFT on 30 March 2024.\nThe defendant signed a balance confirmation acknowledging the outstanding in June 2025.\nThere is no written contract; supply was against oral orders confirmed on WhatsApp."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_019",
+  "org_id": "org_chamber_a",
+  "title": "Moot: Ramesh v. Sunil (Goa Law School moot problem)",
+  "case_type": "cheque_bounce",
+  "status": "draft",
+  "district": "Panaji",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Judicial Magistrate First Class, Panaji",
+  "cause_date": "2026-08-01",
+  "client_language": "en",
+  "created_by": "student_1",
+  "client_name": "Ramesh (moot)",
+  "opposite_party": "Sunil (moot)",
+  "summary": "Moot problem on whether a security cheque attracts s.138 liability.",
+  "documents": [
+   {
+    "filename": "moot_problem.txt",
+    "text": "Sunil issued a cheque to Ramesh as security for a friendly loan of Rs. 2,00,000.\nThe cheque was presented and returned with the memo funds insufficient on 01 August 2026.\nRamesh issued a demand notice under section 138 within 30 days.\nSunil claims the cheque was a security cheque and no legally enforceable debt existed on the date of presentation."
+   }
+  ],
+  "voice": null,
+  "moot": true,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_020",
+  "org_id": "org_chamber_a",
+  "title": "Pai v. Lotus Builders: delay in possession of flat",
+  "case_type": "consumer",
+  "status": "ready",
+  "district": "Margao",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "State Consumer Disputes Redressal Commission, Goa",
+  "cause_date": "2025-09-01",
+  "client_language": "kn",
+  "created_by": "junior_1",
+  "client_name": "Ravi Pai",
+  "opposite_party": "Lotus Builders",
+  "summary": "Builder delayed possession by 3 years; homebuyer seeks refund with interest.",
+  "documents": [
+   {
+    "filename": "builder_agreement.txt",
+    "text": "The agreement for sale dated 2019 promised possession by September 2022.\nPossession has not been offered and construction is incomplete as per photographs dated 2025.\nPayment receipts show Rs. 48,00,000 paid through bank loan.\nThe complainant sent a complaint to the seller and a legal notice in September 2025."
+   }
+  ],
+  "voice": {
+   "language": "kn",
+   "original_text": "ಮೂರು ವರ್ಷ ಕಳೆದರೂ ಫ್ಲ್ಯಾಟ್ ಕೊಟ್ಟಿಲ್ಲ, ನಮ್ಮ ಹಣ ಬಡ್ಡಿಯೊಂದಿಗೆ ವಾಪಸ್ ಬೇಕು.",
+   "english_translation": "Even after three years the flat has not been handed over; we want our money back with interest.",
+   "translation_confidence": "high"
+  },
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_021",
+  "org_id": "org_chamber_b",
+  "title": "Mandovi Marine v. Coastline Fuels: s.12A commercial suit ₹27L",
+  "case_type": "commercial",
+  "status": "ready",
+  "district": "Panaji",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Commercial Court, Panaji",
+  "cause_date": "2025-04-18",
+  "client_language": "en",
+  "created_by": "senior_b",
+  "client_name": "Mandovi Marine Services",
+  "opposite_party": "Coastline Fuels Pvt. Ltd.",
+  "summary": "Breach of bunkering contract; mediation non-starter report obtained.",
+  "documents": [
+   {
+    "filename": "commercial_record.txt",
+    "text": "The master services agreement dated 2023 is a written contract for marine bunkering.\nTax invoices and delivery receipts for April 2025 total Rs. 27,40,000.\nPre-institution mediation under section 12A was attempted and a non-starter report was issued on 18 April 2025.\nEmail correspondence shows the defendant admitted the delivery but disputed the rate."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_022",
+  "org_id": "org_chamber_b",
+  "title": "Hegde Traders v. Basavaraj: cheque bounce, Belagavi",
+  "case_type": "cheque_bounce",
+  "status": "in_review",
+  "district": "Belagavi",
+  "state": "Karnataka",
+  "court_seat": "Dharwad",
+  "forum_hint": "Judicial Magistrate First Class, Belagavi",
+  "cause_date": "2026-06-11",
+  "client_language": "kn",
+  "created_by": "junior_b",
+  "client_name": "Hegde Traders",
+  "opposite_party": "Basavaraj Patil",
+  "summary": "Cheque for cashew consignment dishonoured; complaint filed within time.",
+  "documents": [
+   {
+    "filename": "cheque_record.txt",
+    "text": "Cheque dated 20 May 2026 for Rs. 4,10,000 was returned with the memo exceeds arrangement.\nA demand notice under section 138 was sent within 30 days by registered post with acknowledgment card.\nThe debt arose from cashew consignments under tax invoices, a legally enforceable debt.\nThe complaint was filed within time on 11 June 2026."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_023",
+  "org_id": "org_chamber_b",
+  "title": "Kulkarni v. Kulkarni: interim maintenance, Kolhapur",
+  "case_type": "maintenance",
+  "status": "draft",
+  "district": "Kolhapur",
+  "state": "Maharashtra",
+  "court_seat": "",
+  "forum_hint": "Family Court, Kolhapur",
+  "cause_date": "2026-03-01",
+  "client_language": "mr",
+  "created_by": "senior_b",
+  "client_name": "Anjali Kulkarni",
+  "opposite_party": "Rahul Kulkarni",
+  "summary": "Wife seeks interim maintenance; husband is a software engineer in Pune.",
+  "documents": [
+   {
+    "filename": "maintenance_note.txt",
+    "text": "Marriage proof is on record and the parties have one child.\nThe respondent stopped sending money from March 2026, amounting to neglect or refusal to maintain.\nThe respondent's salary is Rs. 1,80,000 per month as per salary slips.\nAn income and asset affidavit in the Rajnesh format is filed by the applicant."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [],
+  "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_024",
+  "org_id": "org_chamber_b",
+  "title": "State v. Shaikh: regular bail, Hubballi",
+  "case_type": "criminal",
+  "status": "ready",
+  "district": "Hubballi",
+  "state": "Karnataka",
+  "court_seat": "Dharwad",
+  "forum_hint": "Principal Sessions Court, Dharwad",
+  "cause_date": "2025-10-02",
+  "client_language": "ur",
+  "created_by": "junior_b",
+  "client_name": "Imtiaz Shaikh",
+  "opposite_party": "State of Karnataka",
+  "summary": "Undertrial in custody for 13 months; co-accused already on bail.",
+  "documents": [
+   {
+    "filename": "bail_brief.txt",
+    "text": "FIR and chargesheet under sections 323, 504 and 506 IPC and 379 IPC have been filed.\nThe offence maximum punishment is under 7 years and the trial has not commenced.\nThe co-accused was granted bail; the applicant seeks parity.\nThe applicant has no prior conviction for the same offence."
+   }
+  ],
+  "voice": null,
+  "moot": false,
+  "flags": [
+   "undertrial_custody"
+  ],
+  "updated_at": "2026-11-12T10:00:00Z"
+ }
+]

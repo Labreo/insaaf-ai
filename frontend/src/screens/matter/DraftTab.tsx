@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Download, FileText, Lock, LockOpen, ShieldCheck, Stamp } from 'lucide-react'
 import { api } from '@/lib/api'
-import { useDB } from '@/lib/store'
+import { can, useDB } from '@/lib/store'
+import { confirmAction, toast } from '@/lib/feedback'
 import type { Draft, SourceRef } from '@/lib/types'
 import {
   Badge,
@@ -46,6 +47,14 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
   const [switching, setSwitching] = useState(false)
   const [exporting, setExporting] = useState(false)
 
+  useEffect(() => {
+    setLiveDraft(null)
+  }, [id])
+
+  useEffect(() => {
+    if (d.data) setLiveDraft(d.data)
+  }, [d.data])
+
   const draft = liveDraft ?? d.data
   if (d.loading && !draft) return <Skeleton className="h-96" />
   if (d.error && !draft) return <ErrorBanner error={d.error} onRetry={d.reload} />
@@ -56,12 +65,21 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
 
   const switchInstrument = async (k: 'legal_notice' | 'plaint' | 'plea_application') => {
     if (k === draft.type || switching) return
+    const label = INSTRUMENTS.find((x) => x.k === k)?.label ?? k
+    const ok = await confirmAction({
+      title: `Switch to ${label}?`,
+      body: 'The pleading is regenerated for the new instrument from the stored facts and verified authorities. The current draft text and any approval stamp are replaced; senior approval must be recorded again.',
+      confirmLabel: 'Regenerate draft',
+      tone: 'primary',
+    })
+    if (!ok) return
     setSwitching(true)
     sfx.tick()
     try {
       const next = await api.setDraftType(id, k)
       setLiveDraft(next)
       sfx.accept()
+      toast('ok', `${label} drafted`, 'Authority Lock re-applied: unsupported propositions stay withheld.')
     } finally {
       setSwitching(false)
     }
@@ -72,13 +90,11 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
     setExporting(true)
     sfx.tick()
     try {
-      const res = await fetch(api.exportDraftUrl(id))
-      if (!res.ok) throw new Error(`Export failed (${res.status})`)
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
+      const file = await api.exportDraft(id, 'docx')
+      const url = URL.createObjectURL(file.blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${matter.title.replace(/[^a-z0-9]+/gi, '_').replace(/_+$/, '')}_${draft.type}.docx`
+      a.download = file.filename
       a.click()
       setTimeout(() => URL.revokeObjectURL(url), 1000)
       sfx.accept()
@@ -111,7 +127,8 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                disabled={exporting}
+                disabled={exporting || !can('draft.export')}
+                title={can('draft.export') ? undefined : 'Your role cannot export drafts'}
                 onClick={exportDocx}
                 className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink disabled:opacity-50"
               >
@@ -124,8 +141,8 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
                     onReview({
                       target: 'draft',
                       target_id: draft.type,
-                      title: `Approve ${draft.type.replace(/_/g, ' ')}`,
-                      action: 'approve',
+                      title: `${role === 'senior' ? 'Approve' : 'Submit for senior review:'} ${draft.type.replace(/_/g, ' ')}`,
+                      action: role === 'senior' ? 'approve' : 'submit',
                     })
                   }
                   className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
@@ -144,7 +161,8 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
               <button
                 key={inst.k}
                 type="button"
-                disabled={switching}
+                disabled={switching || !can('analysis.run')}
+                title={can('analysis.run') ? undefined : 'Your role cannot change the instrument'}
                 onClick={() => switchInstrument(inst.k)}
                 className={cn(
                   'rounded-[4px] border px-2.5 py-1 text-[11px] font-medium transition-colors',

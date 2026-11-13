@@ -1,0 +1,69 @@
+case_type: cheque_bounce
+description: Cheque dishonour complaint under NI Act s.138
+rules:
+- id: cheque_bounce.1
+  requirement: Original cheque and bank dishonour memo
+  severity: critical
+  why: Return memo ('funds insufficient' / 'exceeds arrangement') is the foundation of s.138.
+  detect:
+    present_any:
+    - dishonour memo
+    - return memo
+    - funds insufficient
+    - insufficient funds
+    - exceeds arrangement
+    - cheque returned
+    weak_any:
+    - cheque
+  sources: []
+- id: cheque_bounce.2
+  requirement: Statutory demand notice within 30 days
+  severity: critical
+  why: 's.138(b): written demand within 30 days of information of dishonour.'
+  detect:
+    present_any:
+    - demand notice
+    - legal notice
+    - notice under section 138
+    weak_any:
+    - reminder
+  sources: []
+- id: cheque_bounce.3
+  requirement: Legally enforceable debt or liability
+  severity: high
+  why: s.139 presumption arises but is rebuttable (Rangappa v. Sri Mohan, 2010).
+  detect:
+    present_any:
+    - legally enforceable debt
+    - loan agreement
+    - invoice
+    - promissory note
+    - acknowledgment of debt
+    weak_any:
+    - friendly loan
+    - security cheque
+  sources: []
+- id: cheque_bounce.4
+  requirement: Complaint within time (s.142)
+  severity: high
+  why: Complaint within one month of cause of action after the 15-day payment window.
+  detect:
+    present_any:
+    - complaint filed
+    - within limitation
+    - 15 days expired
+  sources: []
+- id: cheque_bounce.5
+  requirement: Postal proof of notice service
+  severity: medium
+  why: Deemed service on proper dispatch (C.C. Alavi Haji, 2007).
+  detect:
+    present_any:
+    - postal receipt
+    - speed post
+    - acknowledgment card
+    - tracking report
+    - refused
+    weak_any:
+    - courier
+  sources: []

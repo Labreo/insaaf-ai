@@ -1,0 +1,59 @@
+case_type: labour
+description: Individual industrial dispute / wage claim
+rules:
+- id: labour.1
+  requirement: Appointment letter / proof of employment
+  severity: critical
+  why: Establishes 'workman' status and terms.
+  detect:
+    present_any:
+    - appointment letter
+    - offer letter
+    - id card
+    - attendance register
+  sources: []
+- id: labour.2
+  requirement: Termination order
+  severity: high
+  why: Impugned action under challenge.
+  detect:
+    present_any:
+    - termination order
+    - termination letter
+    - dismissal
+    - retrenchment
+    weak_any:
+    - verbal termination
+  sources: []
+- id: labour.3
+  requirement: Continuous service of 240 days
+  severity: critical
+  why: s.25F protection requires 240 days in 12 months.
+  detect:
+    present_any:
+    - continuous service
+    - 240 days
+    - attendance records
+  sources: []
+- id: labour.4
+  requirement: Salary slips / wage records
+  severity: high
+  why: Back wages and last-drawn salary.
+  detect:
+    present_any:
+    - salary slip
+    - salary slips
+    - wage slip
+    - pf statement
+    - esic
+  sources: []
+- id: labour.5
+  requirement: Conciliation before Labour Commissioner
+  severity: medium
+  why: Conciliation failure report precedes reference.
+  detect:
+    present_any:
+    - conciliation
+    - failure report
+    - labour commissioner
+  sources: []

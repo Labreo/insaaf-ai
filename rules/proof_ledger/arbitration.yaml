@@ -1,0 +1,54 @@
+case_type: arbitration
+description: Applications under the Arbitration and Conciliation Act, 1996
+rules:
+- id: arbitration.1
+  requirement: Arbitration clause in contract
+  severity: critical
+  why: s.7 agreement is the jurisdictional foundation.
+  detect:
+    present_any:
+    - arbitration clause
+    - arbitration agreement
+    - disputes shall be referred to arbitration
+  sources: []
+- id: arbitration.2
+  requirement: Notice invoking arbitration (s.21)
+  severity: critical
+  why: Commencement and limitation for s.11.
+  detect:
+    present_any:
+    - notice invoking arbitration
+    - section 21 notice
+    - notice of arbitration
+  sources: []
+- id: arbitration.3
+  requirement: Underlying contract
+  severity: high
+  why: Defines the claims arising.
+  detect:
+    present_any:
+    - contract
+    - agreement dated
+    - work order
+  sources: []
+- id: arbitration.4
+  requirement: Claim quantification
+  severity: medium
+  why: Statement of claim with computation.
+  detect:
+    present_any:
+    - statement of claim
+    - claim amount
+    - computation
+  sources: []
+- id: arbitration.5
+  requirement: Correspondence on dispute
+  severity: medium
+  why: Shows existence of a live dispute.
+  detect:
+    present_any:
+    - correspondence
+    - email
+    - letter dated
+    - dispute raised
+  sources: []

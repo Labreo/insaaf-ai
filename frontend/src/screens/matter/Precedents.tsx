@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { api } from '@/lib/api'
+import { can } from '@/lib/store'
 import type { Precedents as PrecedentsData } from '@/lib/types'
 import {
   Badge,
@@ -24,11 +25,21 @@ const QUICK_QUERIES = [
 
 /** F3: time-boxed Indian Kanoon search (20 judgments within 8s). */
 export default function Precedents({ id, onOpen }: TabProps) {
+  const canRun = can('analysis.run')
+  const denied = 'Your role cannot run or modify analysis'
   const p = useAsync(() => api.precedents(id), [id])
   const [liveData, setLiveData] = useState<PrecedentsData | null>(null)
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLiveData(null)
+  }, [id])
+
+  useEffect(() => {
+    if (p.data) setLiveData(p.data)
+  }, [p.data])
 
   const runSearch = async (q?: string) => {
     const text = (q ?? query).trim()
@@ -88,8 +99,9 @@ export default function Precedents({ id, onOpen }: TabProps) {
           />
           <button
             type="submit"
-            disabled={searching || !query.trim()}
-            className="inline-flex h-[34px] items-center gap-1.5 rounded-[5px] bg-navy px-4 text-[12px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
+            disabled={searching || !query.trim() || !canRun}
+            title={canRun ? undefined : denied}
+            className="inline-flex h-[34px] items-center gap-1.5 rounded-[5px] bg-navy px-4 text-[12px] font-medium text-white hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Search size={13} /> {searching ? 'Searching…' : 'Search Kanoon'}
           </button>
@@ -101,7 +113,8 @@ export default function Precedents({ id, onOpen }: TabProps) {
             <button
               key={q}
               type="button"
-              disabled={searching}
+              disabled={searching || !canRun}
+              title={canRun ? undefined : denied}
               onClick={() => runSearch(q)}
               className="rounded-[4px] border border-line bg-sunken px-2.5 py-1 text-[11px] text-ink-2 transition-colors hover:border-navy hover:text-navy"
             >

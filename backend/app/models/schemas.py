@@ -5,7 +5,8 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 Confidence = Literal["high", "medium", "low"]
-CaseType = Literal["property", "civil_recovery", "criminal"]
+# Validated against rules/practice_areas.yaml (app.registry) at the API boundary.
+CaseType = str
 MatterStatus = Literal["draft", "running", "ready", "in_review", "approved"]
 StageName = Literal[
     "intake",
@@ -20,14 +21,7 @@ StageName = Literal[
     "advice",
     "draft",
 ]
-IdentityType = Literal[
-    "baseline",
-    "muslim",
-    "dalit",
-    "tribal",
-    "female",
-    "non_english_speaking",
-]
+IdentityType = str  # see app.ml.service.IDENTITIES
 
 
 class SourceRef(BaseModel):
@@ -45,6 +39,8 @@ class OrgMember(BaseModel):
     name: str
     role: Literal["senior", "junior", "clerk", "student"]
     last_seen: str
+    user_id: Optional[str] = None
+    email: Optional[str] = None
 
 
 class OrgInfo(BaseModel):
@@ -59,6 +55,57 @@ class MeResponse(BaseModel):
     name: str
     role: Literal["senior", "junior", "clerk", "student"]
     org: OrgInfo
+    email: Optional[str] = None
+    key_fingerprint: Optional[str] = None
+    rls_policy: Optional[str] = None
+    permissions: list[str] = Field(default_factory=list)
+    session_fingerprint: Optional[str] = None
+    session_expires_at: Optional[int] = None
+
+
+class AuthAccount(BaseModel):
+    user_id: str
+    email: str
+    name: str
+    role: Literal["senior", "junior", "clerk", "student"]
+    org_id: str
+    org_name: str
+    org_plan: str
+    visibility_note: str
+
+
+class LoginRequest(BaseModel):
+    email: Optional[str] = None
+    password: Optional[str] = None
+    user_id: Optional[str] = None
+
+
+class LoginResponse(BaseModel):
+    token: str
+    expires_at: int
+    me: MeResponse
+
+
+class SignupRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    email: str = Field(min_length=5, max_length=120)
+    password: str = Field(min_length=10, max_length=200)
+    chamber_name: str = Field(min_length=2, max_length=100)
+    city: Optional[str] = Field(default=None, max_length=60)
+
+
+class AddMemberRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    email: str = Field(min_length=5, max_length=120)
+    role: Literal["junior", "clerk", "student"]
+
+
+class AddMemberResponse(BaseModel):
+    user_id: str
+    email: str
+    name: str
+    role: str
+    temporary_password: str
 
 
 class SetRoleRequest(BaseModel):
@@ -73,6 +120,7 @@ class MatterDocument(BaseModel):
     added_at: str
     document_id: Optional[str] = None
     pages: Optional[int] = None
+    transcript: Optional[dict[str, Any]] = None
 
 
 class Matter(BaseModel):
@@ -87,6 +135,14 @@ class Matter(BaseModel):
     updated_at: str
     client_language: Optional[str] = "kok"
     forum_hint: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    court_seat: Optional[str] = None
+    cause_date: Optional[str] = None
+    client_name: Optional[str] = None
+    opposite_party: Optional[str] = None
+    summary: Optional[str] = None
+    moot: bool = False
     documents: list[MatterDocument] = Field(default_factory=list)
 
 
@@ -95,6 +151,28 @@ class CreateMatterRequest(BaseModel):
     case_type: CaseType
     forum_hint: Optional[str] = None
     client_language: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    court_seat: Optional[str] = None
+    cause_date: Optional[str] = None
+    client_name: Optional[str] = None
+    opposite_party: Optional[str] = None
+    summary: Optional[str] = None
+
+
+class UpdateMatterRequest(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=3, max_length=200)
+    case_type: Optional[str] = None
+    forum_hint: Optional[str] = None
+    client_language: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    court_seat: Optional[str] = None
+    cause_date: Optional[str] = None
+    client_name: Optional[str] = None
+    opposite_party: Optional[str] = None
+    summary: Optional[str] = None
+    priority: Optional[float] = Field(default=None, ge=0, le=1)
 
 
 class DocumentUploadResponse(BaseModel):
@@ -161,14 +239,23 @@ class ForumInfo(BaseModel):
 
 
 class StatuteClock(BaseModel):
-    limitation_expires: str
-    days_left: int
+    limitation_expires: Optional[str] = None
+    days_left: Optional[int] = None
+    # False when the practice area has no fixed limitation clock (see note); True otherwise.
+    applicable: bool = True
+    note: str = ""
+    total_days: Optional[int] = None
+    limitation_years: Optional[int] = None
+    today: Optional[str] = None
     article: str
     excluded_periods: list[dict[str, str]]
     forum: ForumInfo
     commercial_court: bool
     adr_routes: list[str]
     sources: list[SourceRef] = Field(default_factory=list)
+    # How the cause date was obtained: "document" (found in the record), "user" (entered), "matter_deadline" (pinned), "default" (ASSUMED).
+    cause_date: Optional[str] = None
+    cause_date_source: Optional[str] = None
 
 
 class PrecedentResult(BaseModel):
@@ -176,6 +263,9 @@ class PrecedentResult(BaseModel):
     stance: Literal["for", "against"]
     similarity: float
     why_similar: str
+    outcome: Optional[str] = None
+    locality: Optional[str] = None
+    origin: Optional[str] = None
     sources: list[SourceRef] = Field(default_factory=list)
 
 
@@ -186,6 +276,9 @@ class Precedents(BaseModel):
     total_matches: int
     cached: bool
     results: list[PrecedentResult]
+    index_size: int = 0
+    web_swept: int = 0
+    query: Optional[str] = None
 
 
 class CitationHealth(BaseModel):
@@ -203,6 +296,7 @@ class ScoreFactor(BaseModel):
 
 class CourtAwareInfo(BaseModel):
     court: str
+    prior_bucket: Optional[str] = None
     n_judgments: int
     pooled_from: str
     shrinkage_k: int
@@ -220,24 +314,35 @@ class EvalSummary(BaseModel):
 
 
 class Score(BaseModel):
-    band: Literal["strong", "uncertain", "weak"]
+    band: Literal["strong", "uncertain", "moderate", "weak"]
     model_version: str
     factors: list[ScoreFactor]
     court_aware: CourtAwareInfo
     eval: EvalSummary
     bias_firewall_passed: bool
+    probability: Optional[float] = None
+    model_band: Optional[str] = None
+    override: Optional[dict[str, Any]] = None
 
 
 class BiasFirewallRow(BaseModel):
     identity: IdentityType
     score: float
     delta: float
+    masked: bool = True  # False => identity marker leaked past the masker; firewall fails closed
+    label: Optional[str] = None
+    unprotected_score: Optional[float] = None
+    unprotected_delta: Optional[float] = None
+    blocked: Optional[bool] = None
 
 
 class BiasFirewall(BaseModel):
     epsilon: float
     passed: bool
     rows: list[BiasFirewallRow]
+    max_unprotected_gap: Optional[float] = None
+    comparison_model: Optional[str] = None
+    masked_tokens_example: Optional[str] = None
 
 
 class FlipRequest(BaseModel):
@@ -250,6 +355,8 @@ class PrecedentSearchRequest(BaseModel):
 
 class ClockRecalculateRequest(BaseModel):
     cause_date: str
+    # preview=True computes without changing the matter's stored deadline.
+    preview: bool = False
 
 
 class SetCourtRequest(BaseModel):
@@ -257,7 +364,14 @@ class SetCourtRequest(BaseModel):
 
 
 class SetDraftTypeRequest(BaseModel):
-    draft_type: Literal["legal_notice", "plaint", "plea_application"]
+    draft_type: str
+    instructions: Optional[str] = Field(default=None, max_length=600)
+
+
+class DraftParagraphEdit(BaseModel):
+    paragraph_id: str
+    # None deletes the paragraph.
+    text: Optional[str] = Field(default=None, max_length=4000)
 
 
 class CitationCheckRequest(BaseModel):
@@ -288,6 +402,9 @@ class Advice(BaseModel):
     recommendation: Literal["fight", "mediate", "settle", "plea_bargain"]
     options: list[AdviceOption]
     confidence: Confidence
+    model_recommendation: Optional[str] = None
+    override: Optional[dict[str, Any]] = None
+    based_on_band: Optional[str] = None
 
 
 class DraftParagraph(BaseModel):
@@ -303,6 +420,11 @@ class Draft(BaseModel):
     model_version: str
     watermark: str
     paragraphs: list[DraftParagraph]
+    generated_at: Optional[str] = None
+    inputs_hash: Optional[str] = None
+    # True when facts, precedents or score changed after this draft was generated.
+    stale: bool = False
+    rendered: Optional[dict[str, Any]] = None
 
 
 class VerifyCitationRequest(BaseModel):
@@ -316,7 +438,7 @@ class VerifyCitationResponse(BaseModel):
 
 
 class ReviewRequest(BaseModel):
-    action: Literal["approve", "edit", "override"]
+    action: Literal["approve", "edit", "override", "submit", "delete"]
     target: Literal["fact", "proof", "citation", "score", "draft", "advice"]
     target_id: str
     reason_code: Literal[
@@ -333,10 +455,11 @@ class ReviewRequest(BaseModel):
 
 class LedgerEntry(BaseModel):
     id: str
+    org_id: Optional[str] = None
     actor: str
     role: str
     matter_id: str
-    action: Literal["approve", "edit", "override"]
+    action: Literal["approve", "edit", "override", "submit"]
     target: str
     target_id: str
     reason_code: str
@@ -427,10 +550,12 @@ class ModelInfoResponse(BaseModel):
 
 
 class DeepHealthResponse(BaseModel):
-    kanoon: Literal["ok", "degraded", "down"]
+    precedent_index: Literal["ok", "degraded", "down"]
+    web_sweep: Literal["ok", "degraded", "down"]
     llm: Literal["ok", "degraded", "down"]
-    bhashini: Literal["ok", "degraded", "down"]
+    translation: Literal["ok", "degraded", "down"]
     db: Literal["ok", "degraded", "down"]
     model_version: str
-    cache_hit_rate: float
+    index_size: int = 0
+    llm_provider: Optional[str] = None
 

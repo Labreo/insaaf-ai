@@ -51,15 +51,17 @@ export function Section({
   right,
   children,
   className,
+  id,
 }: {
   title: string
   subtitle?: string
   right?: ReactNode
   children: ReactNode
   className?: string
+  id?: string
 }) {
   return (
-    <section className={cn('space-y-3', className)}>
+    <section id={id} className={cn('scroll-mt-20 space-y-3', className)}>
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-2">
         <div className="flex flex-wrap items-baseline gap-2.5">
           <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
@@ -90,7 +92,7 @@ export function PageHeader({
         <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-ink">{title}</h1>
         {description && <p className="max-w-2xl text-[13px] text-ink-2">{description}</p>}
       </div>
-      {right && <div className="flex shrink-0 flex-wrap items-center gap-2">{right}</div>}
+      {right && <div className="flex max-w-full flex-wrap items-center gap-2">{right}</div>}
     </div>
   )
 }

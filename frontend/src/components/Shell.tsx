@@ -1,38 +1,97 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
   Bell,
+  BookOpenCheck,
   ChevronRight,
+  ClipboardCheck,
+  FileSignature,
+  FileText,
   FolderPlus,
+  Gavel,
+  Hourglass,
+  KeyRound,
+  LayoutDashboard,
   LayoutList,
+  ListOrdered,
+  LogOut,
   Menu,
+  Radar,
   RefreshCw,
   Scale,
+  ScanSearch,
   ScrollText,
+  ShieldCheck,
   Sparkles,
-  UserCheck,
+  Users,
   X,
+  type LucideIcon,
 } from 'lucide-react'
+import AuthModal from './AuthModal'
 import { api } from '@/lib/api'
-import { useDB } from '@/lib/store'
-import type { Matter, Role } from '@/lib/types'
+import { can, openAuth, useDB } from '@/lib/store'
+import type { Matter } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 
-const NAV = [
-  { to: '/docket', label: 'Docket & Queue', icon: LayoutList },
-  { to: '/new', label: 'Matter Intake', icon: FolderPlus },
-  { to: '/alerts', label: 'Limitation Watch', icon: Bell },
-  { to: '/ledger', label: 'Audit Ledger & ML', icon: ScrollText },
-  { to: '/me', label: 'Chamber & RBAC', icon: UserCheck },
-]
-
-const ROLES: { k: Role; label: string }[] = [
-  { k: 'senior', label: 'Senior' },
-  { k: 'junior', label: 'Junior' },
-  { k: 'clerk', label: 'Clerk' },
-  { k: 'student', label: 'Student' },
+/**
+ * Five navigation areas over the existing routes. Items marked `matter` open a tab of
+ * the matter you are in (or the most urgent one on the docket) and are disabled when
+ * the chamber has no matters yet.
+ */
+interface NavItem {
+  label: string
+  icon: LucideIcon
+  to?: string
+  tab?: string
+  action?: 'auth'
+  hash?: string
+}
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: 'Workspace',
+    items: [
+      { label: 'Overview', icon: LayoutDashboard, to: '/docket' },
+      { label: 'Nyaya Queue', icon: ListOrdered, to: '/docket', hash: 'queue' },
+      { label: 'Alerts', icon: Bell, to: '/alerts' },
+    ],
+  },
+  {
+    title: 'Matters',
+    items: [
+      { label: 'Matter intake', icon: FolderPlus, to: '/new' },
+      { label: 'Matter list', icon: LayoutList, to: '/docket', hash: 'matters' },
+      { label: 'Documents & facts', icon: FileText, tab: 'facts' },
+    ],
+  },
+  {
+    title: 'Legal Intelligence',
+    items: [
+      { label: 'Precedents', icon: BookOpenCheck, tab: 'precedents' },
+      { label: 'AI-B score & Bias Firewall', icon: Scale, tab: 'score' },
+      { label: 'Citation health', icon: ScanSearch, tab: 'citations' },
+      { label: 'Law Change Radar', icon: Radar, tab: 'radar' },
+    ],
+  },
+  {
+    title: 'Drafting & Advisory',
+    items: [
+      { label: 'Draft generation', icon: FileSignature, tab: 'draft' },
+      { label: 'Proof Ledger', icon: ClipboardCheck, tab: 'proof' },
+      { label: 'Settlement advice', icon: Gavel, tab: 'advice' },
+      { label: 'Statute Clock', icon: Hourglass, tab: 'clock' },
+    ],
+  },
+  {
+    title: 'Chamber Administration',
+    items: [
+      { label: 'Members & roles', icon: Users, to: '/me' },
+      { label: 'Switch account', icon: KeyRound, action: 'auth' },
+      { label: 'Audit ledger', icon: ScrollText, to: '/ledger' },
+      { label: 'Security & chamber', icon: ShieldCheck, to: '/me', hash: 'security' },
+    ],
+  },
 ]
 
 const caseTag: Record<Matter['case_type'], string> = {
@@ -52,99 +111,157 @@ const statusDot: Record<Matter['status'], string> = {
 export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) {
   const loc = useLocation()
   const nav = useNavigate()
+  const [params] = useSearchParams()
   const [mobileNav, setMobileNav] = useState(false)
 
   const me = useDB((s) => s.me)
   const matters = useDB((s) => s.matters)
   const conn = useDB((s) => s.conn)
   const error = useDB((s) => s.error)
+  const authed = useDB((s) => s.authed)
+  const authReady = useDB((s) => s.authReady)
+  const authModalOpen = useDB((s) => s.authModal.open)
 
   useEffect(() => {
     setMobileNav(false)
-  }, [loc.pathname])
+  }, [loc.pathname, loc.search])
+
+  // In-page anchors (#queue, #matters, #security): the router does not scroll to them itself.
+  useEffect(() => {
+    if (!loc.hash) return
+    const t = setTimeout(() => document.getElementById(loc.hash.slice(1))?.scrollIntoView({ block: 'start' }), 60)
+    return () => clearTimeout(t)
+  }, [loc.hash, loc.pathname, authed, matters.length])
 
   const activeMatterId = loc.pathname.startsWith('/matters/') ? loc.pathname.split('/')[2] : null
+  const activeTab = activeMatterId ? params.get('tab') || 'pipeline' : null
+  // Matter-scoped items target the matter being viewed, otherwise the most urgent one on the docket.
+  const contextMatter =
+    matters.find((m) => m.id === activeMatterId) ??
+    [...matters].sort((a, b) => (a.days_left ?? 9999) - (b.days_left ?? 9999))[0]
   const urgentCount = matters.filter((m) => m.days_left != null && m.days_left <= 45).length
+
+  const hrefFor = (it: NavItem): string | null => {
+    if (it.tab) return contextMatter ? `/matters/${contextMatter.id}?tab=${it.tab}` : null
+    return it.to ? `${it.to}${it.hash ? `#${it.hash}` : ''}` : null
+  }
+  const isActive = (it: NavItem): boolean => {
+    if (it.tab) return activeTab === it.tab
+    if (!it.to || loc.pathname !== it.to) return false
+    if (it.hash) return loc.hash === `#${it.hash}`
+    return !(it.to === '/docket' && loc.hash) && !(it.to === '/me' && loc.hash)
+  }
 
   const RailBody = (
     <div className="flex h-full flex-col justify-between bg-surface">
-      <div className="space-y-5 p-3.5">
-        <div className="space-y-1">
-          <p className="eyebrow px-2 pb-1">Chamber Navigation</p>
-          <nav className="space-y-0.5">
-            {NAV.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={() => sfx.tap()}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center justify-between rounded-[5px] px-2.5 py-2 text-[13px] transition-colors',
-                    isActive
-                      ? 'bg-navy-50 font-medium text-navy'
-                      : 'text-ink-2 hover:bg-hover hover:text-ink',
-                  )
-                }
-              >
-                <span className="flex items-center gap-2.5 truncate">
-                  <Icon size={15} strokeWidth={1.75} />
-                  <span className="truncate">{label}</span>
-                </span>
-                {to === '/alerts' && urgentCount > 0 && (
-                  <span className="tabular rounded-[4px] bg-bad-50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-bad">
-                    {urgentCount}
+      <nav aria-label="Primary" className="scroll-thin flex-1 space-y-4 overflow-y-auto p-3">
+        {NAV_GROUPS.map((g) => (
+          <div key={g.title} className="space-y-0.5">
+            <p className="eyebrow px-2 pb-1">{g.title}</p>
+            {g.items.map((it) => {
+              const Icon = it.icon
+              const href = hrefFor(it)
+              const active = isActive(it)
+              const cls = cn(
+                'flex w-full items-center justify-between rounded-[5px] px-2.5 py-1.5 text-left text-[13px] transition-colors',
+                active ? 'bg-navy-50 font-medium text-navy' : 'text-ink-2 hover:bg-hover hover:text-ink',
+                !href && !it.action && 'pointer-events-none opacity-45',
+              )
+              const inner = (
+                <>
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <Icon size={15} strokeWidth={1.75} className="shrink-0" />
+                    <span className="truncate">{it.label}</span>
                   </span>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-        </div>
-
-        <div className="space-y-1.5 border-t border-line pt-4">
-          <div className="flex items-center justify-between px-2">
-            <p className="eyebrow">Active Matters ({matters.length})</p>
-          </div>
-          <div className="scroll-thin max-h-[44dvh] space-y-0.5 overflow-y-auto pr-0.5">
-            {matters.map((mt) => {
-              const selected = activeMatterId === mt.id
+                  {it.to === '/alerts' && urgentCount > 0 && (
+                    <span className="tabular rounded-[4px] bg-bad-50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-bad">
+                      {urgentCount}
+                    </span>
+                  )}
+                </>
+              )
+              if (it.action === 'auth') {
+                return (
+                  <button
+                    key={it.label}
+                    type="button"
+                    className={cls}
+                    onClick={() => {
+                      sfx.tap()
+                      openAuth()
+                    }}
+                  >
+                    {inner}
+                  </button>
+                )
+              }
+              if (!href) {
+                return (
+                  <span
+                    key={it.label}
+                    aria-disabled="true"
+                    title="Register a matter to open this view"
+                    className={cls}
+                  >
+                    {inner}
+                  </span>
+                )
+              }
               return (
-                <button
-                  key={mt.id}
-                  type="button"
-                  onClick={() => {
-                    sfx.tap()
-                    nav(`/matters/${mt.id}`)
-                  }}
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-[5px] border px-2 py-1.5 text-left transition-colors',
-                    selected
-                      ? 'border-navy-100 bg-navy-50 text-navy'
-                      : 'border-transparent text-ink-2 hover:bg-hover hover:text-ink',
-                  )}
+                <Link
+                  key={it.label}
+                  to={href}
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => sfx.tap()}
+                  className={cls}
                 >
-                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDot[mt.status])} />
-                  <span className="rounded bg-sunken px-1 py-0.5 font-mono text-[9px] font-medium text-ink-3 border border-line">
-                    {caseTag[mt.case_type]}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[12px] font-medium">
-                    {mt.title.replace(' (FICTIONAL)', '')}
-                  </span>
-                  {mt.days_left != null && (
-                    <span className="tabular shrink-0 font-mono text-[10px] text-ink-3">{mt.days_left}d</span>
-                  )}
-                </button>
+                  {inner}
+                </Link>
               )
             })}
-            {matters.length === 0 && (
-              <p className="px-2 py-3 text-[12px] text-ink-3">No matters registered on docket.</p>
+            {g.title === 'Matters' && contextMatter && (
+              <p className="truncate px-2.5 pt-0.5 text-[10.5px] text-ink-3">
+                Matter views open on: {contextMatter.title.replace(' (FICTIONAL)', '')}
+              </p>
             )}
           </div>
-        </div>
-      </div>
+        ))}
 
-      <div className="space-y-3 border-t border-line bg-sunken p-3.5">
-        <div className="flex items-center justify-between gap-2 text-[11px]">
-          <span className="font-medium text-ink-2">{me.org.name}</span>
+        <div className="space-y-1 border-t border-line pt-3">
+          <p className="eyebrow px-2 pb-1">Recent matters</p>
+          {matters.slice(0, 6).map((mt) => (
+            <Link
+              key={mt.id}
+              to={`/matters/${mt.id}`}
+              onClick={() => sfx.tap()}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-[5px] border px-2 py-1.5 text-left transition-colors',
+                activeMatterId === mt.id
+                  ? 'border-navy-100 bg-navy-50 text-navy'
+                  : 'border-transparent text-ink-2 hover:bg-hover hover:text-ink',
+              )}
+            >
+              <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDot[mt.status])} />
+              <span className="rounded border border-line bg-sunken px-1 py-0.5 font-mono text-[9px] font-medium text-ink-3">
+                {caseTag[mt.case_type]}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[12px] font-medium">{mt.title.replace(' (FICTIONAL)', '')}</span>
+              {mt.days_left != null && <span className="tabular shrink-0 font-mono text-[10px] text-ink-3">{mt.days_left}d</span>}
+            </Link>
+          ))}
+          {matters.length === 0 && <p className="px-2 py-2 text-[12px] text-ink-3">No matters registered yet.</p>}
+        </div>
+      </nav>
+
+      <div className="space-y-2 border-t border-line bg-sunken p-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-[12px] font-medium text-ink">{me.name}</p>
+            <p className="truncate font-mono text-[10px] text-ink-3">{me.email ?? me.user_id}</p>
+          </div>
+          <span className="shrink-0 rounded-[4px] bg-navy px-2 py-0.5 text-[10px] font-medium uppercase text-white">{me.role}</span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
           <span
             className={cn(
               'inline-flex items-center gap-1 rounded-[4px] border px-1.5 py-0.5 font-mono text-[10px]',
@@ -156,41 +273,18 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
             )}
           >
             <span className={cn('h-1.5 w-1.5 rounded-full', conn === 'live' ? 'bg-ok' : conn === 'down' ? 'bg-bad' : 'bg-ink-4')} />
-            {conn === 'live' ? 'DPDP VAULT · SYNCED' : conn === 'down' ? 'OFFLINE CUSTODY' : 'VERIFYING'}
+            {conn === 'live' ? 'Backend connected' : conn === 'down' ? 'Backend offline' : 'Checking…'}
           </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-1.5 font-mono text-[10px] text-ink-3">
-          <div className="rounded-[4px] border border-line bg-surface px-2 py-1">
-            Custody <span className="font-medium text-ink">AES-256</span>
-          </div>
-          <div className="rounded-[4px] border border-line bg-surface px-2 py-1">
-            Privilege <span className="font-medium text-ink">BSA s.132</span>
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <p className="eyebrow">Active Role (RBAC)</p>
-          <div className="grid grid-cols-4 gap-1">
-            {ROLES.map((r) => (
-              <button
-                key={r.k}
-                type="button"
-                onClick={() => {
-                  sfx.tick()
-                  api.setRole(r.k)
-                }}
-                className={cn(
-                  'rounded-[4px] border px-1 py-1 text-[10px] font-medium transition-colors',
-                  me.role === r.k
-                    ? 'border-navy bg-navy text-white'
-                    : 'border-line bg-surface text-ink-2 hover:bg-hover',
-                )}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              sfx.tap()
+              api.logout().then(() => nav('/'))
+            }}
+            className="inline-flex items-center gap-1 rounded-[4px] border border-line-strong bg-surface px-1.5 py-0.5 text-[10px] font-medium text-ink-2 hover:text-bad"
+          >
+            <LogOut size={10} /> Sign out
+          </button>
         </div>
       </div>
     </div>
@@ -198,105 +292,88 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
-      {/* Top Website + Workbench Header */}
-      <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-13 max-w-[1440px] items-center justify-between gap-4 px-4 lg:px-6">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded focus:bg-navy focus:px-3 focus:py-1.5 focus:text-white"
+      >
+        Skip to content
+      </a>
+      <header className="sticky top-0 z-30 border-b border-line bg-surface">
+        <div className="mx-auto flex h-13 max-w-[1600px] items-center justify-between gap-4 px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              aria-label="Open docket rail"
+              aria-label="Open navigation"
               onClick={() => setMobileNav(true)}
               className="rounded-[5px] border border-line p-1.5 text-ink-2 hover:bg-hover lg:hidden"
             >
               <Menu size={16} />
             </button>
-
-            <NavLink to="/" className="flex items-center gap-2.5 text-ink">
+            <Link to="/docket" className="flex items-center gap-2.5 text-ink">
               <span className="grid h-7 w-7 place-items-center rounded-[5px] border border-brass-200 bg-brass-50 text-brass">
                 <Scale size={15} strokeWidth={1.8} />
               </span>
               <span className="flex items-baseline gap-2">
                 <span className="text-[15px] font-semibold tracking-[-0.02em]">Insaaf AI</span>
-                <span className="hidden text-[11px] text-ink-3 sm:inline">Chamber Legal Workbench</span>
+                <span className="hidden text-[11px] text-ink-3 sm:inline">{me.org.name}</span>
               </span>
-            </NavLink>
-
-            <nav className="ml-4 hidden items-center gap-1 md:flex">
-              <NavLink
-                to="/"
-                end
-                className="rounded-[5px] px-2.5 py-1 text-[12px] font-medium text-ink-2 transition-colors hover:bg-hover hover:text-ink"
-              >
-                Overview
-              </NavLink>
-              <NavLink
-                to="/docket"
-                className={({ isActive }) =>
-                  cn(
-                    'rounded-[5px] px-2.5 py-1 text-[12px] font-medium transition-colors',
-                    isActive ? 'bg-navy-50 text-navy' : 'text-ink-2 hover:bg-hover hover:text-ink',
-                  )
-                }
-              >
-                Docket
-              </NavLink>
-              <NavLink
-                to="/ledger"
-                className={({ isActive }) =>
-                  cn(
-                    'rounded-[5px] px-2.5 py-1 text-[12px] font-medium transition-colors',
-                    isActive ? 'bg-navy-50 text-navy' : 'text-ink-2 hover:bg-hover hover:text-ink',
-                  )
-                }
-              >
-                Ledger & ML
-              </NavLink>
-              <NavLink
-                to="/me"
-                className={({ isActive }) =>
-                  cn(
-                    'rounded-[5px] px-2.5 py-1 text-[12px] font-medium transition-colors',
-                    isActive ? 'bg-navy-50 text-navy' : 'text-ink-2 hover:bg-hover hover:text-ink',
-                  )
-                }
-              >
-                Chamber
-              </NavLink>
-            </nav>
+            </Link>
+            {contextMatter && activeMatterId && (
+              <span className="ml-1 hidden items-center gap-1.5 text-[12px] text-ink-3 md:flex">
+                <ChevronRight size={12} />
+                <span className="max-w-[320px] truncate text-ink-2">{contextMatter.title.replace(' (FICTIONAL)', '')}</span>
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onReplayIntro}
-              className="hidden items-center gap-1.5 rounded-[5px] border border-line bg-sunken px-2.5 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:border-line-strong hover:text-ink sm:inline-flex"
+              className="hidden items-center gap-1.5 rounded-[5px] border border-line bg-sunken px-2.5 py-1 text-[11px] font-medium text-ink-2 hover:border-line-strong hover:text-ink xl:inline-flex"
             >
-              <Sparkles size={12} className="text-brass" /> Justice Intro
+              <Sparkles size={12} className="text-brass" /> Replay intro
             </button>
-
-            <div className="hidden items-center gap-1.5 rounded-[5px] border border-line bg-sunken px-2.5 py-1 text-[11px] text-ink-2 sm:flex">
-              <span>{me.name}</span>
-              <ChevronRight size={11} className="text-ink-4" />
-              <span className="font-semibold capitalize text-navy">{me.role}</span>
-            </div>
-
             <button
               type="button"
               onClick={() => {
                 sfx.tap()
-                nav('/new')
+                openAuth()
               }}
-              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-navy-600"
+              title="Switch account"
+              className="hidden items-center gap-1.5 rounded-[5px] border border-line bg-sunken px-2.5 py-1 text-[11px] text-ink-2 hover:border-line-strong hover:text-ink sm:inline-flex"
             >
-              <FolderPlus size={13} /> New Matter
+              <span>{me.name}</span>
+              <span className="font-semibold capitalize text-navy">{me.role}</span>
             </button>
+            {can('matter.create') ? (
+              <button
+                type="button"
+                onClick={() => {
+                  sfx.tap()
+                  nav('/new')
+                }}
+                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
+              >
+                <FolderPlus size={13} /> New matter
+              </button>
+            ) : (
+              authed && (
+                <span
+                  title={`The ${me.role} role cannot create matters`}
+                  className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-[5px] border border-line bg-sunken px-3 py-1.5 text-[12px] font-medium text-ink-4"
+                >
+                  <FolderPlus size={13} /> New matter
+                </span>
+              )
+            )}
           </div>
         </div>
       </header>
 
       {conn === 'down' && (
         <div className="border-b border-bad-200 bg-bad-50 px-4 py-2 text-[12px] text-bad">
-          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-2">
+          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-2">
             <span className="flex items-center gap-2">
               <AlertTriangle size={14} />
               Chamber registry unreachable ({error || 'connection failed'}). Verify custody service and retry.
@@ -312,9 +389,9 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-[1440px] flex-1">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-1">
         {/* Desktop Persistent Left Rail */}
-        <aside className="sticky top-13 hidden h-[calc(100dvh-3.25rem)] w-64 shrink-0 border-r border-line lg:block">
+        <aside aria-label="Navigation" className="sticky top-13 hidden h-[calc(100dvh-3.25rem)] w-64 shrink-0 border-r border-line lg:block">
           {RailBody}
         </aside>
 
@@ -337,14 +414,23 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
         )}
 
         {/* Main Workspace Content */}
-        <main className="min-w-0 flex-1 px-4 py-6 lg:px-8 lg:py-7">
-          {me.role === 'student' && (
+        <main id="main" className="min-w-0 flex-1 px-4 py-6 lg:px-8 lg:py-7">
+          {authed && me.role === 'student' && (
             <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-[6px] border border-brass-200 bg-brass-50 px-4 py-2.5 text-[12px] text-ink">
               <span className="font-semibold text-brass">Moot Court &amp; Law-School Evaluation Mode — Read-Only</span>
               <span className="text-ink-2">Bench memorial &amp; citation grading active · Pleading sealing &amp; overrides disabled for student interns.</span>
             </div>
           )}
-          <Outlet />
+          {authed ? (
+            <Outlet />
+          ) : authReady ? (
+            <>
+              <p className="py-10 text-center text-[13px] text-ink-3">Sign in to open the chamber workbench.</p>
+              {!authModalOpen && <AuthModal required />}
+            </>
+          ) : (
+            <p className="py-10 text-center text-[13px] text-ink-3">Restoring session…</p>
+          )}
         </main>
       </div>
     </div>

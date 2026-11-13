@@ -32,7 +32,7 @@ rules:
     severity: high
     why: Part-payment or written acknowledgment extends limitation under s.18–19 Limitation Act.
     detect:
-      present_any: ["part payment", "part-payment", "ledger extract", "balance confirmation", "neft", "bank statement"]
+      present_any: ["part payment", "part-payment", "ledger extract", "balance confirmation", "neft", "bank statement", "acknowledge the outstanding", "acknowledges the outstanding", "acknowledged the outstanding", "acknowledgment of liability", "acknowledgement of liability", "written acknowledgment", "written acknowledgement", "undertake to pay", "undertakes to pay"]
     sources: []
 
   - id: civil.pre_institution_mediation

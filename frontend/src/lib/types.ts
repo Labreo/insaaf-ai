@@ -13,7 +13,8 @@ export interface SourceRef {
   url: string
 }
 
-export type CaseType = 'property' | 'civil_recovery' | 'criminal'
+/** Practice-area id from GET /v1/meta (rules/practice_areas.yaml). */
+export type CaseType = string
 export type MatterStatus = 'draft' | 'running' | 'ready' | 'in_review' | 'approved'
 export type Role = 'senior' | 'junior' | 'clerk' | 'student'
 
@@ -25,6 +26,13 @@ export interface MatterDocument {
   added_at: string
   document_id?: string
   pages?: number
+  transcript?: {
+    language?: string | null
+    original_text: string
+    english_translation: string
+    status: 'transcribed' | 'pending' | 'no_speech' | string
+    has_audio?: boolean
+  } | null
 }
 
 export interface Matter {
@@ -37,9 +45,44 @@ export interface Matter {
   days_left: number | null
   created_by: string
   updated_at: string
-  client_language?: 'en' | 'kok' | 'mr' | 'hi'
+  client_language?: string
   documents?: MatterDocument[]
   forum_hint?: string | null
+  state?: string | null
+  district?: string | null
+  court_seat?: string | null
+  cause_date?: string | null
+  client_name?: string | null
+  opposite_party?: string | null
+  summary?: string | null
+  moot?: boolean
+}
+
+export interface OrgMemberRow {
+  user_id?: string
+  email?: string
+  name: string
+  role: Role
+  last_seen: string
+}
+
+export interface PracticeArea {
+  id: string
+  label: string
+  tag: string
+  group: string
+  forum: string
+  limitation: { article?: string; years?: number | null; note?: string }
+  commercial_court: boolean
+  adr_routes: string[]
+  instruments: string[]
+  statutes: string[]
+}
+
+export interface Meta {
+  areas: PracticeArea[]
+  languages: { code: string; label: string }[]
+  instruments: { id: string; label: string; kind: string }[]
 }
 
 export type Stage =
@@ -71,10 +114,20 @@ export interface ProofItem {
 }
 
 export interface StatuteClock {
-  limitation_expires: string
-  days_left: number
+  limitation_expires: string | null
+  cause_date?: string | null
+  /** document = found in the record, user = entered, missing = not known yet */
+  cause_date_source?: 'document' | 'user' | 'missing' | null
+  days_left: number | null
+  /** false when the practice area has no fixed limitation clock (see note) */
+  applicable?: boolean
+  note?: string
+  total_days?: number | null
+  limitation_years?: number | null
+  today?: string | null
+  preview?: boolean
   article: string
-  excluded_periods: { from: string; to: string; reason: string }[]
+  excluded_periods: { from: string; to: string; reason: string; days?: string }[]
   forum: { court: string; basis: string }
   commercial_court: boolean
   adr_routes: string[]
@@ -87,7 +140,19 @@ export interface Precedents {
   searched: number
   total_matches: number
   cached: boolean
-  results: { rank: number; stance: 'for' | 'against'; similarity: number; why_similar: string; sources: SourceRef[] }[]
+  index_size?: number
+  web_swept?: number
+  query?: string | null
+  results: {
+    rank: number
+    stance: 'for' | 'against'
+    similarity: number
+    why_similar: string
+    outcome?: string | null
+    locality?: string | null
+    origin?: string | null
+    sources: SourceRef[]
+  }[]
 }
 
 export interface CitationHealth {
@@ -119,33 +184,88 @@ export interface Score {
     calibration?: { prob_pred: number[]; prob_true: number[] } | null
   }
   bias_firewall_passed: boolean
+  probability?: number | null
+  model_band?: string | null
+  override?: { band: string; model_band: string; by: string; note: string; reason_code?: string; at: string } | null
 }
 
-export type Identity = 'baseline' | 'muslim' | 'dalit' | 'tribal' | 'female' | 'non_english_speaking'
+export type Identity = string
+
+export interface BiasFirewallRow {
+  identity: Identity
+  label?: string
+  score: number
+  delta: number
+  masked?: boolean
+  unprotected_score?: number
+  unprotected_delta?: number
+  blocked?: boolean
+}
 
 export interface BiasFirewall {
   epsilon: number
   passed: boolean
-  rows: { identity: Identity; score: number; delta: number }[]
+  rows: BiasFirewallRow[]
+  max_unprotected_gap?: number
+  comparison_model?: string
+  masked_tokens_example?: string
 }
 
+export type AdviceRoute = 'fight' | 'mediate' | 'settle' | 'plea_bargain'
+
 export interface Advice {
-  recommendation: 'fight' | 'mediate' | 'settle' | 'plea_bargain'
+  recommendation: AdviceRoute
   options: { route: string; eligible: boolean; why: string; sources: SourceRef[] }[]
   confidence: Confidence
+  model_recommendation?: string | null
+  override?: { recommendation: string; model_recommendation: string; by: string; note: string; at: string } | null
+  based_on_band?: string | null
+}
+
+export interface DraftParagraph {
+  id: string
+  text: string
+  confidence: Confidence
+  sources: SourceRef[]
+  locked_out_claim?: string | null
+  edited_by?: string | null
+}
+
+export interface RenderedDraft {
+  instrument: string
+  label: string
+  kind: 'notice' | 'pleading' | 'application'
+  court: string
+  title: string
+  subtitle: string
+  cause_title: string
+  parties: { left_label: string; left: string; right_label: string; right: string }
+  opening: string
+  paragraphs: { n: number; id: string; text: string; confidence: Confidence; sources: { title: string; court: string; date: string; paragraph: string; url: string }[] }[]
+  prayer: string
+  verification: string
+  place_date: string
+  signature: string
+  withheld: string[]
+  watermark: string
 }
 
 export interface Draft {
   type: string
   model_version: string
   watermark: string
-  paragraphs: { id: string; text: string; confidence: Confidence; sources: SourceRef[]; locked_out_claim?: string | null }[]
+  paragraphs: DraftParagraph[]
+  generated_at?: string | null
+  inputs_hash?: string | null
+  stale?: boolean
+  instructions?: string | null
+  rendered?: RenderedDraft | null
 }
 
 export type ReasonCode = 'wrong_fact' | 'wrong_law' | 'wrong_citation_treatment' | 'score_disagree' | 'bias_concern' | 'other'
 
 export interface ReviewInput {
-  action: 'approve' | 'edit' | 'override'
+  action: 'approve' | 'edit' | 'override' | 'submit' | 'delete'
   target: 'fact' | 'proof' | 'citation' | 'score' | 'draft' | 'advice'
   target_id: string
   reason_code: ReasonCode
@@ -167,7 +287,7 @@ export interface LedgerEntry {
   actor: string
   role: Role
   matter_id: string
-  action: 'approve' | 'edit' | 'override'
+  action: 'approve' | 'edit' | 'override' | 'submit' | 'delete'
   target: string
   target_id: string
   reason_code: string
@@ -230,14 +350,33 @@ export interface Me {
   user_id: string
   name: string
   role: Role
-  org: { id: string; name: string; plan: string; members: { name: string; role: Role; last_seen: string }[] }
+  email?: string
+  key_fingerprint?: string
+  rls_policy?: string
+  permissions?: string[]
+  session_fingerprint?: string
+  session_expires_at?: number
+  org: { id: string; name: string; plan: string; members: OrgMemberRow[] }
+}
+
+export interface AuthAccount {
+  user_id: string
+  email: string
+  name: string
+  role: Role
+  org_id: string
+  org_name: string
+  org_plan: string
+  visibility_note: string
 }
 
 export interface DeepHealth {
-  kanoon: string
+  precedent_index: string
+  web_sweep: string
   llm: string
-  bhashini: string
+  translation: string
   db: string
   model_version: string
-  cache_hit_rate: number
+  index_size: number
+  llm_provider?: string | null
 }

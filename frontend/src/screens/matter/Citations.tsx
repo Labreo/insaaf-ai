@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Search, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { api } from '@/lib/api'
+import { can } from '@/lib/store'
 import type { CitationHealth } from '@/lib/types'
 import {
   Badge,
@@ -32,6 +33,8 @@ const CITATION_PRESETS = [
 
 /** F7: downstream citation health check (blocks overruled authorities until senior overrides). */
 export default function Citations({ id, onOpen, onReview }: TabProps) {
+  const canRun = can('analysis.run')
+  const denied = 'Your role cannot run or modify analysis'
   const c = useAsync(() => api.citationHealth(id), [id])
   const [liveList, setLiveList] = useState<CitationHealth[] | null>(null)
   const [citQuery, setCitQuery] = useState('')
@@ -86,8 +89,9 @@ export default function Citations({ id, onOpen, onReview }: TabProps) {
           />
           <button
             type="submit"
-            disabled={checking || !citQuery.trim()}
-            className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
+            disabled={checking || !citQuery.trim() || !canRun}
+            title={canRun ? undefined : denied}
+            className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Search size={13} /> {checking ? 'Checking…' : 'Check Authority'}
           </button>
@@ -99,7 +103,8 @@ export default function Citations({ id, onOpen, onReview }: TabProps) {
             <button
               key={preset}
               type="button"
-              disabled={checking}
+              disabled={checking || !canRun}
+              title={canRun ? undefined : denied}
               onClick={() => checkCase(preset)}
               className="rounded-[4px] border border-line bg-sunken px-2.5 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:border-navy hover:text-navy"
             >

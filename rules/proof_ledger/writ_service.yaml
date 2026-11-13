@@ -1,0 +1,57 @@
+case_type: writ_service
+description: Writ petition under Article 226 / service dispute
+rules:
+- id: writ_service.1
+  requirement: Impugned order
+  severity: critical
+  why: The decision being challenged.
+  detect:
+    present_any:
+    - impugned order
+    - order dated
+    - office order
+    - notification
+  sources: []
+- id: writ_service.2
+  requirement: Representation made to authority
+  severity: high
+  why: Exhaustion / demand for justice before writ.
+  detect:
+    present_any:
+    - representation
+    - appeal to
+    - request letter
+  sources: []
+- id: writ_service.3
+  requirement: Service record
+  severity: high
+  why: Seniority, ACRs, promotion history.
+  detect:
+    present_any:
+    - service record
+    - service book
+    - seniority list
+    - acr
+  sources: []
+- id: writ_service.4
+  requirement: Governing rule or policy
+  severity: high
+  why: Rule allegedly violated.
+  detect:
+    present_any:
+    - recruitment rules
+    - service rules
+    - policy
+    - circular
+    - government resolution
+  sources: []
+- id: writ_service.5
+  requirement: Comparator / discrimination evidence
+  severity: medium
+  why: Art. 14/16 claims need similarly placed comparators.
+  detect:
+    present_any:
+    - similarly placed
+    - comparator
+    - junior promoted
+  sources: []

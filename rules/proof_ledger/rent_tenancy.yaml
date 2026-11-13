@@ -1,0 +1,59 @@
+case_type: rent_tenancy
+description: Eviction / arrears before the Rent Controller
+rules:
+- id: rent_tenancy.1
+  requirement: Rent agreement or proof of tenancy
+  severity: critical
+  why: Establishes landlord–tenant relationship.
+  detect:
+    present_any:
+    - rent agreement
+    - lease deed
+    - leave and licence
+    - tenancy agreement
+    weak_any:
+    - oral tenancy
+  sources: []
+- id: rent_tenancy.2
+  requirement: Notice to quit / demand for arrears
+  severity: high
+  why: Determination of tenancy (s.106 TPA) or statutory demand.
+  detect:
+    present_any:
+    - notice to quit
+    - notice under section 106
+    - demand for arrears
+  sources: []
+- id: rent_tenancy.3
+  requirement: Arrears statement
+  severity: high
+  why: Default is a statutory ground for eviction.
+  detect:
+    present_any:
+    - arrears
+    - rent due
+    - default in payment
+  sources: []
+- id: rent_tenancy.4
+  requirement: Bona fide requirement / other statutory ground
+  severity: medium
+  why: Personal need, sub-letting, or damage must be pleaded with particulars.
+  detect:
+    present_any:
+    - bona fide requirement
+    - personal use
+    - sub-let
+    - subletting
+    - structural damage
+  sources: []
+- id: rent_tenancy.5
+  requirement: Rent receipts / payment history
+  severity: medium
+  why: Establishes rate and last payment.
+  detect:
+    present_any:
+    - rent receipt
+    - rent receipts
+    - bank transfer
+    - passbook
+  sources: []

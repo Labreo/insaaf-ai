@@ -1,38 +1,17 @@
 """Comprehensive backend & rule engine tests for Insaaf AI."""
 from __future__ import annotations
 
-import json
-import sys
 from datetime import date
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-BACKEND_DIR = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(BACKEND_DIR))
-
-from app.db import db_session, init_db
+from app.db import db_session
 from app.ledger.chain import append_ledger_entry, verify_ledger_chain
 from app.main import app
 from app.rules_engine.engine import calculate_limitation_with_covid, evaluate_law_changes
 from app.services.llm.client import llm_client
-
-
-@pytest.fixture(autouse=True)
-def _fresh_db(tmp_path, monkeypatch):
-    from dataclasses import replace
-    import app.config as cfg
-    import app.db as db_mod
-    import app.services.kanoon.client as kc_mod
-
-    test_db = tmp_path / "test_insaaf.db"
-    new_settings = replace(cfg.settings, database_path=test_db, demo_mode=True)
-    monkeypatch.setattr(cfg, "settings", new_settings)
-    monkeypatch.setattr(db_mod, "settings", new_settings)
-    monkeypatch.setattr(kc_mod, "settings", new_settings)
-    init_db(test_db)
-    yield
+from conftest import DEMO_PASSWORD, DEMO_PASSWORDS, login
 
 
 def test_covid_limitation_exclusion_window():
@@ -81,8 +60,9 @@ def test_ledger_hash_chain_and_tamper_detection():
         target_id="stamp_duty",
         reason_code="wrong_law",
         note="Verified e-stamp receipt offline",
+        org_id="org_chamber_a",
     )
-    assert entry["id"] == "led_003"
+    assert entry["id"].startswith("led_")
     assert verify_ledger_chain()["valid"] is True
 
     # Tamper directly with row led_002 in SQLite -> chain must break at led_002
@@ -117,16 +97,29 @@ def test_authority_lock_rejects_fabricated_citations():
 
 
 def test_full_api_contract_endpoints():
-    with TestClient(app) as client:
+    with TestClient(app) as raw:
+        h_junior = login(raw, "junior_1")
+        h_senior = login(raw, "senior_1")
+
+        class _Authed:
+            """Thin wrapper: every call carries the junior's bearer token unless headers are given."""
+
+            def get(self, url, headers=None, **kw):
+                return raw.get(url, headers=headers or h_junior, **kw)
+
+            def post(self, url, headers=None, **kw):
+                return raw.post(url, headers=headers or h_junior, **kw)
+
+        client = _Authed()
         assert client.get("/v1/me").json()["role"] == "junior"
 
         matters = client.get("/v1/matters").json()
         assert len(matters) >= 3
-        assert matters[0]["id"] == "mat_001"
+        assert "mat_001" in {m["id"] for m in matters}
 
         queue = client.get("/v1/queue").json()
-        assert queue[0]["matter_id"] == "mat_001"
-        assert queue[0]["priority"] >= queue[1]["priority"]
+        assert "mat_001" in {q["matter_id"] for q in queue}
+        assert all(queue[i]["priority"] >= queue[i + 1]["priority"] for i in range(len(queue) - 1))
 
         facts = client.get("/v1/matters/mat_001/facts").json()
         assert len(facts) >= 1
@@ -162,7 +155,7 @@ def test_full_api_contract_endpoints():
 
         plaint = client.post("/v1/matters/mat_001/draft/type", json={"draft_type": "plaint"}).json()
         assert plaint["type"] == "plaint"
-        assert any("ORDER VII RULE 1" in p["text"] for p in plaint["paragraphs"])
+        assert "ORDER VII RULE 1" in plaint["rendered"]["title"]
 
         q_flagged = client.post("/v1/matters/mat_002/flags", json={"flag": "senior_citizen"}).json()
         mat2_q = next(q for q in q_flagged if q["matter_id"] == "mat_002")
@@ -170,7 +163,8 @@ def test_full_api_contract_endpoints():
 
         fw = client.get("/v1/matters/mat_001/bias-firewall").json()
         assert fw["passed"] is True
-        assert len(fw["rows"]) == 6
+        assert len(fw["rows"]) == 10
+        assert fw["max_unprotected_gap"] > fw["epsilon"]  # the comparison model is visibly biased
 
         flip = client.post("/v1/matters/mat_001/bias-firewall/flip", json={"identity": "dalit"}).json()
         assert flip["identity"] == "dalit"
@@ -192,6 +186,18 @@ def test_full_api_contract_endpoints():
         good_cit = client.post("/v1/matters/mat_001/draft/verify-citation", json={"text": "Suraj Lamp"}).json()
         assert good_cit["verified"] is True
 
+        # Overruled authority (Koushal) blocks export until a senior records a reasoned override.
+        blocked = client.get("/v1/matters/mat_001/draft/export?format=docx")
+        assert blocked.status_code == 409
+        assert blocked.json()["detail"]["error"]["code"] == "citation_blocks_draft"
+        for item in client.get("/v1/matters/mat_001/citations/health").json():
+            if item["blocks_draft"]:
+                ok = client.post(
+                    "/v1/matters/mat_001/reviews",
+                    headers=h_senior,
+                    json={"action": "override", "target": "citation", "target_id": item["cited"]["source_id"], "reason_code": "wrong_citation_treatment", "note": "Reviewed: not relied on in this draft"},
+                )
+                assert ok.status_code == 200, ok.text
         docx_res = client.get("/v1/matters/mat_001/draft/export?format=docx")
         assert docx_res.status_code == 200
         assert docx_res.content[:2] == b"PK"
@@ -201,12 +207,14 @@ def test_full_api_contract_endpoints():
 
         rev = client.post(
             "/v1/matters/mat_001/reviews",
+            headers=h_senior,
             json={
                 "action": "override",
                 "target": "score",
                 "target_id": "score",
                 "reason_code": "score_disagree",
                 "note": "Possession corroboration checked",
+                "diff": {"band": "strong"},
             },
         ).json()
         assert rev["id"].startswith("led_")
@@ -223,5 +231,89 @@ def test_full_api_contract_endpoints():
         assert client.get("/v1/ml/model").json()["version"] == health["model_version"]
         scan = client.post("/v1/law-changes/scan", json={"text": "IPC 302", "offence_date": "2025-01-01"}).json()
         assert scan[0]["replaced_by"] == "BNS 103"
-        assert client.post("/v1/me/role", json={"role": "senior"}).json()["role"] == "senior"
-        client.post("/v1/me/role", json={"role": "junior"})
+        # Role switching in-session is privilege escalation; it must be refused.
+        assert client.post("/v1/me/role", json={"role": "senior"}).status_code == 403
+        assert client.get("/v1/me").json()["role"] == "junior"
+
+
+def test_auth_rls_and_overrides():
+    with TestClient(app) as client:
+        accounts = client.get("/v1/auth/accounts").json()
+        uids = {a["user_id"] for a in accounts}
+        assert {"senior_1", "junior_1", "clerk_1", "student_1", "senior_b"}.issubset(uids)
+
+        bad_login = client.post("/v1/auth/login", json={"email": "pradeep.sardessai@sardessai-chambers.insaaf.in", "password": "wrong"})
+        assert bad_login.status_code == 401
+
+        login_b = client.post("/v1/auth/login", json={"email": "pradeep.sardessai@sardessai-chambers.insaaf.in", "password": DEMO_PASSWORDS["senior_b"]})
+        assert login_b.status_code == 200
+        tok_b = login_b.json()["token"]
+        h_b = {"Authorization": f"Bearer {tok_b}"}
+
+        matters_b = client.get("/v1/matters", headers=h_b).json()
+        b_ids = {m["id"] for m in matters_b}
+        assert "mat_004" in b_ids and "mat_001" not in b_ids
+        assert client.get("/v1/matters/mat_001", headers=h_b).status_code == 404
+        assert {q["matter_id"] for q in client.get("/v1/queue", headers=h_b).json()} <= b_ids
+        assert {a["matter_id"] for a in client.get("/v1/alerts", headers=h_b).json()} <= b_ids
+
+        h_clerk = login(client, "clerk_1")
+        clerk_ids = {m["id"] for m in client.get("/v1/matters", headers=h_clerk).json()}
+        assert "mat_001" in clerk_ids and "mat_003" not in clerk_ids
+        assert client.post(
+            "/v1/matters/mat_001/reviews",
+            headers=h_clerk,
+            json={"action": "approve", "target": "draft", "target_id": "draft", "reason_code": "other"},
+        ).status_code == 403
+
+        h_student = login(client, "student_1")
+        student_ids = {m["id"] for m in client.get("/v1/matters", headers=h_student).json()}
+        assert "mat_001" in student_ids and "mat_002" not in student_ids and "mat_003" not in student_ids
+        assert client.post(
+            "/v1/matters/mat_001/reviews",
+            headers=h_student,
+            json={"action": "override", "target": "score", "target_id": "score", "reason_code": "score_disagree"},
+        ).status_code == 403
+
+        h_senior = login(client, "senior_1")
+        sc_before = client.get("/v1/matters/mat_001/score", headers=h_senior).json()["band"]
+        client.post(
+            "/v1/matters/mat_001/reviews",
+            headers=h_senior,
+            json={"action": "override", "target": "score", "target_id": "score", "reason_code": "score_disagree", "note": "Strong adverse possession corroboration",
+                  "diff": {"band": "strong" if sc_before != "strong" else "weak"}},
+        )
+        sc_after = client.get("/v1/matters/mat_001/score", headers=h_senior).json()["band"]
+        assert sc_after != sc_before
+
+        client.post(
+            "/v1/matters/mat_001/reviews",
+            headers=h_senior,
+            json={"action": "override", "target": "advice", "target_id": "advice", "reason_code": "other", "diff": {"recommendation": "fight"}},
+        )
+        assert client.get("/v1/matters/mat_001/advice", headers=h_senior).json()["recommendation"] == "fight"
+
+        blocked = client.post(
+            "/v1/matters/mat_001/reviews",
+            headers=h_senior,
+            json={"action": "approve", "target": "draft", "target_id": "draft", "reason_code": "other", "note": "Approved for filing"},
+        )
+        assert blocked.status_code == 409, "approval must be blocked while an overruled citation is un-overridden"
+        for item in client.get("/v1/matters/mat_001/citations/health", headers=h_senior).json():
+            if item["blocks_draft"]:
+                client.post(
+                    "/v1/matters/mat_001/reviews",
+                    headers=h_senior,
+                    json={"action": "override", "target": "citation", "target_id": item["cited"]["source_id"], "reason_code": "wrong_citation_treatment", "note": "Reviewed"},
+                )
+        client.post(
+            "/v1/matters/mat_001/reviews",
+            headers=h_senior,
+            json={"action": "approve", "target": "draft", "target_id": "draft", "reason_code": "other", "note": "Approved for filing"},
+        )
+        draft_after = client.get("/v1/matters/mat_001/draft", headers=h_senior).json()
+        assert "APPROVED BY senior_1 (SENIOR)" in draft_after["watermark"]
+        assert client.get("/v1/matters/mat_001", headers=h_senior).json()["status"] == "approved"
+
+        assert client.post("/v1/demo/reset", headers=h_senior).json()["reset"] is True
+        assert client.get("/v1/me", headers=h_senior).json()["user_id"] == "senior_1"

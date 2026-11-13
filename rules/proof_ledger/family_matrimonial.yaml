@@ -1,0 +1,59 @@
+case_type: family_matrimonial
+description: Matrimonial reliefs before the Family Court
+rules:
+- id: family_matrimonial.1
+  requirement: Marriage certificate or proof of marriage
+  severity: critical
+  why: Jurisdictional fact for any matrimonial relief.
+  detect:
+    present_any:
+    - marriage certificate
+    - marriage registration
+    - wedding photographs
+    - marriage invitation
+  sources: []
+- id: family_matrimonial.2
+  requirement: Separation evidence (living apart)
+  severity: high
+  why: s.13B requires living separately for one year or more.
+  detect:
+    present_any:
+    - living separately
+    - separated since
+    - separate residence
+  sources: []
+- id: family_matrimonial.3
+  requirement: Cruelty / desertion evidence
+  severity: high
+  why: Specific instances, complaints, medical records.
+  detect:
+    present_any:
+    - cruelty
+    - desertion
+    - police complaint
+    - medical record
+    - threat
+    weak_any:
+    - quarrel
+  sources: []
+- id: family_matrimonial.4
+  requirement: Mediation / counselling attempt
+  severity: medium
+  why: Family Courts Act s.9 duty to attempt settlement.
+  detect:
+    present_any:
+    - mediation
+    - counselling
+    - settlement talks
+  sources: []
+- id: family_matrimonial.5
+  requirement: Income proof of parties
+  severity: medium
+  why: Relevant to permanent alimony and child support.
+  detect:
+    present_any:
+    - salary slip
+    - itr
+    - income tax return
+    - bank statement
+  sources: []

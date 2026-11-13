@@ -1,0 +1,59 @@
+case_type: motor_accident
+description: Claim petition before the MACT
+rules:
+- id: motor_accident.1
+  requirement: FIR / accident report
+  severity: critical
+  why: Establishes the accident and the offending vehicle.
+  detect:
+    present_any:
+    - fir
+    - first information report
+    - accident report
+    - panchnama
+  sources: []
+- id: motor_accident.2
+  requirement: Medical records / treatment bills
+  severity: high
+  why: Proves injury and expenses.
+  detect:
+    present_any:
+    - medical records
+    - discharge summary
+    - hospital bills
+    - treatment
+  sources: []
+- id: motor_accident.3
+  requirement: Income proof of victim
+  severity: high
+  why: Drives the multiplier method (Sarla Verma; Pranay Sethi).
+  detect:
+    present_any:
+    - income proof
+    - salary slip
+    - itr
+    - income certificate
+    weak_any:
+    - approximate income
+  sources: []
+- id: motor_accident.4
+  requirement: Insurance policy of offending vehicle
+  severity: high
+  why: Insurer liability under s.149.
+  detect:
+    present_any:
+    - insurance policy
+    - policy number
+    - cover note
+  sources: []
+- id: motor_accident.5
+  requirement: Post-mortem or disability certificate
+  severity: high
+  why: Death or functional disability determines heads of compensation.
+  detect:
+    present_any:
+    - post-mortem
+    - post mortem
+    - disability certificate
+    - death certificate
+  sources: []

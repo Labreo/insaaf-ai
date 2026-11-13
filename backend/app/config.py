@@ -40,6 +40,8 @@ class Settings:
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     anthropic_base_url: str = os.getenv("ANTHROPIC_BASE_URL", "")
     serpapi_api_key: str = os.getenv("SERPAPI_API_KEY", "")
+    serper_api_key: str = os.getenv("SERPER_API_KEY", "")
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     bhashini_user_id: str = os.getenv("BHASHINI_USER_ID", "")
     bhashini_api_key: str = os.getenv("BHASHINI_API_KEY", "")
     telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -48,6 +50,20 @@ class Settings:
     database_path: Path = BACKEND_DIR / "insaaf.db"
     demo_mode: bool = os.getenv("DEMO_MODE", "false").lower() == "true"
     kanoon_budget_ms: int = int(os.getenv("KANOON_BUDGET_MS", "8000"))
+    # Single clock for limitation maths and seeded deadlines. Empty = real system date.
+    demo_today: str = os.getenv("INSAAF_DEMO_TODAY", "")
+
+
+def today():
+    """The app's notion of 'today' (pinned via INSAAF_DEMO_TODAY for reproducible demos)."""
+    from datetime import date
+
+    if settings.demo_today:
+        try:
+            return date.fromisoformat(settings.demo_today)
+        except ValueError:
+            pass
+    return date.today()
 
 
 settings = Settings()

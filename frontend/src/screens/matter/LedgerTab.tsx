@@ -29,7 +29,7 @@ export default function LedgerTab({ id }: { id: string }) {
         )}
       >
         <div>
-          <Label>F11 · Tamper-Evident SHA-256 Reviewer Ledger</Label>
+          <Label>Tamper-Evident SHA-256 Reviewer Ledger</Label>
           <p
             className={cn(
               'mt-1 flex items-center gap-2 text-[15px] font-semibold',

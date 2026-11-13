@@ -9,7 +9,9 @@ from typing import Any
 import yaml
 
 from app.config import RULES_DIR
-from app.services.kanoon.client import kanoon_client
+from app.config import today as app_today
+from app import registry
+from app.services.precedents.service import precedent_client
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -21,7 +23,7 @@ async def _resolve_sources(raw_sources: list[dict[str, Any]]) -> list[dict[str, 
     for s in raw_sources or []:
         doc_id = str(s.get("doc_id", "")).strip()
         if doc_id:
-            src = await kanoon_client.get_doc_source(
+            src = await precedent_client.get_doc_source(
                 doc_id,
                 fallback_meta={
                     "kind": s.get("kind", "statute"),
@@ -47,6 +49,24 @@ async def _resolve_sources(raw_sources: list[dict[str, Any]]) -> list[dict[str, 
     return resolved
 
 
+_NEG_BEFORE = re.compile(r"\b(no|not|without|never|neither|nor|nil|absence of|lack of|lacks|lacking|missing|cannot|none)\b[^.;\n]{0,40}$")
+_NEG_AFTER = re.compile(r"^[^.;\n]{0,30}\b(does not exist|do not exist|not exist|is missing|are missing|not available|not produced|not on file|absent|unavailable|not found|was not|were not|is not|are not)\b")
+
+
+def _evidence_hit(corpus: str, keyword: str) -> bool:
+    """True if `keyword` occurs in a non-negated clause ("no written contract exists" does NOT establish a written contract)."""
+    start = 0
+    while True:
+        i = corpus.find(keyword, start)
+        if i < 0:
+            return False
+        before = corpus[max(0, i - 60):i]
+        after = corpus[i + len(keyword): i + len(keyword) + 40]
+        if not _NEG_BEFORE.search(before) and not _NEG_AFTER.search(after):
+            return True
+        start = i + len(keyword)
+
+
 async def evaluate_proof_ledger(
     case_type: str,
     facts: list[dict[str, Any]],
@@ -68,9 +88,9 @@ async def evaluate_proof_ledger(
         weak_any = [k.lower() for k in detect.get("weak_any", [])]
         negative_any = [k.lower() for k in detect.get("negative_any", [])]
 
-        has_negative = any(k in corpus for k in negative_any)
-        has_weak = any(k in corpus for k in weak_any)
-        has_present = any(k in corpus for k in present_any)
+        has_negative = any(k in corpus for k in negative_any)  # explicit "missing" phrases are matched as written
+        has_weak = any(_evidence_hit(corpus, k) for k in weak_any)
+        has_present = any(_evidence_hit(corpus, k) for k in present_any)
 
         if has_negative:
             state = "missing"
@@ -101,18 +121,19 @@ def calculate_limitation_with_covid(
     covid_to: date = date(2022, 2, 28),
     reference_today: date | None = None,
 ) -> tuple[date, int, list[dict[str, str]]]:
-    """Deterministic limitation calculator honouring SC suo motu COVID exclusion."""
-    today = reference_today or date(2026, 11, 13)
+    """Deterministic limitation calculator honouring the Supreme Court's COVID exclusion.
+
+    Only the days of the limitation window that actually fall inside the exclusion are added
+    back, and the excluded period reported is that overlap (not the whole COVID window).
+    """
+    today = reference_today or app_today()
     try:
         nominal_expiry = cause_date.replace(year=cause_date.year + limitation_years)
-    except ValueError:
-        # Handle Feb 29
+    except ValueError:  # 29 February
         nominal_expiry = cause_date.replace(year=cause_date.year + limitation_years, day=28)
 
     excluded: list[dict[str, str]] = []
     final_expiry = nominal_expiry
-
-    # If the limitation window overlaps [covid_from, covid_to], exclude overlapping days
     if cause_date <= covid_to and nominal_expiry >= covid_from:
         overlap_start = max(cause_date, covid_from)
         overlap_end = min(nominal_expiry, covid_to)
@@ -121,14 +142,67 @@ def calculate_limitation_with_covid(
             final_expiry = nominal_expiry + timedelta(days=excluded_days)
             excluded.append(
                 {
-                    "from": covid_from.isoformat(),
-                    "to": covid_to.isoformat(),
-                    "reason": "Supreme Court suo motu COVID limitation exclusion",
+                    "from": overlap_start.isoformat(),
+                    "to": overlap_end.isoformat(),
+                    "days": str(excluded_days),
+                    "reason": "Supreme Court suo motu COVID limitation exclusion (15.03.2020 to 28.02.2022)",
                 }
             )
+    return final_expiry, (final_expiry - today).days, excluded
 
-    days_left = (final_expiry - today).days
-    return final_expiry, days_left, excluded
+
+_MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"], 1)}
+_DATE_PATTERNS = [
+    (re.compile(r"\b(20\d{2}|19\d{2})-(\d{2})-(\d{2})\b"), lambda m: (int(m[1]), int(m[2]), int(m[3]))),
+    (re.compile(r"\b(\d{1,2})(?:st|nd|rd|th)?[ -]([A-Za-z]{3,9}),?[ -](20\d{2}|19\d{2})\b"), lambda m: (int(m[3]), _MONTHS.get(m[2].lower()) or next((v for k, v in _MONTHS.items() if k.startswith(m[2].lower()[:3]) and len(m[2]) >= 3), 0), int(m[1]))),
+    (re.compile(r"\b([A-Za-z]{3,9}) (\d{1,2})(?:st|nd|rd|th)?,? (20\d{2}|19\d{2})\b"), lambda m: (int(m[3]), next((v for k, v in _MONTHS.items() if k.startswith(m[1].lower()[:3])), 0), int(m[2]))),
+    (re.compile(r"\b(\d{1,2})[/.](\d{1,2})[/.](20\d{2}|19\d{2})\b"), lambda m: (int(m[3]), int(m[2]), int(m[1]))),  # dd/mm/yyyy (India)
+]
+
+
+def extract_document_dates(text: str, not_after: date) -> list[date]:
+    """All real calendar dates in the text (ISO, '14 March 2024', 'March 14, 2024', dd/mm/yyyy), not later than `not_after`."""
+    found: set[date] = set()
+    for rx, conv in _DATE_PATTERNS:
+        for m in rx.finditer(text or ""):
+            try:
+                y, mo, d = conv(m)
+                dt = date(y, mo, d)
+            except (ValueError, TypeError):
+                continue
+            if dt <= not_after:
+                found.add(dt)
+    return sorted(found)
+
+
+def _covid_window() -> tuple[date, date]:
+    cfg = _load_yaml(RULES_DIR / "statute_clock" / "limitation.yaml").get("covid_exclusion", {})
+    return date.fromisoformat(cfg.get("from", "2020-03-15")), date.fromisoformat(cfg.get("to", "2022-02-28"))
+
+
+def limitation_for(case_type: str, cause_date: date | None, reference_today: date | None = None) -> dict[str, Any]:
+    """Pure limitation computation for a practice area and cause-of-action date (no I/O beyond rules)."""
+    area = registry.area(case_type)
+    lim = area.get("limitation", {}) or {}
+    years = lim.get("years")
+    today = reference_today or app_today()
+    base = {
+        "article": lim.get("article", "Limitation Act, 1963"),
+        "note": lim.get("note", ""),
+        "limitation_years": years,
+        "today": today.isoformat(),
+        "excluded_periods": [],
+    }
+    if years is None:
+        return {**base, "applicable": False, "limitation_expires": None, "days_left": None, "total_days": None,
+                "cause_date": cause_date.isoformat() if cause_date else None}
+    if cause_date is None:
+        return {**base, "applicable": True, "limitation_expires": None, "days_left": None, "total_days": None, "cause_date": None,
+                "note": base["note"] or "Enter the cause-of-action date to start the clock."}
+    covid_from, covid_to = _covid_window()
+    expires, days_left, excluded = calculate_limitation_with_covid(cause_date, int(years), covid_from, covid_to, today)
+    return {**base, "applicable": True, "limitation_expires": expires.isoformat(), "days_left": days_left,
+            "total_days": (expires - cause_date).days, "excluded_periods": excluded, "cause_date": cause_date.isoformat()}
 
 
 async def evaluate_statute_clock(
@@ -137,55 +211,36 @@ async def evaluate_statute_clock(
     documents_text: str,
     reference_today: date | None = None,
 ) -> dict[str, Any]:
-    cfg = _load_yaml(RULES_DIR / "statute_clock" / "limitation.yaml")
-    case_cfg = cfg["case_types"].get(case_type, cfg["case_types"]["property"])
-    covid = cfg["covid_exclusion"]
-    covid_from = date.fromisoformat(covid["from"])
-    covid_to = date.fromisoformat(covid["to"])
-
-    # If matter already has a pinned next_deadline (e.g. seeded demo mat_001 -> 2026-12-24), honour exact date
-    today = reference_today or date(2026, 11, 13)
-    if matter.get("next_deadline"):
-        expires = date.fromisoformat(matter["next_deadline"])
-        days_left = (expires - today).days
-        excluded = [
-            {
-                "from": covid["from"],
-                "to": covid["to"],
-                "reason": covid["reason"],
-            }
-        ] if case_type in ("property", "civil_recovery") else []
-    else:
-        cause_date = date.fromisoformat(case_cfg["default_cause_date"])
-        # Detect date in uploaded documents if present
-        m = re.search(r"(20\d{2}-\d{2}-\d{2})", documents_text or "")
-        if m:
-            try:
-                cause_date = date.fromisoformat(m.group(1))
-            except ValueError:
-                pass
-        expires, days_left, excluded = calculate_limitation_with_covid(
-            cause_date=cause_date,
-            limitation_years=int(case_cfg["limitation_years"]),
-            covid_from=covid_from,
-            covid_to=covid_to,
-            reference_today=today,
-        )
-
-    sources = await _resolve_sources(case_cfg.get("sources", []))
-    forum = dict(case_cfg["forum"])
-    if matter.get("forum_hint"):
-        forum["court"] = matter["forum_hint"]
-
+    area = registry.area(case_type)
+    today = reference_today or app_today()
+    cause_date: date | None = None
+    cause_source = "missing"
+    if matter.get("cause_date"):
+        try:
+            cause_date = date.fromisoformat(matter["cause_date"])
+            cause_source = "user"
+        except ValueError:
+            cause_date = None
+    if cause_date is None:
+        dates = extract_document_dates(documents_text or "", today)
+        if dates:
+            # The latest dated event on record is the best available proxy for accrual / acknowledgment (ss.18-19).
+            cause_date = dates[-1]
+            cause_source = "document"
+    out = limitation_for(case_type, cause_date, today)
+    cfg = _load_yaml(RULES_DIR / "statute_clock" / "limitation.yaml").get("case_types", {}).get(case_type, {})
+    sources = await _resolve_sources(cfg.get("sources", []) or [
+        {"source_id": "src_kanoon_1317393", "kind": "statute", "title": "Limitation Act, 1963 — Schedule", "doc_id": "1317393", "date": "1963-01-01"}
+    ])
+    forum = {"court": matter.get("forum_hint") or area.get("forum", "Competent court"),
+             "basis": "Territorial and pecuniary jurisdiction" + (f" ({matter['district']})" if matter.get("district") else "")}
     return {
-        "limitation_expires": expires.isoformat(),
-        "days_left": days_left,
-        "article": case_cfg["article"],
-        "excluded_periods": excluded,
+        **out,
         "forum": forum,
-        "commercial_court": bool(case_cfg["commercial_court"]),
-        "adr_routes": list(case_cfg["adr_routes"]),
+        "commercial_court": bool(area.get("commercial_court")),
+        "adr_routes": list(area.get("adr_routes", [])),
         "sources": sources,
+        "cause_date_source": cause_source if cause_date else "missing",
     }
 
 
@@ -234,75 +289,119 @@ async def evaluate_advice(
         )
         recommendation = "plea_bargain" if plea_eligible else "fight"
         confidence = "high" if plea_eligible else "medium"
-        return {"recommendation": recommendation, "options": options, "confidence": confidence}
+        return {"recommendation": recommendation, "options": options, "confidence": confidence, "based_on_band": band}
 
-    # Civil / Property routes
+    # Civil, commercial, family and other routes, driven by the practice-area registry.
+    area = registry.area(case_type)
+    adr = [r.lower() for r in area.get("adr_routes", [])]
+    lok_ok = case_type not in ("writ_service",) and any("lok adalat" in r for r in adr)
     lok_sources = await _resolve_sources(cfg["lok_adalat"]["sources"])
     options.append(
         {
             "route": "lok_adalat",
-            "eligible": True,
-            "why": cfg["lok_adalat"]["why"],
-            "sources": lok_sources,
+            "eligible": lok_ok,
+            "why": cfg["lok_adalat"]["why"] if lok_ok else "Not a matter Lok Adalat can settle for this practice area.",
+            "sources": lok_sources if lok_ok else [],
         }
     )
-
+    is_commercial = bool(area.get("commercial_court")) or case_type == "civil_recovery" and "commercial" in lower_txt
     med_sources = await _resolve_sources(cfg["pre_institution_mediation_12A"]["sources"])
-    is_commercial = case_type == "civil_recovery"
+    med_route = next((r for r in area.get("adr_routes", []) if any(w in r.lower() for w in ("mediation", "compounding", "conciliation", "s.89", "counselling"))), None)
     options.append(
         {
-            "route": "pre_institution_mediation_12A",
-            "eligible": is_commercial,
-            "why": cfg["pre_institution_mediation_12A"]["why_eligible"] if is_commercial else cfg["pre_institution_mediation_12A"]["why_ineligible"],
-            "sources": med_sources,
+            "route": "pre_institution_mediation_12A" if is_commercial else "mediation",
+            "eligible": bool(is_commercial or med_route),
+            "why": cfg["pre_institution_mediation_12A"]["why_eligible"] if is_commercial else (f"{med_route} is available for this dispute." if med_route else "No statutory mediation route."),
+            "sources": med_sources if is_commercial else [],
         }
     )
-
     fight_why = (
-        f"Weak band: {', '.join(missing_critical)} missing."
+        f"Weak evidence: {', '.join(missing_critical)} missing."
         if missing_critical
-        else ("Strong evidentiary record supports litigation." if band == "strong" else "Uncertain merits; weigh litigation costs.")
+        else ("Strong evidentiary record supports litigation." if band == "strong" else "Uncertain merits; weigh litigation cost and delay.")
     )
-    options.append(
-        {
-            "route": "fight",
-            "eligible": True,
-            "why": fight_why,
-            "sources": [],
-        }
-    )
+    options.append({"route": "fight", "eligible": True, "why": fight_why, "sources": []})
 
     if band == "strong" and not is_commercial:
         recommendation = "fight"
-    elif band == "strong" and is_commercial:
+    elif band in ("strong", "moderate") and is_commercial:
         recommendation = "mediate"  # mandatory s.12A before suit per Patil Automation
     elif band == "weak":
-        recommendation = "mediate"
+        recommendation = "mediate" if (is_commercial or med_route) else "settle"
     else:
         recommendation = "settle"
 
     confidence = "high" if band in ("strong", "weak") else "medium"
-    return {"recommendation": recommendation, "options": options, "confidence": confidence}
+    return {"recommendation": recommendation, "options": options, "confidence": confidence, "based_on_band": band}
 
 
-async def evaluate_law_changes(documents_text: str, offence_date: str = "2025-08-14") -> list[dict[str, Any]]:
+_CODE = r"(?P<code>I\.?\s?P\.?\s?C\.?|Indian Penal Code|Cr\.?\s?P\.?\s?C\.?|Code of Criminal Procedure|(?:Indian\s+)?Evidence Act|IEA)(?![A-Za-z])"
+_NUM = r"\d{1,3}[A-Z]?(?:\(\d+\))?"
+_LIST = rf"{_NUM}(?:\s*(?:,|and|&|/|r/w|read with)\s*{_NUM})*"
+# "u/s 406, 420 of the IPC", "Sections 438 Cr.P.C.", "s.65B Evidence Act", "302 IPC"
+_BEFORE_RX = re.compile(rf"(?:(?:u/s|under\s+sections?|sections?|secs?\.?|ss?\.)\s*)?(?P<nums>{_LIST})\s*(?:of\s+(?:the\s+)?)?{_CODE}", re.IGNORECASE)
+# "IPC 420", "IPC s.420, 406", "CrPC section 438"
+_AFTER_RX = re.compile(rf"{_CODE}\s*(?:(?:u/s|sections?|secs?\.?|ss?\.)\s*)?(?P<nums>{_LIST})", re.IGNORECASE)
+
+
+def _code_of(token: str) -> str:
+    t = re.sub(r"[\s.]", "", token).lower()
+    if t in ("ipc", "indianpenalcode"):
+        return "IPC"
+    if t in ("crpc", "codeofcriminalprocedure"):
+        return "CrPC"
+    return "IEA"
+
+
+def extract_section_refs(text: str) -> list[tuple[str, str, str]]:
+    """(code, section, label) for 'IPC 420', 's.420 IPC', 'u/s 406, 420 of the IPC', 'Section 438 Cr.P.C.', 's.65B Evidence Act'."""
+    hits: list[tuple[int, str, str]] = []
+    for rx in (_BEFORE_RX, _AFTER_RX):
+        for m in rx.finditer(text or ""):
+            code = _code_of(m.group("code"))
+            for n in re.findall(_NUM, m.group("nums")):
+                sec = re.sub(r"\(\d+\)$", "", n).upper()
+                hits.append((m.start(), code, sec))
+    out: list[tuple[str, str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for _, code, sec in sorted(hits):
+        if (code, sec) not in seen and int(re.sub(r"\D", "", sec) or 0) > 0:
+            seen.add((code, sec))
+            out.append((code, sec, f"{code} {sec}"))
+    return out
+
+
+async def evaluate_law_changes(documents_text: str, offence_date: str = "") -> list[dict[str, Any]]:
     cfg = _load_yaml(RULES_DIR / "law_change" / "mappings.yaml")
     cutoff = cfg.get("cutoff_date", "2024-07-01")
-    applies = offence_date >= cutoff
-    lower = (documents_text or "").lower()
+    od = (offence_date or "").strip() or app_today().isoformat()
+    applies = od >= cutoff
+    table = {(m["code"], str(m["section"]).upper()): m for m in cfg.get("mappings", [])}
     findings: list[dict[str, Any]] = []
-    for m in cfg.get("mappings", []):
-        aliases = [m["old"].lower()] + [a.lower() for a in m.get("aliases", [])]
-        if any(a in lower for a in aliases):
+    for code, sec, found in extract_section_refs(documents_text or ""):
+        m = table.get((code, sec))
+        if m:
             findings.append(
                 {
-                    "found": m["old"],
+                    "found": found,
                     "replaced_by": m["new"],
                     "effective": cutoff,
                     "applies": applies,
-                    "reason": m["reason"] if applies else f"Offence predates {cutoff}; old code applies.",
+                    "reason": m["reason"] if applies else f"Offence / proceeding dated {od} predates {cutoff}: the old {code} provision continues to apply.",
                     "sources": [],
+                    "location": m.get("subject"),
+                }
+            )
+        else:
+            findings.append(
+                {
+                    "found": found,
+                    "replaced_by": "Not in crosswalk",
+                    "effective": cutoff,
+                    "applies": False,
+                    "reason": f"{found} is not in the Insaaf crosswalk table yet. Check the official BNS/BNSS/BSA correspondence table.",
+                    "sources": [],
+                    "location": None,
                 }
             )
     return findings
-

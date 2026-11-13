@@ -1,7 +1,14 @@
-"""Speech-to-text + translation service using Gemini 2.5 Flash Multimodal Audio & GTX Indic fallback (optional Bhashini keys)."""
+"""Insaaf Translate: client-statement transcription and translation for 12 Indian languages.
+
+Speech: Whisper large-v3 (Groq), Gemini multimodal as fallback.
+Text:   LLM translation (Groq, then Gemini) with a Goa land-law glossary, then the keyless
+        Google Translate endpoint as a last resort. Nothing here ever invents a statement:
+        when every engine fails the result is marked "pending" with an empty translation.
+
+(The module keeps its historical path so existing imports keep working; no Bhashini key is used.)
+"""
 from __future__ import annotations
 
-import base64
 import json
 import re
 import urllib.parse
@@ -11,154 +18,138 @@ from typing import Any
 import httpx
 
 from app.config import settings
+from app.registry import language_label
 from app.services.llm.client import llm_client
 
 AUDIO_MIME_TYPES = {
     ".wav": "audio/wav",
-    ".mp3": "audio/mp3",
+    ".mp3": "audio/mpeg",
     ".m4a": "audio/mp4",
     ".mp4": "audio/mp4",
     ".webm": "audio/webm",
     ".ogg": "audio/ogg",
 }
 
+# Google Translate codes where they differ from ours.
+_GTX_CODE = {"kok": "gom"}
+
 GOA_LAND_GLOSSARY = {
     "मुंडकार": "mundkar",
-    "mundkar": "mundkar",
     "भाटकार": "bhatkar",
-    "bhatkar": "bhatkar",
     "कोमुनिदाद": "comunidade",
-    "comunidade": "comunidade",
     "फॉर्म i & xiv": "Form I & XIV",
     "फॉर्म 1 & 14": "Form I & XIV",
 }
 
 
-class BhashiniClient:
-    """Handles Konkani / Marathi / Hindi audio and Devanagari text translation."""
+def _glossary(text: str) -> str:
+    out = text
+    for src, dst in GOA_LAND_GLOSSARY.items():
+        out = re.sub(re.escape(src), dst, out, flags=re.IGNORECASE)
+    return out
+
+
+class TranslationClient:
+    engine_name = "Insaaf Translate"
 
     async def ping(self) -> str:
-        if settings.bhashini_api_key and settings.bhashini_user_id:
-            return "ok"
-        # Operational via Gemini 2.5 Flash Devanagari / audio pipeline + keyless GTX fallback
-        return "ok" if settings.gemini_api_key else "degraded"
+        return "ok" if (settings.groq_api_key or settings.gemini_api_key) else "degraded"
+
+    async def _gtx(self, text: str, source: str, target: str) -> str:
+        try:
+            sl = _GTX_CODE.get(source, source or "auto")
+            tl = _GTX_CODE.get(target, target)
+            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sl}&tl={tl}&dt=t&q={urllib.parse.quote(text)}"
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                r = await client.get(url)
+            if r.status_code == 200:
+                data = r.json()
+                return "".join(seg[0] for seg in data[0] if seg and seg[0]).strip()
+        except Exception:
+            pass
+        return ""
+
+    async def translate(self, text: str, source_lang: str = "auto", target_lang: str = "en") -> dict[str, Any]:
+        """Translate text. Returns {text, engine, confidence}; text is '' if every engine failed."""
+        text = (text or "").strip()
+        if not text:
+            return {"text": "", "engine": "none", "confidence": "low"}
+        if source_lang == target_lang:
+            return {"text": text, "engine": "identity", "confidence": "high"}
+        src_name = language_label(source_lang) if source_lang != "auto" else "the source language"
+        tgt_name = language_label(target_lang)
+        prompt = (
+            f"Translate this client statement from {src_name} into {tgt_name} for an Indian advocate's file. "
+            "Keep names, dates, amounts, survey numbers and Goa land-law terms (mundkar, bhatkar, comunidade, "
+            "Form I & XIV) unchanged. Return only the translation, no commentary.\n\n" + text
+        )
+        try:
+            out = await llm_client.generate_text(prompt, max_tokens=900, timeout=20.0)
+            if out:
+                return {"text": _glossary(out.strip()), "engine": llm_client.last_model or "llm", "confidence": "high"}
+        except Exception:
+            pass
+        out = await self._gtx(text, source_lang, target_lang)
+        if out:
+            return {"text": _glossary(out), "engine": "google-translate", "confidence": "medium"}
+        return {"text": "", "engine": "none", "confidence": "low"}
 
     async def translate_or_transcribe(
         self,
         file_path: Path | None = None,
         text: str | None = None,
         source_lang: str = "kok",
+        audio_bytes: bytes | None = None,
+        mime: str | None = None,
     ) -> dict[str, Any]:
-        # 1. If JSON voice fixture exists, parse and optionally verify translation via Gemini
+        # 1. Prepared voice-note fixture (transcript already on file).
         if file_path and file_path.suffix.lower() == ".json" and file_path.exists():
             data = json.loads(file_path.read_text(encoding="utf-8"))
             orig = data.get("original_text", "")
             eng = data.get("english_translation", "")
-            conf = data.get("translation_confidence", "medium")
             if orig and not eng:
-                eng = await self._translate_text_with_gemini(orig, source_lang)
+                eng = (await self.translate(orig, data.get("language", source_lang)))["text"]
             return {
                 "language": data.get("language", source_lang),
                 "original_text": orig,
                 "english_translation": eng,
-                "translation_confidence": conf,
-                "duration_range": data.get("duration_range", "00:00–00:24"),
+                "translation_confidence": data.get("translation_confidence", "medium"),
+                "duration_range": data.get("duration_range", "00:00-00:24"),
+                "status": "transcribed" if eng else "pending",
             }
 
-        # 2. If raw text provided, translate via Gemini 2.5 Flash (+ keyless GTX fallback)
+        # 2. Typed / pasted statement.
         if text:
-            eng = await self._translate_text_with_gemini(text, source_lang)
+            tr = await self.translate(text, source_lang)
             return {
                 "language": source_lang,
                 "original_text": text,
-                "english_translation": eng,
-                "translation_confidence": "medium",
-                "duration_range": "00:00–00:20",
+                "english_translation": tr["text"],
+                "translation_confidence": tr["confidence"],
+                "engine": tr["engine"],
+                "status": "transcribed" if tr["text"] else "pending",
             }
 
-        # 3. If audio file (.wav/.mp3/.m4a/.webm/.ogg) provided, transcribe + translate with Gemini multimodal
-        if file_path and file_path.exists():
-            keys = [k for k in (settings.gemini_api_key, settings.gemini_api_key_secondary) if k]
-            if keys:
-                audio_bytes = file_path.read_bytes()
-                mime = AUDIO_MIME_TYPES.get(file_path.suffix.lower(), "audio/mp4")
-                b64 = base64.b64encode(audio_bytes).decode("ascii")
-                prompt_text = (
-                    f"Transcribe this {source_lang} (Konkani/Marathi/Hindi) client voice note in Devanagari "
-                    "and translate it accurately to English. Preserve Goa land terms (mundkar, bhatkar, comunidade, Form I & XIV). "
-                    'Return JSON: {"original_text": "...", "english_translation": "...", "translation_confidence": "high"|"medium"|"low"}'
-                )
-                body = {
-                    "contents": [
-                        {
-                            "parts": [
-                                {"text": prompt_text},
-                                {"inlineData": {"mimeType": mime, "data": b64}},
-                            ]
-                        }
-                    ],
-                    "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1},
+        # 3. Audio recording.
+        if audio_bytes is None and file_path and file_path.exists():
+            audio_bytes = file_path.read_bytes()
+            mime = mime or AUDIO_MIME_TYPES.get(file_path.suffix.lower(), "audio/webm")
+        if audio_bytes:
+            res = await llm_client.transcribe_audio(audio_bytes, mime or "audio/webm", source_lang)
+            if res.get("no_speech"):
+                return {"language": source_lang, "original_text": "", "english_translation": "", "translation_confidence": "low", "status": "no_speech"}
+            if res.get("original_text"):
+                return {
+                    "language": res.get("language") or source_lang,
+                    "original_text": res["original_text"],
+                    "english_translation": _glossary(res.get("english_translation") or ""),
+                    "translation_confidence": "high" if res.get("english_translation") else "low",
+                    "engine": res.get("engine", "speech"),
+                    "status": "transcribed",
                 }
-                for model in llm_client.MODELS:
-                    url = f"{llm_client.GEMINI_BASE}/{model}:generateContent"
-                    for key in keys:
-                        try:
-                            async with httpx.AsyncClient(timeout=15.0) as client:
-                                r = await client.post(f"{url}?key={key}", json=body)
-                                if r.status_code == 200:
-                                    txt = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-                                    res = json.loads(txt)
-                                    return {
-                                        "language": source_lang,
-                                        "original_text": res.get("original_text", ""),
-                                        "english_translation": res.get("english_translation", ""),
-                                        "translation_confidence": res.get("translation_confidence", "medium"),
-                                        "duration_range": "00:00–00:25",
-                                    }
-                        except Exception:
-                            continue
-
-        return {
-            "language": source_lang,
-            "original_text": "",
-            "english_translation": "Audio uploaded for client statement review.",
-            "translation_confidence": "low",
-            "duration_range": "00:00–00:15",
-        }
-
-    def _apply_goa_glossary(self, text: str) -> str:
-        out = text
-        for src, dst in GOA_LAND_GLOSSARY.items():
-            out = re.sub(re.escape(src), dst, out, flags=re.IGNORECASE)
-        return out
-
-    async def _translate_text_with_gemini(self, text: str, source_lang: str) -> str:
-        try:
-            prompt = (
-                f"Translate this {source_lang} legal statement accurately into English. "
-                f"Preserve Indian/Goa legal terms (mundkar, bhatkar, comunidade, Form I & XIV). "
-                f"Return only the English sentence.\n\n{text}"
-            )
-            translated = await llm_client.generate_text(prompt, max_tokens=200, timeout=8.0)
-            return self._apply_goa_glossary(translated)
-        except Exception:
-            # Free keyless Google Translate GTX fallback + Goa Land Glossary normalization
-            try:
-                sl_map = {"kok": "gom", "mr": "mr", "hi": "hi"}
-                sl = sl_map.get(source_lang, "auto")
-                q = urllib.parse.quote(text)
-                url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sl}&tl=en&dt=t&q={q}"
-                async with httpx.AsyncClient(timeout=8.0) as client:
-                    r = await client.get(url)
-                    if r.status_code == 200:
-                        data = r.json()
-                        joined = "".join(seg[0] for seg in data[0] if seg and seg[0])
-                        if joined.strip():
-                            return self._apply_goa_glossary(joined.strip())
-            except Exception:
-                pass
-            return self._apply_goa_glossary(text)
+        return {"language": source_lang, "original_text": "", "english_translation": "", "translation_confidence": "low", "status": "pending"}
 
 
-bhashini_client = BhashiniClient()
-
+translation_client = TranslationClient()
+# Historical name kept for existing imports.
+bhashini_client = translation_client
