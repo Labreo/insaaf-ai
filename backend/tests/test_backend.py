@@ -150,6 +150,23 @@ def test_full_api_contract_endpoints():
         assert sc["band"] == "weak"
         assert sc["bias_firewall_passed"] is True
         assert sc["eval"]["heldout_total"] > 0
+        assert sc["eval"]["calibration"] is not None
+        assert sc["court_aware"]["pooled_rate"] is not None
+
+        sc_hc = client.post("/v1/matters/mat_001/court", json={"court": "Bombay High Court (Goa bench)"}).json()
+        assert sc_hc["court_aware"]["court"] == "Bombay High Court (Goa bench)"
+        assert sc_hc["court_aware"]["pooled_rate"] != sc["court_aware"]["pooled_rate"]
+
+        cit_adm = client.post("/v1/matters/mat_001/citations/check", json={"citation": "ADM Jabalpur v. Shivkant Shukla"}).json()
+        assert any(c["badge"] == "red" and "ADM Jabalpur" in c["cited"]["title"] for c in cit_adm)
+
+        plaint = client.post("/v1/matters/mat_001/draft/type", json={"draft_type": "plaint"}).json()
+        assert plaint["type"] == "plaint"
+        assert any("ORDER VII RULE 1" in p["text"] for p in plaint["paragraphs"])
+
+        q_flagged = client.post("/v1/matters/mat_002/flags", json={"flag": "senior_citizen"}).json()
+        mat2_q = next(q for q in q_flagged if q["matter_id"] == "mat_002")
+        assert "senior_citizen" in mat2_q["flags"]
 
         fw = client.get("/v1/matters/mat_001/bias-firewall").json()
         assert fw["passed"] is True

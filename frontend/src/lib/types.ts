@@ -1,4 +1,4 @@
-// Mirrors docs/API_CONTRACT.md. Keep these in sync with the backend's pydantic models.
+// Mirrors docs/API_CONTRACT.md and backend/app/models/schemas.py.
 
 export type Confidence = 'high' | 'medium' | 'low'
 
@@ -20,9 +20,11 @@ export type Role = 'senior' | 'junior' | 'clerk' | 'student'
 export interface MatterDocument {
   id: string
   name: string
-  kind: 'pdf' | 'docx' | 'voice' | 'other'
+  kind: 'pdf' | 'docx' | 'voice' | 'audio' | 'other'
   size: number
   added_at: string
+  document_id?: string
+  pages?: number
 }
 
 export interface Matter {
@@ -37,7 +39,7 @@ export interface Matter {
   updated_at: string
   client_language?: 'en' | 'kok' | 'mr' | 'hi'
   documents?: MatterDocument[]
-  forum_hint?: string
+  forum_hint?: string | null
 }
 
 export type Stage =
@@ -97,11 +99,25 @@ export interface CitationHealth {
 }
 
 export interface Score {
-  band: 'strong' | 'uncertain' | 'weak'
+  band: 'strong' | 'uncertain' | 'moderate' | 'weak'
   model_version: string
   factors: { name: string; effect: number }[]
-  court_aware: { court: string; n_judgments: number; pooled_from: string; shrinkage_k: number }
-  eval: { heldout_correct: number; heldout_total: number; note: string; brier: number | null }
+  court_aware: {
+    court: string
+    n_judgments: number
+    pooled_from: string
+    shrinkage_k: number
+    local_rate?: number | null
+    parent_rate?: number | null
+    pooled_rate?: number | null
+  }
+  eval: {
+    heldout_correct: number
+    heldout_total: number
+    note: string
+    brier: number | null
+    calibration?: { prob_pred: number[]; prob_true: number[] } | null
+  }
   bias_firewall_passed: boolean
 }
 
@@ -123,7 +139,7 @@ export interface Draft {
   type: string
   model_version: string
   watermark: string
-  paragraphs: { id: string; text: string; confidence: Confidence; sources: SourceRef[]; locked_out_claim?: string }[]
+  paragraphs: { id: string; text: string; confidence: Confidence; sources: SourceRef[]; locked_out_claim?: string | null }[]
 }
 
 export type ReasonCode = 'wrong_fact' | 'wrong_law' | 'wrong_citation_treatment' | 'score_disagree' | 'bias_concern' | 'other'
@@ -181,7 +197,7 @@ export interface LawChange {
   applies: boolean
   reason: string
   sources: SourceRef[]
-  location?: string
+  location?: string | null
 }
 
 export interface ModelInfo {
@@ -190,6 +206,14 @@ export interface ModelInfo {
   labels: number
   metrics: { accuracy: number | null; brier: number | null }
   history: { version: string; labels_added: number; accuracy: number | null; brier: number | null; at: string }[]
+}
+
+export interface RetrainResult {
+  old_version: string
+  new_version: string
+  metrics_before: { accuracy: number | null; brier: number | null }
+  metrics_after: { accuracy: number | null; brier: number | null }
+  labels_added: number
 }
 
 export interface Alert {
@@ -207,4 +231,13 @@ export interface Me {
   name: string
   role: Role
   org: { id: string; name: string; plan: string; members: { name: string; role: Role; last_seen: string }[] }
+}
+
+export interface DeepHealth {
+  kanoon: string
+  llm: string
+  bhashini: string
+  db: string
+  model_version: string
+  cache_hit_rate: number
 }

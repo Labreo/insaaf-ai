@@ -40,7 +40,7 @@ export default function Intro({ onDone }: { onDone: () => void }) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 overflow-hidden bg-void select-none"
+      className="night fixed inset-0 z-50 overflow-hidden bg-night select-none"
       onPointerDown={finish}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.5 } }}
@@ -117,7 +117,7 @@ export default function Intro({ onDone }: { onDone: () => void }) {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             <Wordmark />
-            <p className="text-pewter text-[13px] font-light tracking-wide">Writes the first draft. Refuses to write a claim it can&rsquo;t prove.</p>
+            <p className="text-fog text-[13px] font-light tracking-wide">Writes the first draft. Refuses to write a claim it can&rsquo;t prove.</p>
           </motion.div>
         )}
       </AnimatePresence>

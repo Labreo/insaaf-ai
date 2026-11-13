@@ -17,7 +17,7 @@ def _normalize_text(s: str) -> str:
 class LLMClient:
     """Real LLM service calling Gemini Flash-Lite / Flash (with multi-model & multi-key fallback)."""
 
-    MODELS = ("gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3-flash-preview")
+    MODELS = ("gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview")
     GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
     async def ping(self) -> str:
@@ -160,7 +160,14 @@ class LLMClient:
                     continue
                 except Exception:
                     pass
-            lines = [ln.strip() for ln in txt.splitlines() if len(ln.strip()) > 25 and not ln.strip().startswith("FICTIONAL")]
+            lines = [
+                ln.strip()
+                for ln in txt.splitlines()
+                if len(ln.strip()) > 25
+                and not ln.strip().startswith("FICTIONAL")
+                and not ln.strip().startswith("[Page")
+                and not ln.strip().isupper()
+            ]
             for l_i, line in enumerate(lines[:3]):
                 lower = line.lower()
                 status = "documented"
@@ -308,7 +315,7 @@ class LLMClient:
         return [
             {
                 "id": "p1",
-                "text": f"The Claimant states that {p1_fact[0].lower() + p1_fact[1:] if len(p1_fact) > 1 else p1_fact}",
+                "text": f"Under instructions from our client, it is stated on record: {p1_fact}",
                 "confidence": "high",
                 "sources": [],
             },

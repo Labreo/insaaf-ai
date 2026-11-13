@@ -398,23 +398,34 @@ async def ensure_stage(matter_id: str, stage: str) -> Any:
 
 def build_draft_docx_bytes(matter: dict[str, Any], draft: dict[str, Any]) -> bytes:
     doc = Document()
-    doc.add_heading(f"INSAAF AI — {draft['type'].replace('_', ' ').upper()}", level=1)
-    p_wm = doc.add_paragraph(f"[{draft['watermark']} · Model: {draft['model_version']}]")
+    draft_type = draft.get("type", "legal_notice")
+    heading_map = {
+        "plaint": "IN THE COURT OF THE COMPETENT CIVIL JURISDICTION — SUIT PLAINT (ORDER VII RULE 1 CPC)",
+        "plea_application": "BEFORE THE HON'BLE JUDICIAL MAGISTRATE — APPLICATION UNDER SECTION 290 BNSS",
+        "legal_notice": "STATUTORY LEGAL NOTICE UNDER REGISTERED POST A.D.",
+    }
+    doc.add_heading(heading_map.get(draft_type, draft_type.replace("_", " ").upper()), level=1)
+    p_wm = doc.add_paragraph(f"[{draft['watermark']}]")
     p_wm.runs[0].italic = True
-    doc.add_paragraph(f"Matter: {matter['title']} ({matter['case_type']})")
+    doc.add_paragraph(f"In the matter of: {matter['title'].replace(' (FICTIONAL)', '')}")
+    if matter.get("forum_hint"):
+        doc.add_paragraph(f"Forum: {matter['forum_hint']}")
     doc.add_paragraph("")
 
     for idx, para in enumerate(draft.get("paragraphs", []), start=1):
         doc.add_paragraph(f"{idx}. {para['text']}")
         if para.get("locked_out_claim"):
-            doc.add_paragraph(f"   [Authority Lock rejected unsupported claim: {para['locked_out_claim']}]")
+            doc.add_paragraph(f"   [Authority Lock withheld unverified assertion: {para['locked_out_claim']}]")
         for s in para.get("sources", []):
             doc.add_paragraph(
-                f"   Source: {s['title']} ({s.get('court', '')} {s.get('date', '')}) — {s['url']} | \"{s['snippet'][:180]}...\""
+                f"   Authority: {s['title']} ({s.get('court', '')} {s.get('date', '')}) — {s['url']} | \"{s['snippet'][:180]}...\""
             )
 
     doc.add_paragraph("")
-    doc.add_paragraph("Advocate Approval Signature: ___________________________")
+    if draft_type == "plaint":
+        doc.add_paragraph("VERIFICATION (ORDER VI RULE 15 CPC): Verified at Mapusa, Goa on this date that the contents of paragraphs 1 to above are true to my personal knowledge and belief based on record.")
+        doc.add_paragraph("")
+    doc.add_paragraph("Advocate for the Claimant / Plaintiff: ___________________________")
     buf = io.BytesIO()
     doc.save(buf)
     return buf.getvalue()
@@ -427,7 +438,7 @@ async def compute_nyaya_queue() -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     for m in matters:
         proof = get_stage_result(m["id"], "proof_ledger")
-        flags: list[str] = []
+        flags: list[str] = list(get_stage_result(m["id"], "urgency_flags") or [])
         if proof:
             missing_reqs = [it["requirement"].lower() for it in proof.get("items", []) if it["state"] == "missing"]
             if any("sale deed" in r or "invoice" in r for r in missing_reqs):
@@ -437,8 +448,15 @@ async def compute_nyaya_queue() -> list[dict[str, Any]]:
             if m["case_type"] == "property":
                 flags.append("title_missing")
             prio = m["priority"]
-        if m["case_type"] == "criminal":
+        if m["case_type"] == "criminal" and "plea_check" not in flags:
             flags.append("plea_check")
+        cit = get_stage_result(m["id"], "citation_health") or []
+        if any(c.get("badge") == "red" and c.get("blocks_draft") for c in cit):
+            flags.append("overruled_citation")
+        if m.get("status") == "in_review":
+            flags.append("awaiting_senior")
+        urgency_boost = 0.12 * sum(1 for fl in flags if fl in ("senior_citizen", "interim_relief", "undertrial_custody"))
+        prio = round(min(0.99, prio + urgency_boost), 2)
         items.append(
             {
                 "matter_id": m["id"],
@@ -450,6 +468,227 @@ async def compute_nyaya_queue() -> list[dict[str, Any]]:
         )
     items.sort(key=lambda x: x["priority"], reverse=True)
     return items
+
+
+async def set_matter_court(matter_id: str, court: str) -> dict[str, Any]:
+    """F10: Switch target forum for a matter and recompute hierarchical court-pooled score."""
+    matter, _ = _get_matter_and_docs(matter_id)
+    clock = await ensure_stage(matter_id, "statute_clock")
+    clock = dict(clock)
+    basis_map = {
+        "District Court, North Goa": "Location of immovable property — s.16 CPC (District Civil Jurisdiction)",
+        "Commercial Court, Panaji": "Specified Value Commercial Dispute — Commercial Courts Act, 2015",
+        "Bombay High Court (Goa bench)": "Extraordinary Writ / First Appeal / Original Jurisdiction — Panaji Bench",
+        "Judicial Magistrate First Class, Mapusa": "Criminal Cognizance & Plea Jurisdiction — BNSS s.290",
+    }
+    clock["forum"] = {"court": court, "basis": basis_map.get(court, clock.get("forum", {}).get("basis", "Statutory territorial jurisdiction"))}
+    save_stage_result(matter_id, "statute_clock", clock, 15)
+    with db_session() as conn:
+        conn.execute("UPDATE matters SET forum_hint = ? WHERE id = ?", (court, matter_id))
+    facts = await ensure_stage(matter_id, "facts")
+    proof = await ensure_stage(matter_id, "proof_ledger")
+    precs = await ensure_stage(matter_id, "search")
+    firewall, score_obj = compute_bias_firewall_and_score(
+        matter=matter,
+        facts=facts,
+        proof_ledger=proof,
+        statute_clock=clock,
+        precedents=precs,
+        court_override=court,
+    )
+    save_stage_result(matter_id, "bias_firewall", firewall, 20)
+    save_stage_result(matter_id, "score", score_obj, 20)
+    return score_obj
+
+
+async def set_matter_draft_type(matter_id: str, draft_type: str) -> dict[str, Any]:
+    """F1: Switch pleading instrument between Legal Notice, Suit Plaint (Order VII CPC), and s.290 BNSS Application."""
+    matter, _ = _get_matter_and_docs(matter_id)
+    facts = await ensure_stage(matter_id, "facts")
+    clock = await ensure_stage(matter_id, "statute_clock")
+    rag = await ensure_stage(matter_id, "rag")
+    existing = await ensure_stage(matter_id, "draft")
+    corpus_sources = list(rag.get("corpus_sources", []))
+    primary_src = [corpus_sources[0]] if corpus_sources else []
+    limitation_src = [s for s in corpus_sources if "limitation" in s.get("title", "").lower()][:1] or primary_src
+    p1_fact = facts[0]["statement"] if facts else matter["title"].replace(" (FICTIONAL)", "")
+    p2_fact = facts[1]["statement"] if len(facts) > 1 else p1_fact
+    default_locked = next((p.get("locked_out_claim") for p in existing.get("paragraphs", []) if p.get("locked_out_claim")), None) or (
+        "Unregistered GPA automatically confers absolute ownership title without a registered conveyance deed."
+    )
+    forum_name = clock.get("forum", {}).get("court", matter.get("forum_hint") or "Competent Civil Court")
+    clean_title = matter["title"].replace(" (FICTIONAL)", "")
+
+    if draft_type == "plaint":
+        paragraphs = [
+            {
+                "id": "p1",
+                "text": f"PLAINT UNDER ORDER VII RULE 1 CPC — {forum_name.upper()}. Cause Title: {clean_title}. The Plaintiff respectfully submits that the cause of action arose within the territorial and pecuniary jurisdiction of this Hon'ble Court.",
+                "confidence": "high",
+                "sources": [],
+            },
+            {
+                "id": "p2",
+                "text": f"FACTS & DOCUMENTED RECORD: {p1_fact} Further, {p2_fact[0].lower() + p2_fact[1:] if len(p2_fact) > 1 else p2_fact}",
+                "confidence": "high",
+                "sources": [],
+            },
+            {
+                "id": "p3",
+                "text": f"LEGAL GROUNDS & LIMITATION: The suit is instituted within the prescribed period ({clock.get('article', 'Limitation Act, 1963')}, expiring {clock.get('limitation_expires', 'on record')}) and is governed by {primary_src[0]['title'] if primary_src else 'binding statutory law'}.",
+                "confidence": "high" if primary_src else "medium",
+                "sources": limitation_src,
+            },
+            {
+                "id": "p4",
+                "text": "No verified authority found.",
+                "confidence": "low",
+                "sources": [],
+                "locked_out_claim": default_locked,
+            },
+            {
+                "id": "p5",
+                "text": "PRAYER: Wherefore the Plaintiff prays for appropriate declaratory and consequential relief, costs of the suit, and any further order deemed fit in the interest of justice.",
+                "confidence": "medium",
+                "sources": primary_src,
+            },
+        ]
+    elif draft_type == "plea_application":
+        paragraphs = [
+            {
+                "id": "p1",
+                "text": f"APPLICATION FOR PLEA BARGAINING UNDER CHAPTER XXIII (SECTIONS 289–290) BNSS — {forum_name.upper()}. Matter: {clean_title}.",
+                "confidence": "high",
+                "sources": [],
+            },
+            {
+                "id": "p2",
+                "text": f"That the applicant voluntarily submits this application supported by affidavit stating: {p1_fact}",
+                "confidence": "high",
+                "sources": [],
+            },
+            {
+                "id": "p3",
+                "text": "No verified authority found.",
+                "confidence": "low",
+                "sources": [],
+                "locked_out_claim": default_locked,
+            },
+        ]
+    else:
+        paragraphs = [
+            {
+                "id": "p1",
+                "text": f"STATUTORY LEGAL NOTICE — Under instructions from our client in {clean_title}, we call upon you to take notice that {p1_fact[0].lower() + p1_fact[1:] if len(p1_fact) > 1 else p1_fact}",
+                "confidence": "high",
+                "sources": [],
+            },
+            {
+                "id": "p2",
+                "text": f"In view of {primary_src[0]['title'] if primary_src else 'applicable statute law'}, documentary registration, stamp duty compliance, and statutory notice requirements strictly govern any enforceable claim.",
+                "confidence": "high" if primary_src else "medium",
+                "sources": primary_src,
+            },
+            {
+                "id": "p3",
+                "text": "No verified authority found.",
+                "confidence": "low",
+                "sources": [],
+                "locked_out_claim": default_locked,
+            },
+        ]
+
+    draft_obj = {
+        "type": draft_type,
+        "model_version": existing.get("model_version", "b-score-0.5"),
+        "watermark": existing.get("watermark", "AI-assisted draft — advocate review required"),
+        "paragraphs": paragraphs,
+    }
+    save_stage_result(matter_id, "draft", draft_obj, 30)
+    return draft_obj
+
+
+async def check_matter_citation(matter_id: str, citation: str) -> list[dict[str, Any]]:
+    """F7: Run live citedby / overruling verification on any user-submitted case authority."""
+    c_health = list(await ensure_stage(matter_id, "citation_health"))
+    q = citation.strip()
+    ql = q.lower()
+    entry: dict[str, Any] | None = None
+
+    if "jabalpur" in ql or "shivkant" in ql:
+        cited = await kanoon_client.get_doc_source("1725400")
+        by = await kanoon_client.get_doc_source("91938676", query_hint="ADM Jabalpur overruled")
+        entry = {
+            "cited": cited,
+            "badge": "red",
+            "treatment": "overruled",
+            "by": by,
+            "blocks_draft": True,
+        }
+    elif "koushal" in ql or "377" in ql:
+        cited = await kanoon_client.get_doc_source("58730926")
+        by = await kanoon_client.get_doc_source("168671544", query_hint="Suresh Kumar Koushal overruled")
+        entry = {
+            "cited": cited,
+            "badge": "red",
+            "treatment": "overruled",
+            "by": by,
+            "blocks_draft": True,
+        }
+    elif "suraj lamp" in ql:
+        cited = await kanoon_client.get_doc_source("1565619")
+        entry = {
+            "cited": cited,
+            "badge": "green",
+            "treatment": "followed",
+            "by": None,
+            "blocks_draft": False,
+        }
+    elif "patil" in ql or "12a" in ql:
+        cited = await kanoon_client.get_doc_source("164693074")
+        entry = {
+            "cited": cited,
+            "badge": "green",
+            "treatment": "followed",
+            "by": None,
+            "blocks_draft": False,
+        }
+    else:
+        res = await kanoon_client.search(q, max_results=3, budget_ms=5000)
+        docs = res.get("docs") or []
+        if docs:
+            cited = await kanoon_client.get_doc_source(str(docs[0]["doc_id"]), query_hint=q, fallback_meta=docs[0])
+            treatment = await llm_client.classify_citation_treatment(cited["title"], cited["title"], cited["snippet"])
+            entry = {
+                "cited": cited,
+                "badge": "red" if treatment == "overruled" else ("amber" if treatment in ("distinguished", "limited") else "green"),
+                "treatment": treatment,
+                "by": None,
+                "blocks_draft": treatment == "overruled",
+            }
+
+    if entry:
+        c_health = [item for item in c_health if item.get("cited", {}).get("source_id") != entry["cited"]["source_id"]]
+        c_health.insert(0, entry)
+        save_stage_result(matter_id, "citation_health", c_health, 40)
+    return c_health
+
+
+async def toggle_matter_flag(matter_id: str, flag: str) -> list[dict[str, Any]]:
+    """F12: Toggle statutory urgency flag (senior_citizen / interim_relief / undertrial_custody) and re-rank Nyaya Queue."""
+    _get_matter_and_docs(matter_id)
+    flags = list(get_stage_result(matter_id, "urgency_flags") or [])
+    if flag in flags:
+        flags = [f for f in flags if f != flag]
+    else:
+        flags.append(flag)
+    save_stage_result(matter_id, "urgency_flags", flags, 5)
+    queue = await compute_nyaya_queue()
+    matching = next((q for q in queue if q["matter_id"] == matter_id), None)
+    if matching:
+        with db_session() as conn:
+            conn.execute("UPDATE matters SET priority = ? WHERE id = ?", (matching["priority"], matter_id))
+    return queue
 
 
 async def _build_prec_results(case_type: str, query: str, search_docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -633,8 +872,8 @@ async def seed_fast_stage_results(matter_id: str | None = None) -> None:
             "model_version": score_obj["model_version"],
             "watermark": "AI-assisted draft — advocate review required",
             "paragraphs": [
-                {"id": "p1", "text": f"Our client records that {p1_fact[0].lower() + p1_fact[1:] if len(p1_fact) > 1 else p1_fact}", "confidence": "high", "sources": []},
-                {"id": "p2", "text": f"In view of {primary_src[0]['title']}, documentary registration and statutory compliance govern relief.", "confidence": "high" if primary_src else "medium", "sources": primary_src},
+                {"id": "p1", "text": f"Under instructions from our client, it is stated on record: {p1_fact}", "confidence": "high", "sources": []},
+                {"id": "p2", "text": f"In view of {primary_src[0]['title']}, documentary registration and statutory compliance govern relief." if primary_src else "Documentary registration and statutory compliance govern relief.", "confidence": "high" if primary_src else "medium", "sources": primary_src},
                 {"id": "p3", "text": "No verified authority found.", "confidence": "low", "sources": [], "locked_out_claim": default_locked},
             ],
         }

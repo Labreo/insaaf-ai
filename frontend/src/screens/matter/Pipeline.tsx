@@ -3,33 +3,39 @@ import { Check, ChevronRight, Play, RotateCcw } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useDB } from '@/lib/store'
 import type { PipelineEvent, Stage } from '@/lib/types'
-import { Bar, Chip, Glass, Label, Ring, Well } from '@/components/primitives'
-import { Button } from '@/components/ui/button'
+import { Badge, Bar, Card, ErrorBanner, Label, Ring, Well, type Tone } from '@/components/primitives'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
-import type { TabProps } from '../Matter'
+import type { Tab, TabProps } from '../Matter'
 
-const STAGES: { key: Stage; label: string; tab: TabProps['onJump'] extends (t: infer T) => void ? T : never; what: string }[] = [
-  { key: 'intake', label: 'Intake & OCR', tab: 'facts', what: 'PDF · DOCX · Konkani voice' },
-  { key: 'facts', label: 'Fact cards', tab: 'facts', what: 'allegation ≠ fact' },
-  { key: 'proof_ledger', label: 'Proof ledger', tab: 'proof', what: 'deterministic rule pack' },
-  { key: 'statute_clock', label: 'Statute clock', tab: 'clock', what: 'limitation · forum · ADR' },
-  { key: 'search', label: 'Time-boxed search', tab: 'precedents', what: '20 judgments, 8 s budget' },
-  { key: 'rag', label: 'Authority lock', tab: 'draft', what: 'no quote, no claim' },
-  { key: 'citation_health', label: 'Citation health', tab: 'citations', what: 'overruled? distinguished?' },
-  { key: 'bias_firewall', label: 'Bias firewall', tab: 'score', what: '6 identities, ε = 0.02' },
-  { key: 'score', label: 'Insaaf B score', tab: 'score', what: 'court-pooled band' },
-  { key: 'advice', label: 'Settle or fight', tab: 'advice', what: 'eligibility rules' },
-  { key: 'draft', label: 'Draft pleading', tab: 'draft', what: 'senior review required' },
+const STAGES: { key: Stage; label: string; engine: string; tab: Tab; what: string }[] = [
+  { key: 'intake', label: 'Intake & OCR', engine: 'PyMuPDF · Bhashini', tab: 'facts', what: 'PDF · DOCX · voice notes' },
+  { key: 'facts', label: 'Fact cards', engine: 'Source-Span Lock', tab: 'facts', what: 'allegation ≠ fact' },
+  { key: 'proof_ledger', label: 'Proof ledger', engine: 'Deterministic YAML', tab: 'proof', what: 'statutory rule checklist' },
+  { key: 'statute_clock', label: 'Statute clock', engine: 'Deterministic Rules', tab: 'clock', what: 'limitation · forum · ADR' },
+  { key: 'search', label: 'Time-boxed search', engine: 'Kanoon 8s', tab: 'precedents', what: '20 judgments, 8s budget' },
+  { key: 'rag', label: 'Authority lock', engine: 'Corpus Binding', tab: 'draft', what: 'no quote, no claim' },
+  { key: 'citation_health', label: 'Citation health', engine: 'Downstream Check', tab: 'citations', what: 'overruled? distinguished?' },
+  { key: 'bias_firewall', label: 'Bias firewall', engine: '6-Identity Flip', tab: 'score', what: '6 identities, ε = 0.02' },
+  { key: 'score', label: 'Insaaf B score', engine: 'Court-Pooled ML', tab: 'score', what: 'calibrated band + shrinkage' },
+  { key: 'advice', label: 'Settle or fight', engine: 'Statutory Rules', tab: 'advice', what: 's.12A · Lok Adalat · BNSS' },
+  { key: 'draft', label: 'Draft pleading', engine: 'DOCX + Ledger', tab: 'draft', what: 'senior review required' },
 ]
 
-/** F1: the whole pipeline, live. Stages light up from the event stream; search shows its fixed budget. */
+const statusTone: Record<string, Tone> = {
+  done: 'ok',
+  running: 'info',
+  failed: 'bad',
+  skipped: 'neutral',
+  queued: 'neutral',
+}
+
 export default function Pipeline({ id, onJump, autorun }: TabProps & { autorun?: boolean }) {
   const matter = useDB((d) => d.matters.find((m) => m.id === id))
-  const hasStages = useDB((d) => !!d.stages[id])
   const [events, setEvents] = useState<Partial<Record<Stage, PipelineEvent>>>({})
   const [running, setRunning] = useState(false)
   const [run, setRun] = useState(0)
+  const [err, setErr] = useState<string | null>(null)
   const started = useRef(false)
 
   useEffect(() => {
@@ -43,20 +49,28 @@ export default function Pipeline({ id, onJump, autorun }: TabProps & { autorun?:
     if (!run) return
     let alive = true
     setEvents({})
+    setErr(null)
     setRunning(true)
     ;(async () => {
-      let last: Stage | null = null
-      for await (const ev of api.pipeline(id)) {
-        if (!alive) return
-        if (ev.status === 'done' && ev.stage !== last) {
-          last = ev.stage
-          sfx.stage()
+      try {
+        let last: Stage | null = null
+        for await (const ev of api.pipeline(id)) {
+          if (!alive) return
+          if (ev.status === 'done' && ev.stage !== last) {
+            last = ev.stage
+            sfx.stage()
+          }
+          setEvents((e) => ({ ...e, [ev.stage]: ev }))
         }
-        setEvents((e) => ({ ...e, [ev.stage]: ev }))
-      }
-      if (alive) {
-        setRunning(false)
-        sfx.seal()
+        if (alive) {
+          setRunning(false)
+          sfx.seal()
+        }
+      } catch (e) {
+        if (alive) {
+          setRunning(false)
+          setErr(e instanceof Error ? e.message : String(e))
+        }
       }
     })()
     return () => {
@@ -64,115 +78,142 @@ export default function Pipeline({ id, onJump, autorun }: TabProps & { autorun?:
     }
   }, [run, id])
 
+  const prewarmed = matter ? matter.status !== 'draft' : false
   const doneCount = Object.values(events).filter((e) => e?.status === 'done').length
-  const completedCount = running || run > 0 ? doneCount : hasStages ? STAGES.length : 0
+  const completedCount = running || run > 0 ? doneCount : prewarmed ? STAGES.length : 0
   const search = events.search
   const total = STAGES.length
-  const headline = running ? 'Running' : run > 0 ? 'Complete' : hasStages ? 'Last run on record' : 'Ready to run'
+  const headline = running ? 'Executing Live Stream' : run > 0 ? 'Pipeline Complete' : prewarmed ? 'Stages Computed & Cached' : 'Ready to Run'
 
   return (
-    <div className="grid gap-6 lg:grid-cols-12">
-      <div className="lg:col-span-8">
-        <div className="glass overflow-hidden p-0">
-          <div className="border-b border-seam bg-graphite/70 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.06em] text-smoke">
-            11-Stage Deterministic & AI Verification Orchestration
-          </div>
-          <div className="divide-y divide-seam">
-            {STAGES.map((s, idx) => {
-              const ev = events[s.key]
-              const st = ev?.status ?? (hasStages && run === 0 ? 'done' : 'queued')
-              const clickable = st === 'done'
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => clickable && onJump(s.tab)}
-                  className={cn(
-                    'flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors',
-                    clickable ? 'hover:bg-graphite/50 cursor-pointer' : 'cursor-default',
-                  )}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span
-                      className={cn(
-                        'grid h-6 w-6 shrink-0 place-items-center rounded-md text-[11px] font-mono',
-                        st === 'done'
-                          ? 'bg-brass text-void font-medium'
-                          : st === 'running'
-                            ? 'bg-steel/25 text-marble border border-steel/40 animate-pulse'
-                            : 'bg-graphite text-smoke border border-seam',
-                      )}
+    <div className="space-y-4">
+      {err && <ErrorBanner error={err} />}
+
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-8">
+          <Card className="overflow-x-auto p-0">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Stage</th>
+                  <th>Engine</th>
+                  <th>Status</th>
+                  <th>Output</th>
+                  <th className="text-right">Elapsed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {STAGES.map((s, idx) => {
+                  const ev = events[s.key]
+                  const st = ev?.status ?? (prewarmed && run === 0 ? 'done' : 'queued')
+                  const clickable = st === 'done'
+                  return (
+                    <tr
+                      key={s.key}
+                      onClick={() => clickable && onJump(s.tab)}
+                      className={cn(clickable && 'row-link cursor-pointer')}
                     >
-                      {st === 'done' ? <Check size={12} strokeWidth={2.8} /> : idx + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <p className={cn('text-[14px] font-medium', st === 'queued' ? 'text-smoke' : 'text-marble')}>{s.label}</p>
-                      <p className="truncate text-[12px] text-smoke">{ev?.message && st !== 'queued' ? ev.message : s.what}</p>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {ev?.elapsed_ms && st === 'done' ? (
-                      <span className="font-mono text-[11px] tabular-nums text-smoke">{(ev.elapsed_ms / 1000).toFixed(1)}s</span>
-                    ) : (
-                      <Chip tone={st === 'done' ? 'followed' : st === 'running' ? 'steel' : 'smoke'}>{st}</Chip>
-                    )}
-                    {clickable && <ChevronRight size={14} className="text-smoke" />}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+                      <td className="w-10 font-mono text-[11px] text-ink-3">
+                        <span
+                          className={cn(
+                            'grid h-6 w-6 place-items-center rounded-[4px] border text-[11px] font-medium',
+                            st === 'done'
+                              ? 'border-ok-200 bg-ok-50 text-ok'
+                              : st === 'running'
+                                ? 'border-info-200 bg-info-50 text-info animate-pulse'
+                                : 'border-line bg-sunken text-ink-3',
+                          )}
+                        >
+                          {st === 'done' ? <Check size={12} strokeWidth={2.5} /> : idx + 1}
+                        </span>
+                      </td>
+                      <td className="font-medium text-ink">
+                        <div className="flex items-center gap-1.5">
+                          <span>{s.label}</span>
+                          {clickable && <ChevronRight size={13} className="text-ink-4" />}
+                        </div>
+                      </td>
+                      <td>
+                        <Badge tone="neutral">{s.engine}</Badge>
+                      </td>
+                      <td>
+                        <Badge tone={statusTone[st] ?? 'neutral'}>{st}</Badge>
+                      </td>
+                      <td className="text-[12px] text-ink-2">
+                        {ev?.message ?? s.what}
+                      </td>
+                      <td className="text-right font-mono text-[11px] text-ink-3 tabular">
+                        {ev?.elapsed_ms ? `${ev.elapsed_ms} ms` : st === 'done' ? 'cached' : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </Card>
         </div>
-      </div>
 
-      <div className="space-y-4 lg:col-span-4">
-        <Glass className="space-y-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <Label>Orchestration state</Label>
-              <p className="mt-1 text-[22px] font-medium text-marble">
-                {headline}
-                {running && <span className="animate-pulse">…</span>}
-              </p>
-              <p className="mt-1 font-mono text-[12px] text-smoke">
-                {running || run > 0 ? `${doneCount}/${total} stages` : `${completedCount}/${total} stages`} · {matter?.documents?.length ?? 0} documents
-              </p>
+        <div className="space-y-4 lg:col-span-4">
+          <Card className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Ring value={completedCount / total} size={76} stroke={5} tone={completedCount === total ? '#2e7350' : '#1f3a5c'}>
+                <span className="tabular font-mono text-[16px] font-semibold text-ink">
+                  {completedCount}/{total}
+                </span>
+              </Ring>
+              <div className="min-w-0">
+                <Label>F1 · Pipeline State Machine</Label>
+                <p className="mt-1 text-[16px] font-semibold text-ink">{headline}</p>
+                <p className="mt-0.5 text-[11px] text-ink-3">SSE stream · resumable stages</p>
+              </div>
             </div>
-            <Button
-              onClick={() => { sfx.tap(); setRun((r) => r + 1) }}
+
+            <button
+              type="button"
               disabled={running}
-              className="h-9 rounded-md bg-brass px-4 text-[12px] font-medium uppercase tracking-[0.06em] text-void hover:bg-[#d6b676]"
+              onClick={() => {
+                sfx.tap()
+                setRun((r) => r + 1)
+              }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-navy-600 disabled:opacity-50"
             >
-              {run === 0 && !hasStages ? <><Play size={13} /> Run</> : <><RotateCcw size={13} /> Re-run</>}
-            </Button>
-          </div>
-          <Bar value={completedCount / total} tone={running ? 'steel' : 'brass'} />
-          <p className="text-[12px] leading-relaxed text-smoke">
-            Click any completed stage on the left to inspect the source-linked output in its dedicated module.
-          </p>
-        </Glass>
+              {running ? (
+                <>Running Live SSE Stream…</>
+              ) : prewarmed || run > 0 ? (
+                <>
+                  <RotateCcw size={13} /> Re-Run 11-Stage Pipeline
+                </>
+              ) : (
+                <>
+                  <Play size={13} /> Run 11-Stage Pipeline
+                </>
+              )}
+            </button>
 
-        {search && search.status === 'running' && (
-          <Well className="flex items-center gap-4">
-            <Ring value={search.progress} size={60} stroke={4}>
-              <span className="font-mono text-[11px] tabular-nums text-marble">{(search.progress * 8).toFixed(1)}s</span>
-            </Ring>
-            <div>
-              <Label>Fixed 8-second budget</Label>
-              <p className="mt-1 text-[12px] leading-snug text-pewter">Indian Kanoon already indexes 50 million. We fetch 20 and rerank top 5.</p>
-            </div>
-          </Well>
-        )}
+            <Well className="space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-medium text-ink">Time-Boxed Kanoon Search Budget</span>
+                <span className="font-mono text-ink-2 tabular">
+                  {search ? `${(search.elapsed_ms / 1000).toFixed(1)}s / 8.0s` : 'max 8.0s'}
+                </span>
+              </div>
+              <Bar
+                value={search ? Math.min(1, search.elapsed_ms / 8000) : completedCount >= 5 ? 0.18 : 0}
+                tone="brass"
+              />
+              <p className="text-[11px] leading-snug text-ink-3">
+                Whether the corpus holds 50 thousand or 50 million judgments, retrieval caps at 20 matches within 8 seconds.
+              </p>
+            </Well>
 
-        {hasStages && !running && (
-          <Glass className="space-y-2">
-            <Label>Audit guarantees</Label>
-            <div className="flex flex-wrap gap-1.5">
-              <Chip tone="brass">every claim linked to source</Chip>
-              <Chip tone="steel">cached results replay offline</Chip>
-              <Chip tone="followed">authority lock enforced</Chip>
-            </div>
-          </Glass>
-        )}
+            {matter && (
+              <div className="border-t border-line pt-3 text-[12px] text-ink-2">
+                <span className="font-medium text-ink">Click any completed row</span> in the table to open that stage&rsquo;s dedicated legal workbench tab.
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
     </div>
   )

@@ -206,6 +206,9 @@ class CourtAwareInfo(BaseModel):
     n_judgments: int
     pooled_from: str
     shrinkage_k: int
+    local_rate: Optional[float] = None
+    parent_rate: Optional[float] = None
+    pooled_rate: Optional[float] = None
 
 
 class EvalSummary(BaseModel):
@@ -213,6 +216,7 @@ class EvalSummary(BaseModel):
     heldout_total: int
     note: str
     brier: Optional[float] = None
+    calibration: Optional[dict[str, list[float]]] = None
 
 
 class Score(BaseModel):
@@ -246,6 +250,22 @@ class PrecedentSearchRequest(BaseModel):
 
 class ClockRecalculateRequest(BaseModel):
     cause_date: str
+
+
+class SetCourtRequest(BaseModel):
+    court: str
+
+
+class SetDraftTypeRequest(BaseModel):
+    draft_type: Literal["legal_notice", "plaint", "plea_application"]
+
+
+class CitationCheckRequest(BaseModel):
+    citation: str
+
+
+class ToggleFlagRequest(BaseModel):
+    flag: Literal["senior_citizen", "interim_relief", "undertrial_custody"]
 
 
 class AccessLogEntry(BaseModel):

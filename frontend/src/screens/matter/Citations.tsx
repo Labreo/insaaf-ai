@@ -1,82 +1,105 @@
-import { motion } from 'motion/react'
 import { ShieldAlert, ShieldCheck } from 'lucide-react'
 import { api } from '@/lib/api'
-import { useDB } from '@/lib/store'
 import type { CitationHealth } from '@/lib/types'
-import { Chip, Empty, Glass, Label, Skeleton, SourceChip, Well, stagger, useAsync } from '@/components/primitives'
+import {
+  Badge,
+  Card,
+  Empty,
+  ErrorBanner,
+  Label,
+  Skeleton,
+  SourceChip,
+  Well,
+  type Tone,
+  useAsync,
+} from '@/components/primitives'
 import { cn } from '@/lib/utils'
 import type { TabProps } from '../Matter'
 
-const badge: Record<CitationHealth['badge'], { ring: string; tone: 'followed' | 'distinguished' | 'overruled'; label: string }> = {
-  green: { ring: 'bg-followed', tone: 'followed', label: 'good law' },
-  amber: { ring: 'bg-distinguished', tone: 'distinguished', label: 'distinguished / limited' },
-  red: { ring: 'bg-overruled', tone: 'overruled', label: 'overruled' },
+const badgeMap: Record<CitationHealth['badge'], { tone: Tone; label: string }> = {
+  green: { tone: 'ok', label: 'Good Law (Followed)' },
+  amber: { tone: 'warn', label: 'Distinguished / Limited' },
+  red: { tone: 'bad', label: 'Overruled' },
 }
 
-/** F7: every cited case checked against later judgments. Red blocks the draft until a senior overrides. */
+/** F7: downstream citation health check (blocks overruled authorities until senior overrides). */
 export default function Citations({ id, onOpen, onReview }: TabProps) {
-  const v = useDB((d) => JSON.stringify(d.stages[id]?.citations.map((c) => c.blocks_draft)))
-  const c = useAsync(() => api.citationHealth(id), [id, v])
-  if (c.loading) return <Skeleton className="h-64" />
-  if (!c.data?.length) return <Empty text="No judgments cited in this draft yet." />
+  const c = useAsync(() => api.citationHealth(id), [id])
+  if (c.loading && !c.data) return <Skeleton className="h-64" />
+  if (c.error) return <ErrorBanner error={c.error} onRetry={c.reload} />
+  if (!c.data?.length) return <Empty text="No cited authorities require downstream health review." />
 
   return (
     <div className="space-y-4">
-      <div className="border-b border-seam pb-3">
-        <p className="text-[13px] text-pewter">
-          Each cited authority is verified via downstream citing judgments (<code className="text-marble">citedby:</code>). Red-flagged citations block final sealing until a senior advocate records a reasoned override.
-        </p>
-      </div>
+      <Well className="text-[12.5px] text-ink-2">
+        Each cited decision is checked against subsequent citing judgments (<code className="font-mono text-ink">citedby:</code>). Overruled authorities block draft sealing until a Senior Advocate records a reasoned override.
+      </Well>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {c.data.map((it, i) => {
-          const b = badge[it.badge]
+        {c.data.map((it) => {
+          const b = badgeMap[it.badge]
           return (
-            <motion.div key={it.cited.source_id} {...stagger(i)}>
-              <Glass className={cn('flex h-full flex-col justify-between gap-3', it.badge === 'red' && it.blocks_draft && 'border-overruled/40')}>
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', b.ring)} />
-                      <Chip tone={b.tone}>{b.label}</Chip>
-                    </div>
-                    <span className="text-[11px] text-smoke">{it.cited.date}</span>
-                  </div>
-
-                  <div>
-                    <p className="serif text-[20px] leading-tight text-marble">{it.cited.title}</p>
-                    <p className="mt-0.5 text-[12px] text-smoke">{it.cited.court}</p>
-                  </div>
-
-                  {it.by && (
-                    <Well>
-                      <Label>{it.treatment} by later decision</Label>
-                      <p className="mt-1 text-[13px] font-medium text-marble">{it.by.title}</p>
-                      <p className="text-[11px] text-smoke">{it.by.court} · {it.by.date}</p>
-                      <div className="mt-2"><SourceChip s={it.by} onOpen={onOpen} /></div>
-                    </Well>
-                  )}
+            <Card
+              key={it.cited.source_id}
+              className={cn(
+                'flex h-full flex-col justify-between gap-3',
+                it.badge === 'red' && it.blocks_draft && 'border-bad-200 bg-bad-50/20',
+              )}
+            >
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <Badge tone={b.tone}>{b.label}</Badge>
+                  <span className="font-mono text-[11px] text-ink-3">{it.cited.date}</span>
                 </div>
 
-                {it.badge === 'red' && (
-                  <div className="flex items-center justify-between border-t border-seam/70 pt-2.5">
-                    {it.blocks_draft ? (
-                      <p className="flex items-center gap-1.5 text-[12px] text-overruled"><ShieldAlert size={13} /> Blocked from final draft</p>
-                    ) : (
-                      <p className="flex items-center gap-1.5 text-[12px] text-distinguished"><ShieldCheck size={13} /> Senior override on record</p>
-                    )}
-                    {it.blocks_draft && (
-                      <button
-                        onClick={() => onReview({ target: 'citation', target_id: it.cited.source_id, title: `Override block on ${it.cited.title.split(' v. ')[0]}` })}
-                        className="rounded-md border border-seam bg-graphite px-2.5 py-1 text-[11px] font-medium text-brass hover:border-brass/40"
-                      >
-                        override →
-                      </button>
-                    )}
-                  </div>
+                <div>
+                  <h3 className="serif text-[20px] leading-snug text-ink">{it.cited.title}</h3>
+                  <p className="mt-0.5 text-[12px] text-ink-3">{it.cited.court}</p>
+                </div>
+
+                {it.by && (
+                  <Well className="space-y-1">
+                    <Label>{it.treatment} by later judgment</Label>
+                    <p className="text-[13px] font-medium text-ink">{it.by.title}</p>
+                    <p className="text-[11px] text-ink-3">
+                      {it.by.court} · {it.by.date}
+                    </p>
+                    <div className="pt-1.5">
+                      <SourceChip s={it.by} onOpen={onOpen} />
+                    </div>
+                  </Well>
                 )}
-              </Glass>
-            </motion.div>
+              </div>
+
+              {it.badge === 'red' && (
+                <div className="flex items-center justify-between border-t border-line pt-2.5">
+                  {it.blocks_draft ? (
+                    <p className="flex items-center gap-1.5 text-[12px] font-medium text-bad">
+                      <ShieldAlert size={14} /> Blocks final draft sealing
+                    </p>
+                  ) : (
+                    <p className="flex items-center gap-1.5 text-[12px] font-medium text-warn">
+                      <ShieldCheck size={14} /> Senior override recorded
+                    </p>
+                  )}
+                  {it.blocks_draft && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onReview({
+                          target: 'citation',
+                          target_id: it.cited.source_id,
+                          title: `Override block on ${it.cited.title.split(' v. ')[0]}`,
+                        })
+                      }
+                      className="rounded-[4px] border border-line-strong bg-surface px-2.5 py-1 text-[11px] font-medium text-navy hover:bg-navy-50"
+                    >
+                      Senior Override →
+                    </button>
+                  )}
+                </div>
+              )}
+            </Card>
           )
         })}
       </div>

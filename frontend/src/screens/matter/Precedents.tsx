@@ -1,11 +1,17 @@
 import { useState } from 'react'
-import { motion } from 'motion/react'
 import { Search } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { Precedents as PrecedentsData } from '@/lib/types'
-import { Bar, Chip, Glass, Label, Skeleton, SourceChip, stagger, useAsync } from '@/components/primitives'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import {
+  Badge,
+  Bar,
+  Card,
+  ErrorBanner,
+  Label,
+  Skeleton,
+  SourceChip,
+  useAsync,
+} from '@/components/primitives'
 import { sfx } from '@/lib/sound'
 import type { TabProps } from '../Matter'
 
@@ -16,90 +22,129 @@ const QUICK_QUERIES = [
   'BNSS plea bargaining 290',
 ]
 
-/** F3: time-boxed Kanoon search. Supporting and adverse authorities side by side. */
+/** F3: time-boxed Indian Kanoon search (20 judgments within 8s). */
 export default function Precedents({ id, onOpen }: TabProps) {
   const p = useAsync(() => api.precedents(id), [id])
   const [liveData, setLiveData] = useState<PrecedentsData | null>(null)
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
 
   const runSearch = async (q?: string) => {
     const text = (q ?? query).trim()
     if (!text) return
     setQuery(text)
     setSearching(true)
+    setErr(null)
     sfx.tick()
-    const next = await api.searchPrecedents(id, text)
-    setLiveData(next)
-    setSearching(false)
-    sfx.accept()
+    try {
+      const next = await api.searchPrecedents(id, text)
+      setLiveData(next)
+      sfx.accept()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSearching(false)
+    }
   }
 
   const d = liveData ?? p.data
-  if (p.loading || !d) return <Skeleton className="h-72" />
+  if (p.loading && !d) return <Skeleton className="h-72" />
+  if (p.error && !d) return <ErrorBanner error={p.error} onRetry={p.reload} />
+  if (!d) return null
 
   return (
-    <div className="space-y-5">
-      <Glass className="space-y-3">
+    <div className="space-y-4">
+      {err && <ErrorBanner error={err} />}
+
+      <Card className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[18px] font-medium text-marble tabular-nums">
-              {d.searched} inspected <span className="text-smoke">of {d.total_matches.toLocaleString('en-IN')} Indian Kanoon matches</span>
+            <p className="tabular text-[16px] font-semibold text-ink">
+              {d.searched} judgments inspected{' '}
+              <span className="font-normal text-ink-3">
+                of {d.total_matches.toLocaleString('en-IN')} Indian Kanoon matches
+              </span>
             </p>
-            <p className="text-[12px] text-smoke">
-              Fetched in {(d.elapsed_ms / 1000).toFixed(1)}s within hard {(d.budget_ms / 1000).toFixed(0)}s budget · Supporting & adverse authorities retrieved simultaneously
+            <p className="text-[12px] text-ink-3">
+              Completed in {(d.elapsed_ms / 1000).toFixed(2)}s within {(d.budget_ms / 1000).toFixed(0)}s hard budget · Supporting &amp; adverse authorities retrieved together
             </p>
           </div>
-          {d.cached ? <Chip>cached</Chip> : <Chip tone="followed">live kanoon</Chip>}
+          <Badge tone={d.cached ? 'neutral' : 'ok'}>{d.cached ? 'Kanoon Cache' : 'Live Kanoon'}</Badge>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); runSearch() }} className="flex gap-2">
-          <Input
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            runSearch()
+          }}
+          className="flex gap-2"
+        >
+          <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Query Indian Kanoon live (8s budget)…"
-            className="glass-well h-10 flex-1 border border-seam text-[13px] text-marble placeholder:text-smoke"
+            className="field flex-1"
           />
-          <Button type="submit" disabled={searching || !query.trim()} className="h-10 rounded-md bg-brass px-4 text-[12px] font-medium uppercase tracking-[0.06em] text-void hover:bg-[#d6b676]">
-            <Search size={13} /> {searching ? '…' : 'Search'}
-          </Button>
+          <button
+            type="submit"
+            disabled={searching || !query.trim()}
+            className="inline-flex h-[34px] items-center gap-1.5 rounded-[5px] bg-navy px-4 text-[12px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
+          >
+            <Search size={13} /> {searching ? 'Searching…' : 'Search Kanoon'}
+          </button>
         </form>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-smoke mr-1">Presets:</span>
+          <span className="mr-1 text-[11px] text-ink-3">Quick queries:</span>
           {QUICK_QUERIES.map((q) => (
             <button
               key={q}
+              type="button"
               disabled={searching}
               onClick={() => runSearch(q)}
-              className="rounded-md border border-seam bg-graphite px-2.5 py-1 text-[11px] text-pewter transition-colors hover:border-brass/40 hover:text-marble"
+              className="rounded-[4px] border border-line bg-sunken px-2.5 py-1 text-[11px] text-ink-2 transition-colors hover:border-navy hover:text-navy"
             >
               {q}
             </button>
           ))}
         </div>
-      </Glass>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         {d.results.map((r, i) => (
-          <motion.div key={`${r.rank}-${r.sources[0]?.source_id ?? i}`} {...stagger(i)}>
-            <Glass className={r.stance === 'against' ? 'flex h-full flex-col justify-between border-overruled/30' : 'flex h-full flex-col justify-between border-followed/30'}>
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <Chip tone={r.stance === 'for' ? 'followed' : 'overruled'}>{r.stance === 'for' ? 'supports you' : 'against you'}</Chip>
-                  <span className="font-mono text-[11px] tabular-nums text-smoke">similarity {Math.round(r.similarity * 100)}%</span>
-                </div>
-                <p className="serif mt-2.5 text-[20px] leading-tight text-marble">{r.sources[0]?.title}</p>
-                <p className="mt-0.5 text-[12px] text-smoke">{r.sources[0]?.court} · {r.sources[0]?.date}</p>
-                <Label className="mt-3">Ratio / Match basis</Label>
-                <p className="mt-1 text-[13px] leading-snug text-pewter">{r.why_similar}</p>
-                <Bar value={r.similarity} tone={r.stance === 'for' ? 'followed' : 'overruled'} className="mt-3" />
+          <Card
+            key={`${r.rank}-${r.sources[0]?.source_id ?? i}`}
+            className={
+              r.stance === 'against'
+                ? 'flex h-full flex-col justify-between border-l-[3px] border-l-bad'
+                : 'flex h-full flex-col justify-between border-l-[3px] border-l-ok'
+            }
+          >
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <Badge tone={r.stance === 'for' ? 'ok' : 'bad'}>
+                  {r.stance === 'for' ? 'Supports Claimant' : 'Adverse Authority'}
+                </Badge>
+                <span className="tabular font-mono text-[11px] text-ink-3">
+                  Similarity {Math.round(r.similarity * 100)}%
+                </span>
               </div>
-              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-seam/70 pt-2.5">
-                {r.sources.map((s) => <SourceChip key={s.source_id} s={s} onOpen={onOpen} />)}
-              </div>
-            </Glass>
-          </motion.div>
+              <h3 className="serif mt-2.5 text-[20px] leading-snug text-ink">{r.sources[0]?.title}</h3>
+              <p className="mt-0.5 text-[12px] text-ink-3">
+                {r.sources[0]?.court || 'Court'} · {r.sources[0]?.date}
+              </p>
+              <Label className="mt-3">Ratio / Match Basis</Label>
+              <p className="mt-1 text-[13px] leading-snug text-ink-2">{r.why_similar}</p>
+              <Bar value={r.similarity} tone={r.stance === 'for' ? 'ok' : 'bad'} className="mt-3" />
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-2.5">
+              {r.sources.map((s) => (
+                <SourceChip key={s.source_id} s={s} onOpen={onOpen} />
+              ))}
+            </div>
+          </Card>
         ))}
       </div>
     </div>

@@ -67,6 +67,29 @@ insaaf-ai/
 | F13 🔴 | Disagreement → Retraining loop | ML + FE |
 | F14 🔵 | Law Change Radar (IPC → BNS etc.) | Legal + BE |
 
+## Evaluation & Calibration Benchmarks
+
+### Golden Eval Suite (`ml/eval/golden_results.json`)
+
+| Evaluation Axis | Result |
+|---|---|
+| Overall Golden Suite | **30 / 30 passed** |
+| Authority Lock (rejection & exact-span match) | `10 / 10` |
+| Citation Health & BNS/BNSS/BSA Transition Radar | `6 / 6` |
+| Statute Clock & COVID-19 Suo Motu Exclusion | `4 / 4` |
+| Bias Firewall (6-identity counterfactual flip) | `6 / 6` (`max_delta = 0.00`, threshold `ε = 0.02`) |
+| Score & Settle-or-Fight Eligibility Alignment | `4 / 4` |
+
+### Insaaf AI-B Score Held-Out Evaluation (`ml/training/artifacts/model_meta.json`)
+
+- **Held-out Split**: `38 / 50` unseen cases correct (**76.0% accuracy**), **Brier score `0.152`** (train `190` / test `50`, LightGBM benchmark `0.1371` Brier).
+- **Court-Aware Hierarchical Partial Pooling** ($\hat p_{\text{court}} = \frac{n \cdot \bar p_{\text{court}} + k \cdot \hat p_{\text{parent}}}{n + k}$, $k = 30$):
+  - `District Court, North Goa` ($n = 12$, local `0.41`) → pools with `Bombay High Court (Goa bench)` (`0.49`) → **`0.467`**
+  - `Commercial Court, Panaji` ($n = 19$, local `0.62`) → pools with `Bombay High Court (Goa bench)` (`0.54`) → **`0.571`**
+  - `Bombay High Court (Goa bench)` ($n = 84$, local `0.49`) → pools with `Supreme Court of India` (`0.50`) → **`0.493`**
+- **Empirical Calibration Bins (`prob_pred` → `prob_true`)**: `0.107 → 0.273`, `0.318 → 0.700`, `0.420 → 1.000`, `0.686 → 1.000`, `0.977 → 0.960`.
+- **Model Card Limitation**: *Reported judgments over-represent contested and appealed cases; calibrated on 190 train / 50 held-out cases.*
+
 ## Ground rules
 
 - Work in branches and open PRs into `main`. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
