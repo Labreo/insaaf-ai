@@ -34,6 +34,7 @@ from app.models.schemas import (
     AlertItem,
     BiasFirewall,
     BiasFirewallRow,
+    CitationCheckRequest,
     CitationHealth,
     ClockRecalculateRequest,
     CreateMatterRequest,
@@ -58,19 +59,26 @@ from app.models.schemas import (
     RetrainResponse,
     ReviewRequest,
     Score,
+    SetCourtRequest,
+    SetDraftTypeRequest,
     SetRoleRequest,
     StatuteClock,
+    ToggleFlagRequest,
     VerifyCitationRequest,
     VerifyCitationResponse,
 )
 from app.pipeline.orchestrator import (
     build_draft_docx_bytes,
+    check_matter_citation,
     compute_nyaya_queue,
     ensure_stage,
     recalculate_matter_clock,
     run_pipeline_stream,
     run_precedent_search,
     seed_fast_stage_results,
+    set_matter_court,
+    set_matter_draft_type,
+    toggle_matter_flag,
 )
 from app.rules_engine.engine import evaluate_law_changes
 from app.services.bhashini.client import bhashini_client
@@ -212,7 +220,7 @@ async def get_matter(
 
 @router.post("/matters/{matter_id}/documents", response_model=MatterDocument)
 async def upload_document(matter_id: str, file: UploadFile = File(...)) -> dict[str, Any]:
-    _get_matter_or_404(matter_id)
+    matter = _get_matter_or_404(matter_id)
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
     doc_id = f"doc_{uuid.uuid4().hex[:8]}"
     fname = file.filename or "upload.bin"
@@ -234,9 +242,9 @@ async def upload_document(matter_id: str, file: UploadFile = File(...)) -> dict[
         docx_doc = Document(str(save_path))
         extracted = "\n".join(p.text for p in docx_doc.paragraphs if p.text.strip())
         pages = 1
-    elif suffix in (".m4a", ".wav", ".mp3", ".ogg", ".json"):
+    elif suffix in (".m4a", ".wav", ".mp3", ".ogg", ".webm", ".json"):
         kind = "audio"
-        tr = await bhashini_client.translate_or_transcribe(file_path=save_path, source_lang="kok")
+        tr = await bhashini_client.translate_or_transcribe(file_path=save_path, source_lang=matter.get("client_language") or "kok")
         extracted = json.dumps(tr, ensure_ascii=False)
     else:
         kind = "text"
@@ -323,6 +331,24 @@ async def get_citations_health(matter_id: str) -> list[dict[str, Any]]:
     return await ensure_stage(matter_id, "citation_health")
 
 
+@router.post("/matters/{matter_id}/citations/check", response_model=list[CitationHealth])
+async def check_citations_endpoint(matter_id: str, body: CitationCheckRequest) -> list[dict[str, Any]]:
+    _get_matter_or_404(matter_id)
+    return await check_matter_citation(matter_id, body.citation)
+
+
+@router.post("/matters/{matter_id}/court", response_model=Score)
+async def set_court_endpoint(matter_id: str, body: SetCourtRequest) -> dict[str, Any]:
+    _get_matter_or_404(matter_id)
+    return await set_matter_court(matter_id, body.court)
+
+
+@router.post("/matters/{matter_id}/flags", response_model=list[QueueItem])
+async def toggle_flag_endpoint(matter_id: str, body: ToggleFlagRequest) -> list[dict[str, Any]]:
+    _get_matter_or_404(matter_id)
+    return await toggle_matter_flag(matter_id, body.flag)
+
+
 async def _refresh_score_and_firewall(matter_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
     matter = _get_matter_or_404(matter_id)
     facts = await ensure_stage(matter_id, "facts")
@@ -393,6 +419,12 @@ async def get_draft(
     actor, role = _actor_from_headers(x_actor, x_role)
     log_access(actor, role, matter_id, f"GET /matters/{matter_id}/draft")
     return await ensure_stage(matter_id, "draft")
+
+
+@router.post("/matters/{matter_id}/draft/type", response_model=Draft)
+async def set_draft_type_endpoint(matter_id: str, body: SetDraftTypeRequest) -> dict[str, Any]:
+    _get_matter_or_404(matter_id)
+    return await set_matter_draft_type(matter_id, body.draft_type)
 
 
 @router.post("/matters/{matter_id}/draft/verify-citation", response_model=VerifyCitationResponse)
@@ -559,10 +591,11 @@ async def reset_demo() -> dict[str, Any]:
     with db_session() as conn:
         conn.execute("DELETE FROM ledger_entries WHERE id NOT IN ('led_001', 'led_002')")
         conn.execute("UPDATE ledger_entries SET note = 'Client confirmed payment date' WHERE id = 'led_001'")
+        conn.execute("DELETE FROM documents WHERE id NOT IN ('doc_pdf_01', 'doc_docx_01', 'doc_voice_01', 'doc_docx_02', 'doc_docx_03')")
         conn.execute("DELETE FROM matters WHERE id NOT IN ('mat_001', 'mat_002', 'mat_003')")
-        conn.execute("UPDATE matters SET status = 'ready' WHERE id = 'mat_001'")
-        conn.execute("UPDATE matters SET status = 'in_review' WHERE id = 'mat_002'")
-        conn.execute("UPDATE matters SET status = 'draft' WHERE id = 'mat_003'")
+        conn.execute("UPDATE matters SET status = 'ready', next_deadline = '2026-12-24', days_left = 41, priority = 0.86 WHERE id = 'mat_001'")
+        conn.execute("UPDATE matters SET status = 'in_review', next_deadline = '2027-02-02', days_left = 81, priority = 0.64 WHERE id = 'mat_002'")
+        conn.execute("UPDATE matters SET status = 'draft', next_deadline = NULL, days_left = NULL, priority = 0.41 WHERE id = 'mat_003'")
         conn.execute("DELETE FROM stage_results")
     init_db()
     await kanoon_client.warm_landmark_cache()

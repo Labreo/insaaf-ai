@@ -127,14 +127,39 @@ def compute_bias_firewall_and_score(
     statute_clock: dict[str, Any],
     precedents: dict[str, Any],
     epsilon: float = 0.02,
+    court_override: str | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     bundle, meta = _ensure_model_loaded()
     model = bundle["model"]
     features_order = meta["features"]
     coeffs = meta["coefficients"]
-    court_name = statute_clock.get("forum", {}).get("court", "District Court, North Goa")
-    if "Mapusa" in court_name and matter["case_type"] == "property":
-        court_name = "District Court, North Goa"
+    court_name = court_override or statute_clock.get("forum", {}).get("court") or matter.get("forum_hint") or "District Court, North Goa"
+    hierarchy = meta.get("court_hierarchy", {})
+    if court_name not in hierarchy:
+        if "Commercial" in court_name or "Panaji" in court_name:
+            court_name = "Commercial Court, Panaji"
+        elif "High Court" in court_name or "Bombay" in court_name:
+            court_name = "Bombay High Court (Goa bench)"
+        elif "Magistrate" in court_name or "JMFC" in court_name:
+            court_name = "Judicial Magistrate First Class, Mapusa"
+        else:
+            court_name = "District Court, North Goa"
+
+    c_meta = hierarchy.get(
+        court_name,
+        {
+            "n_judgments": 12,
+            "local_rate": 0.41,
+            "pooled_from": "Bombay High Court (Goa bench)",
+            "parent_rate": 0.49,
+            "shrinkage_k": 30,
+        },
+    )
+    n_j = c_meta.get("n_judgments", 12)
+    k_sh = c_meta.get("shrinkage_k", 30)
+    p_local = c_meta.get("local_rate", 0.41)
+    p_parent = c_meta.get("parent_rate", 0.49)
+    pooled_rate = round((n_j * p_local + k_sh * p_parent) / (n_j + k_sh), 3)
 
     raw_text = " ".join(f.get("statement", "") for f in facts)
     rows: list[dict[str, Any]] = []
@@ -154,7 +179,8 @@ def compute_bias_firewall_and_score(
             masked_text=masked,
         )
         X = np.array([[feat_dict[f] for f in features_order]], dtype=float)
-        prob = round(float(model.predict_proba(X)[0, 1]), 2)
+        raw_prob = float(model.predict_proba(X)[0, 1]) + (pooled_rate - 0.48) * 0.65
+        prob = round(max(0.08, min(0.94, raw_prob)), 2)
         if baseline_prob is None:
             baseline_prob = prob
         delta = round(abs(prob - baseline_prob), 2)
@@ -193,6 +219,11 @@ def compute_bias_firewall_and_score(
             lbl = "Within limitation" if val >= 1.0 else "Limitation expired"
         factor_items.append({"name": lbl, "effect": contrib})
 
+    factor_items.append({
+        "name": f"Court baseline ({court_name})",
+        "effect": round((pooled_rate - 0.48) * 1.4, 2),
+    })
+
     p_score = baseline_prob or 0.5
     if not passed:
         band = "uncertain"
@@ -203,31 +234,25 @@ def compute_bias_firewall_and_score(
     else:
         band = "uncertain"
 
-    hierarchy = meta.get("court_hierarchy", {})
-    c_meta = hierarchy.get(
-        court_name,
-        {
-            "n_judgments": 12,
-            "pooled_from": "Bombay High Court (Goa bench)",
-            "shrinkage_k": 30,
-        },
-    )
-
     score_obj = {
         "band": band,
         "model_version": meta["version"],
         "factors": factor_items,
         "court_aware": {
             "court": court_name,
-            "n_judgments": c_meta["n_judgments"],
+            "n_judgments": n_j,
             "pooled_from": c_meta["pooled_from"],
-            "shrinkage_k": c_meta["shrinkage_k"],
+            "shrinkage_k": k_sh,
+            "local_rate": p_local,
+            "parent_rate": p_parent,
+            "pooled_rate": pooled_rate,
         },
         "eval": {
             "heldout_correct": meta["heldout_correct"],
             "heldout_total": meta["heldout_total"],
             "note": meta["limit_note"],
             "brier": meta["brier"],
+            "calibration": meta.get("calibration"),
         },
         "bias_firewall_passed": passed,
     }

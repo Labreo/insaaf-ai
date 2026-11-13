@@ -93,6 +93,22 @@ LANDMARK_DOCS = {
         "preferred_paras": ["p_1", "p_2"],
         "default_snippet": "Section 10: All agreements are contracts if they are made by the free consent of parties competent to contract, for a lawful consideration and with a lawful object, and are not hereby expressly declared to be void.",
     },
+    "1725400": {
+        "title": "ADM Jabalpur v. Shivkant Shukla",
+        "court": "Supreme Court of India",
+        "date": "1976-04-28",
+        "kind": "judgment",
+        "preferred_paras": ["p_1", "p_2"],
+        "default_snippet": "Majority holding suspending enforcement of Article 21 rights during Proclamation of Emergency — expressly overruled by the Nine-Judge Constitution Bench in Justice K.S. Puttaswamy (Retd.) v. Union of India (2017) 10 SCC 1.",
+    },
+    "91938676": {
+        "title": "Justice K.S. Puttaswamy (Retd.) v. Union of India",
+        "court": "Supreme Court of India",
+        "date": "2017-08-24",
+        "kind": "judgment",
+        "preferred_paras": ["p_139", "p_1", "p_2"],
+        "default_snippet": "The judgments rendered by all the four judges constituting the majority in ADM Jabalpur are seriously flawed. Life and personal liberty are inalienable to human existence. ADM Jabalpur v. Shivkant Shukla is expressly overruled.",
+    },
 }
 
 
