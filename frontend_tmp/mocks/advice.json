@@ -1,0 +1,46 @@
+{
+  "recommendation": "mediate",
+  "options": [
+    {
+      "route": "lok_adalat",
+      "eligible": true,
+      "why": "Award is final with no appeal; court fee refunded.",
+      "sources": [
+        {
+          "source_id": "src_lsa_act",
+          "kind": "statute",
+          "title": "Legal Services Authorities Act, 1987 — s.21",
+          "court": "",
+          "date": "1987-01-01",
+          "paragraph": "21",
+          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+        }
+      ]
+    },
+    {
+      "route": "pre_institution_mediation_12A",
+      "eligible": false,
+      "why": "Not a commercial dispute.",
+      "sources": [
+        {
+          "source_id": "src_patil",
+          "kind": "judgment",
+          "title": "Patil Automation Pvt. Ltd. v. Rakheja Engineers Pvt. Ltd.",
+          "court": "Supreme Court of India",
+          "date": "2022-08-17",
+          "paragraph": "—",
+          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+        }
+      ]
+    },
+    {
+      "route": "fight",
+      "eligible": true,
+      "why": "Weak band: title document missing.",
+      "sources": []
+    }
+  ],
+  "confidence": "medium"
+}

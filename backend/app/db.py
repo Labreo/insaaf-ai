@@ -305,6 +305,15 @@ def _seed_demo_data(conn: sqlite3.Connection) -> None:
             """,
             ("led_002", "senior_1", "senior", "mat_001", "override", "score", "score", "score_disagree", "Possession since 2009 underweighted", "2026-11-13T10:20:00Z", e2_hash, e1_hash),
         )
+        for actor, role, m_id, ep, ts in [
+            ("Adv. Dhanshri", "senior", "mat_001", "GET /matters/mat_001/draft", "2026-11-13T10:20:00Z"),
+            ("Adv. Kanak", "junior", "mat_002", "GET /matters/mat_002/statute-clock", "2026-11-13T10:35:00Z"),
+            ("R. Sawant", "clerk", "mat_003", "GET /matters/mat_003/facts", "2026-11-13T09:15:00Z"),
+        ]:
+            conn.execute(
+                "INSERT INTO access_logs (org_id, actor, role, matter_id, endpoint, at) VALUES ('org_chamber_a', ?, ?, ?, ?, ?)",
+                (actor, role, m_id, ep, ts),
+            )
 
 
 def save_stage_result(matter_id: str, stage: str, payload: Any, elapsed_ms: int = 0, db_path: Path | None = None) -> None:

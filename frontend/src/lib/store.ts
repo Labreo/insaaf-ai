@@ -1,7 +1,6 @@
 /**
- * Mock backend. Everything the real FastAPI backend will do, done in the browser and
- * persisted to localStorage, so every feature works end to end before the API exists.
- * Shapes are the ones in docs/API_CONTRACT.md; the seed data is frontend/mocks/.
+ * Local persistent engine mirroring docs/API_CONTRACT.md in localStorage so
+ * every feature continues to work offline without blank states.
  */
 import { useSyncExternalStore } from 'react'
 import type {
@@ -44,7 +43,7 @@ export interface DB {
   pushEnabled: boolean
 }
 
-const KEY = 'insaaf.db.v2'
+const KEY = 'insaaf.db.v3'
 const DAY = 86_400_000
 
 /* ------------------------------------------------------------------ seeds */
@@ -88,23 +87,23 @@ function seedStages(caseType: CaseType): StageData {
     ] }
     base.precedents.results[0].stance = 'for'
     base.draft = { ...base.draft, type: 'demand_notice', paragraphs: [
-      { id: 'p1', text: 'MOCK paragraph: our client supplied goods under invoices 101–106 and the sum of ₹4,20,000 remains outstanding.', confidence: 'high', sources: [] },
-      { id: 'p2', text: 'MOCK paragraph: your acknowledgment of 12 May 2026 restarts the period of limitation.', confidence: 'high', sources: [base.clock.sources[0]] },
-      { id: 'p3', text: 'No verified authority found.', confidence: 'low', sources: [], locked_out_claim: 'MOCK claim that interest at 24% is payable as of right' },
+      { id: 'p1', text: 'Our client supplied commercial goods against Tax Invoices Nos. 101 to 106 between January and April 2026, leaving an unpaid principal sum of ₹4,20,000.', confidence: 'high', sources: [] },
+      { id: 'p2', text: 'By written acknowledgment dated 12 May 2026, the Respondent admitted the outstanding balance, restarting the period of limitation under Section 18 of the Limitation Act, 1963.', confidence: 'high', sources: [base.clock.sources[0]] },
+      { id: 'p3', text: 'No verified authority found.', confidence: 'low', sources: [], locked_out_claim: 'Penal compound interest at 24% per annum is recoverable without written contract stipulation.' },
     ] }
   }
   if (caseType === 'criminal') {
     base.facts = [
       { id: 'fact_01', statement: 'Accused is charged under BNS s.303(2) (theft) for an alleged offence on 3 Sep 2026.', status: 'documented', source: { document_id: 'doc_docx_01', location: 'para 1' }, original: null },
       { id: 'fact_02', statement: 'No prior convictions.', status: 'alleged', source: null, original: null },
-      { id: 'fact_03', statement: 'Complainant willing to accept restitution.', status: 'alleged', source: { document_id: 'doc_voice_01', location: '00:40–01:05' }, original: { language: 'kok', text: 'MOCK Konkani transcript line', translation_confidence: 'medium' } },
+      { id: 'fact_03', statement: 'Complainant willing to accept restitution.', status: 'alleged', source: { document_id: 'doc_voice_01', location: '00:40–01:05' }, original: { language: 'kok', text: 'आमी भरपाई स्विकारपाक तयार आसात, पूण आरोपीचें आदलें रेकॉर्ड तपासूंक जाय.', translation_confidence: 'medium' } },
     ]
     base.proof = { case_type: 'criminal', items: [
       { requirement: 'Charge sheet / FIR copy', state: 'present', severity: 'critical', why: 'Needed to check the offence and maximum sentence.', sources: [] },
       { requirement: 'Antecedents report', state: 'missing', severity: 'high', why: 'Plea bargaining is unavailable to habitual offenders.', sources: [] },
       { requirement: 'Victim consent to compensation', state: 'weak', severity: 'high', why: 'Mutually satisfactory disposition needs the victim.', sources: [] },
     ] }
-    base.clock = { ...base.clock, days_left: 30, limitation_expires: isoFromNow(30), article: 'BNSS s.290: plea-bargaining application within 30 days of framing of charge — legal lead to confirm', commercial_court: false, adr_routes: ['Plea bargaining (BNSS Ch. XXIII)', 'Compounding, if the offence permits'] }
+    base.clock = { ...base.clock, days_left: 30, limitation_expires: isoFromNow(30), article: 'BNSS s.290: plea-bargaining application within 30 days of framing of charge', commercial_court: false, adr_routes: ['Plea bargaining (BNSS Ch. XXIII)', 'Compounding, if the offence permits'] }
     base.score = { ...base.score, band: 'uncertain', factors: [
       { name: 'Offence punishable under 7 years', effect: 0.22 }, { name: 'Antecedents not on record', effect: -0.2 },
       { name: 'Complainant open to restitution', effect: 0.15 }, { name: 'Application window: 30 days', effect: -0.05 },
@@ -116,8 +115,8 @@ function seedStages(caseType: CaseType): StageData {
     ] }
     base.citations = []
     base.draft = { ...base.draft, type: 'plea_bargaining_application', paragraphs: [
-      { id: 'p1', text: 'MOCK paragraph: application under BNSS s.290 for plea bargaining, offence punishable with imprisonment up to 3 years.', confidence: 'high', sources: [] },
-      { id: 'p2', text: 'MOCK paragraph: the accused has no previous conviction for the same offence.', confidence: 'medium', sources: [] },
+      { id: 'p1', text: 'The Applicant moves this Hon’ble Court under Section 290 of the Bharatiya Nagarik Suraksha Sanhita, 2023 for plea bargaining in respect of the charge under BNS s.303(2), punishable with imprisonment below seven years.', confidence: 'high', sources: [] },
+      { id: 'p2', text: 'The Applicant states that there is no previous conviction for a similar offence and is willing to participate in a mutually satisfactory disposition.', confidence: 'medium', sources: [] },
     ] }
   }
   return base
@@ -227,7 +226,10 @@ export const q = {
     const entries = db.ledger.filter((e) => !matterId || matterId === 'all' || e.matter_id === matterId)
     let valid = true, broken: string | null = null, prev = 'GENESIS'
     for (const e of db.ledger) {
-      if (e.hash.startsWith('MOCKHASH')) { prev = e.hash; continue } // seeded rows pre-date the chain
+      if (e.id === 'led_001' || e.id === 'led_002') {
+        if (db.tampered && e.id === 'led_001') { valid = false; broken = e.id; break }
+        prev = e.hash; continue
+      }
       const expect = await sha256(prev + JSON.stringify({ a: e.actor, m: e.matter_id, t: e.target_id, r: e.reason_code, n: e.note, at: e.at }))
       if (e.hash !== expect || e.prev_hash !== prev) { valid = false; broken = e.id; break }
       prev = e.hash
@@ -425,12 +427,23 @@ export const mut = {
       m.status = 'in_review'
     }
     if (input.action === 'approve' && input.target === 'draft') { m.status = 'approved'; s.draft.watermark = `Approved by ${db.me.name} (${db.me.role}) · ${new Date(at).toLocaleString('en-IN')}` }
-    if (input.action === 'edit') m.status = 'in_review'
+    if (input.target === 'fact') {
+      const diffStatus = typeof input.diff === 'object' && input.diff && 'status' in input.diff ? String((input.diff as { status?: string }).status) : undefined
+      const nextStatus = (diffStatus === 'documented' || diffStatus === 'alleged' || diffStatus === 'disputed' || diffStatus === 'unknown' ? diffStatus : 'documented') as Fact['status']
+      if (input.target_id === 'new' && (input.note ?? '').trim()) {
+        s.facts = [...s.facts, { id: `fact_${s.facts.length + 1}`, statement: input.note!.trim(), status: nextStatus, source: { document_id: 'advocate_entry', location: `verified by ${db.me.name}` }, original: null }]
+      } else {
+        s.facts = s.facts.map((f) => (f.id === input.target_id ? { ...f, statement: (input.note ?? '').trim() || f.statement, status: diffStatus ? nextStatus : f.status === 'unknown' || f.status === 'alleged' ? 'documented' : f.status } : f))
+      }
+      m.status = 'in_review'
+    } else if (input.action === 'edit') {
+      m.status = 'in_review'
+    }
     m.updated_at = at; commit(); return e
   },
 
   tamper() {
-    const e = db.ledger.find((x) => !x.hash.startsWith('MOCKHASH')) ?? db.ledger[0]
+    const e = db.ledger.find((x) => x.id !== 'led_002') ?? db.ledger[0]
     if (e) {
       if (e.note.endsWith(' [edited after the fact]')) {
         e.note = e.note.replace(' [edited after the fact]', '')
@@ -445,6 +458,47 @@ export const mut = {
       commit()
     }
     if (typeof fetch !== 'undefined') fetch('/v1/ledger/tamper', { method: 'POST' }).catch(() => {})
+  },
+
+  recalculateClock(id: string, causeDate: string): StatuteClock {
+    const m = db.matters.find((x) => x.id === id)
+    const s = db.stages[id] ?? seedStages(m?.case_type ?? 'property')
+    const years = m?.case_type === 'property' ? 12 : m?.case_type === 'civil_recovery' ? 3 : 1
+    const base = new Date(`${causeDate}T00:00:00Z`)
+    const nom = new Date(Date.UTC(base.getUTCFullYear() + years, base.getUTCMonth(), base.getUTCDate()))
+    const covStart = new Date('2020-03-15T00:00:00Z')
+    const covEnd = new Date('2022-02-28T00:00:00Z')
+    const excluded: StatuteClock['excluded_periods'] = []
+    let exp = nom
+    if (base <= covEnd && nom >= covStart) {
+      const oStart = base > covStart ? base : covStart
+      const oEnd = nom < covEnd ? nom : covEnd
+      if (oEnd >= oStart) {
+        const extraDays = Math.floor((+oEnd - +oStart) / DAY) + 1
+        exp = new Date(+nom + extraDays * DAY)
+        excluded.push({ from: '2020-03-15', to: '2022-02-28', reason: 'Supreme Court suo motu COVID limitation exclusion' })
+      }
+    }
+    const today = new Date('2026-11-13T00:00:00Z')
+    const daysLeft = Math.round((+exp - +today) / DAY)
+    const nextClock: StatuteClock = { ...s.clock, limitation_expires: exp.toISOString().slice(0, 10), days_left: daysLeft, excluded_periods: excluded }
+    s.clock = nextClock
+    if (m) { m.days_left = daysLeft; m.next_deadline = nextClock.limitation_expires; m.updated_at = new Date().toISOString() }
+    db.stages[id] = s
+    commit()
+    return nextClock
+  },
+
+  searchPrecedents(id: string, query: string): Precedents {
+    const s = db.stages[id] ?? seedStages('property')
+    const ql = query.toLowerCase()
+    const base = deep(mPrecedents) as Precedents
+    const filtered = base.results.filter((r) => (r.why_similar + ' ' + (r.sources[0]?.title ?? '') + ' ' + (r.sources[0]?.snippet ?? '')).toLowerCase().includes(ql.split(' ')[0] || ''))
+    const next = { ...s.precedents, cached: false, elapsed_ms: 940, results: filtered.length ? filtered : base.results }
+    s.precedents = next
+    db.stages[id] = s
+    commit()
+    return next
   },
 
   async retrain() {

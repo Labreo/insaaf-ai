@@ -1,5 +1,5 @@
 {
-  "version": "b-score-0.1",
+  "version": "b-score-0.5",
   "features": [
     "registered_deed_present",
     "stamp_duty_paid",
@@ -21,38 +21,38 @@
     "court_prior_rate": "Court-level baseline"
   },
   "coefficients": {
-    "registered_deed_present": 2.6845,
-    "stamp_duty_paid": 0.8018,
-    "possession_evidence": 0.7133,
-    "revenue_record_form_1_14": 0.3463,
-    "payment_trail": 0.2919,
-    "within_limitation": 1.0027,
-    "precedent_support_ratio": 0.9506,
-    "court_prior_rate": -0.0834
+    "registered_deed_present": 2.6752,
+    "stamp_duty_paid": 0.8033,
+    "possession_evidence": 0.7171,
+    "revenue_record_form_1_14": 0.3508,
+    "payment_trail": 0.2842,
+    "within_limitation": 1.0042,
+    "precedent_support_ratio": 0.9659,
+    "court_prior_rate": -0.088
   },
-  "intercept": -3.0048,
+  "intercept": -3.0055,
   "heldout_correct": 38,
   "heldout_total": 50,
   "accuracy": 0.76,
-  "brier": 0.1527,
+  "brier": 0.152,
   "lgbm_benchmark": {
-    "accuracy": 0.78,
-    "brier": 0.1333
+    "accuracy": 0.76,
+    "brier": 0.1371
   },
   "calibration": {
     "prob_true": [
-      0.2222,
-      0.6667,
+      0.2727,
+      0.7,
       1.0,
       1.0,
       0.96
     ],
     "prob_pred": [
-      0.0756,
-      0.3019,
-      0.5128,
-      0.7366,
-      0.9778
+      0.1067,
+      0.3182,
+      0.4201,
+      0.686,
+      0.9772
     ]
   },
   "court_hierarchy": {

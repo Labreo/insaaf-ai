@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,16 +23,19 @@ from app.ledger.chain import (
     verify_ledger_chain,
 )
 from app.ml.service import (
+    compute_bias_firewall_and_score,
     get_current_model_version,
     retrain_from_overrides,
     run_single_identity_flip,
 )
 from app.models.schemas import (
+    AccessLogEntry,
     Advice,
     AlertItem,
     BiasFirewall,
     BiasFirewallRow,
     CitationHealth,
+    ClockRecalculateRequest,
     CreateMatterRequest,
     DeepHealthResponse,
     Draft,
@@ -47,6 +51,7 @@ from app.models.schemas import (
     MeResponse,
     ModelInfoResponse,
     PipelineRunResponse,
+    PrecedentSearchRequest,
     Precedents,
     ProofLedgerResponse,
     QueueItem,
@@ -62,7 +67,10 @@ from app.pipeline.orchestrator import (
     build_draft_docx_bytes,
     compute_nyaya_queue,
     ensure_stage,
+    recalculate_matter_clock,
     run_pipeline_stream,
+    run_precedent_search,
+    seed_fast_stage_results,
 )
 from app.rules_engine.engine import evaluate_law_changes
 from app.services.bhashini.client import bhashini_client
@@ -291,10 +299,22 @@ async def get_statute_clock(matter_id: str) -> dict[str, Any]:
     return await ensure_stage(matter_id, "statute_clock")
 
 
+@router.post("/matters/{matter_id}/statute-clock/recalculate", response_model=StatuteClock)
+async def recalculate_statute_clock_endpoint(matter_id: str, body: ClockRecalculateRequest) -> dict[str, Any]:
+    _get_matter_or_404(matter_id)
+    return await recalculate_matter_clock(matter_id, body.cause_date)
+
+
 @router.get("/matters/{matter_id}/precedents", response_model=Precedents)
 async def get_precedents(matter_id: str) -> dict[str, Any]:
     _get_matter_or_404(matter_id)
     return await ensure_stage(matter_id, "search")
+
+
+@router.post("/matters/{matter_id}/precedents/search", response_model=Precedents)
+async def search_precedents_endpoint(matter_id: str, body: PrecedentSearchRequest) -> dict[str, Any]:
+    _get_matter_or_404(matter_id)
+    return await run_precedent_search(matter_id, body.query)
 
 
 @router.get("/matters/{matter_id}/citations/health", response_model=list[CitationHealth])
@@ -303,16 +323,38 @@ async def get_citations_health(matter_id: str) -> list[dict[str, Any]]:
     return await ensure_stage(matter_id, "citation_health")
 
 
+async def _refresh_score_and_firewall(matter_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    matter = _get_matter_or_404(matter_id)
+    facts = await ensure_stage(matter_id, "facts")
+    proof = await ensure_stage(matter_id, "proof_ledger")
+    clock = await ensure_stage(matter_id, "statute_clock")
+    precs = await ensure_stage(matter_id, "search")
+    existing_score = get_stage_result(matter_id, "score")
+    firewall, score_obj = compute_bias_firewall_and_score(
+        matter=matter,
+        facts=facts,
+        proof_ledger=proof,
+        statute_clock=clock,
+        precedents=precs,
+    )
+    if existing_score and existing_score.get("overridden_band"):
+        score_obj["band"] = existing_score["overridden_band"]
+        score_obj["overridden_band"] = existing_score["overridden_band"]
+    save_stage_result(matter_id, "bias_firewall", firewall)
+    save_stage_result(matter_id, "score", score_obj)
+    return firewall, score_obj
+
+
 @router.get("/matters/{matter_id}/score", response_model=Score)
 async def get_score(matter_id: str) -> dict[str, Any]:
-    _get_matter_or_404(matter_id)
-    return await ensure_stage(matter_id, "score")
+    _, score_obj = await _refresh_score_and_firewall(matter_id)
+    return score_obj
 
 
 @router.get("/matters/{matter_id}/bias-firewall", response_model=BiasFirewall)
 async def get_bias_firewall(matter_id: str) -> dict[str, Any]:
-    _get_matter_or_404(matter_id)
-    return await ensure_stage(matter_id, "bias_firewall")
+    firewall, _ = await _refresh_score_and_firewall(matter_id)
+    return firewall
 
 
 @router.post("/matters/{matter_id}/bias-firewall/flip", response_model=BiasFirewallRow)
@@ -342,8 +384,14 @@ async def get_advice(matter_id: str) -> dict[str, Any]:
 
 
 @router.get("/matters/{matter_id}/draft", response_model=Draft)
-async def get_draft(matter_id: str) -> dict[str, Any]:
+async def get_draft(
+    matter_id: str,
+    x_actor: Optional[str] = Header(default="junior_1"),
+    x_role: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
     _get_matter_or_404(matter_id)
+    actor, role = _actor_from_headers(x_actor, x_role)
+    log_access(actor, role, matter_id, f"GET /matters/{matter_id}/draft")
     return await ensure_stage(matter_id, "draft")
 
 
@@ -411,6 +459,31 @@ async def create_review(
         note=body.note or "",
         diff={"text": body.diff} if isinstance(body.diff, str) else body.diff,
     )
+    if body.action in ("override", "edit") and body.target == "fact":
+        facts = await ensure_stage(matter_id, "facts")
+        diff_status = body.diff.get("status") if isinstance(body.diff, dict) else None
+        if body.target_id == "new" and (body.note or "").strip():
+            facts.append(
+                {
+                    "id": f"fact_{len(facts) + 1:02d}",
+                    "statement": body.note.strip(),
+                    "status": diff_status if diff_status in ("documented", "alleged", "disputed", "unknown") else "documented",
+                    "source": {"document_id": "advocate_entry", "location": f"verified by {actor}"},
+                    "original": None,
+                }
+            )
+        else:
+            for item in facts:
+                if item.get("id") == body.target_id:
+                    if (body.note or "").strip():
+                        item["statement"] = body.note.strip()
+                    if diff_status in ("documented", "alleged", "disputed", "unknown"):
+                        item["status"] = diff_status
+                    elif item.get("status") in ("unknown", "alleged"):
+                        item["status"] = "documented"
+                    break
+        save_stage_result(matter_id, "facts", facts)
+
     if body.action == "override":
         if body.target == "citation":
             c_health = await ensure_stage(matter_id, "citation_health")
@@ -492,7 +565,18 @@ async def reset_demo() -> dict[str, Any]:
         conn.execute("UPDATE matters SET status = 'draft' WHERE id = 'mat_003'")
         conn.execute("DELETE FROM stage_results")
     init_db()
+    await kanoon_client.warm_landmark_cache()
+    await seed_fast_stage_results()
     return {"reset": True}
+
+
+@router.get("/access-logs", response_model=list[AccessLogEntry])
+async def get_access_logs() -> list[dict[str, Any]]:
+    with db_session() as conn:
+        rows = conn.execute(
+            "SELECT id, actor, role, matter_id, endpoint, at FROM access_logs ORDER BY id DESC LIMIT 12"
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 @router.get("/ml/model", response_model=ModelInfoResponse)
@@ -577,6 +661,34 @@ async def get_law_changes(matter_id: str) -> list[dict[str, Any]]:
     return await ensure_stage(matter_id, "law_changes")
 
 
+_HEALTH_PING_CACHE: dict[str, Any] = {
+    "ts": 0.0,
+    "running": False,
+    "kanoon": "ok",
+    "llm": "ok",
+    "bhashini": "ok",
+}
+
+
+async def _refresh_external_pings() -> None:
+    if _HEALTH_PING_CACHE["running"]:
+        return
+    _HEALTH_PING_CACHE["running"] = True
+    try:
+        k, l, b = await asyncio.gather(
+            kanoon_client.ping(),
+            llm_client.ping(),
+            bhashini_client.ping(),
+            return_exceptions=True,
+        )
+        _HEALTH_PING_CACHE["kanoon"] = k if isinstance(k, str) else "degraded"
+        _HEALTH_PING_CACHE["llm"] = l if isinstance(l, str) else "degraded"
+        _HEALTH_PING_CACHE["bhashini"] = b if isinstance(b, str) else "degraded"
+        _HEALTH_PING_CACHE["ts"] = time.time()
+    finally:
+        _HEALTH_PING_CACHE["running"] = False
+
+
 @router.get("/health/deep", response_model=DeepHealthResponse)
 async def deep_health() -> dict[str, Any]:
     try:
@@ -586,15 +698,13 @@ async def deep_health() -> dict[str, Any]:
     except Exception:
         db_status = "down"
 
-    kanoon_status, llm_status, bhashini_status = await asyncio.gather(
-        kanoon_client.ping(),
-        llm_client.ping(),
-        bhashini_client.ping(),
-    )
+    if time.time() - float(_HEALTH_PING_CACHE["ts"]) > 120.0 and not _HEALTH_PING_CACHE["running"]:
+        asyncio.create_task(_refresh_external_pings())
+
     return {
-        "kanoon": kanoon_status,
-        "llm": llm_status,
-        "bhashini": bhashini_status,
+        "kanoon": _HEALTH_PING_CACHE["kanoon"],
+        "llm": _HEALTH_PING_CACHE["llm"],
+        "bhashini": _HEALTH_PING_CACHE["bhashini"],
         "db": db_status,
         "model_version": get_current_model_version(),
         "cache_hit_rate": get_cache_hit_rate(),

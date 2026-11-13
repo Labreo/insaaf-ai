@@ -1,0 +1,45 @@
+{
+  "budget_ms": 8000,
+  "elapsed_ms": 7400,
+  "searched": 20,
+  "total_matches": 4312,
+  "cached": true,
+  "results": [
+    {
+      "rank": 1,
+      "stance": "against",
+      "similarity": 0.81,
+      "why_similar": "Unregistered agreement + POA relied on for title",
+      "sources": [
+        {
+          "source_id": "src_suraj_lamp",
+          "kind": "judgment",
+          "title": "Suraj Lamp & Industries v. State of Haryana",
+          "court": "Supreme Court of India",
+          "date": "2011-10-11",
+          "paragraph": "—",
+          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "stance": "for",
+      "similarity": 0.74,
+      "why_similar": "Long possession protected pending suit",
+      "sources": [
+        {
+          "source_id": "src_mock_for",
+          "kind": "judgment",
+          "title": "MOCK supporting judgment — replace",
+          "court": "Bombay High Court (Goa bench)",
+          "date": "2019-01-01",
+          "paragraph": "—",
+          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+        }
+      ]
+    }
+  ]
+}

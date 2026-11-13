@@ -5,24 +5,24 @@
   "paragraphs": [
     {
       "id": "p1",
-      "text": "MOCK paragraph stating the client's possession.",
+      "text": "Our client, Mrs. Maria Fernandes, has remained in continuous, settled possession of Plot Survey No. 44/2, Sub-Division 3, Mapusa, North Goa since February 2009 pursuant to an Agreement of Sale and General Power of Attorney.",
       "confidence": "high",
       "sources": []
     },
     {
       "id": "p2",
-      "text": "MOCK paragraph citing title requirements.",
+      "text": "Under Suraj Lamp & Industries v. State of Haryana, an unregistered agreement of sale or general power of attorney does not convey title by itself; however, possession and consideration paid entitle our client to seek execution of a registered conveyance and protection pending adjudication.",
       "confidence": "high",
       "sources": [
         {
-          "source_id": "src_suraj_lamp",
+          "source_id": "src_kanoon_1565619",
           "kind": "judgment",
           "title": "Suraj Lamp & Industries v. State of Haryana",
           "court": "Supreme Court of India",
           "date": "2011-10-11",
-          "paragraph": "—",
-          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+          "paragraph": "15",
+          "snippet": "Immovable property can be legally and lawfully transferred/conveyed only by a registered deed of conveyance. Transactions of the nature of 'GPA sales' or 'SA/GPA/WILL transfers' do not convey title.",
+          "url": "https://indiankanoon.org/doc/1565619/"
         }
       ]
     },
@@ -31,7 +31,7 @@
       "text": "No verified authority found.",
       "confidence": "low",
       "sources": [],
-      "locked_out_claim": "MOCK unsupported claim the model tried to make"
+      "locked_out_claim": "Continuous possession since 2009 under an unregistered GPA automatically confers absolute ownership title."
     }
   ]
 }

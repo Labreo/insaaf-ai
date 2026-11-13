@@ -12,14 +12,14 @@
       "why_similar": "Unregistered agreement + POA relied on for title",
       "sources": [
         {
-          "source_id": "src_suraj_lamp",
+          "source_id": "src_kanoon_1565619",
           "kind": "judgment",
           "title": "Suraj Lamp & Industries v. State of Haryana",
           "court": "Supreme Court of India",
           "date": "2011-10-11",
-          "paragraph": "—",
-          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+          "paragraph": "15",
+          "snippet": "Immovable property can be legally and lawfully transferred/conveyed only by a registered deed of conveyance. Transactions of the nature of 'GPA sales' or 'SA/GPA/WILL transfers' do not convey title.",
+          "url": "https://indiankanoon.org/doc/1565619/"
         }
       ]
     },
@@ -30,14 +30,14 @@
       "why_similar": "Long possession protected pending suit",
       "sources": [
         {
-          "source_id": "src_mock_for",
+          "source_id": "src_kanoon_72595235",
           "kind": "judgment",
-          "title": "MOCK supporting judgment — replace",
-          "court": "Bombay High Court (Goa bench)",
-          "date": "2019-01-01",
-          "paragraph": "—",
-          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+          "title": "Hardip Kaur v. Kailash & Anr.",
+          "court": "Delhi High Court",
+          "date": "2012-05-18",
+          "paragraph": "68",
+          "snippet": "A Power of Attorney given for consideration coupled with interest is irrevocable under Section 202 of the Contract Act, 1872 and protects possession pending formal conveyance.",
+          "url": "https://indiankanoon.org/doc/72595235/"
         }
       ]
     }

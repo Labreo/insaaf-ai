@@ -7,14 +7,14 @@
       "why": "Award is final with no appeal; court fee refunded.",
       "sources": [
         {
-          "source_id": "src_lsa_act",
+          "source_id": "src_kanoon_139325262",
           "kind": "statute",
           "title": "Legal Services Authorities Act, 1987 — s.21",
           "court": "",
           "date": "1987-01-01",
           "paragraph": "21",
-          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+          "snippet": "Section 21: Every award of the Lok Adalat shall be deemed to be a decree of a civil court and shall be final and binding, with no appeal.",
+          "url": "https://indiankanoon.org/doc/139325262/"
         }
       ]
     },
@@ -24,14 +24,14 @@
       "why": "Not a commercial dispute.",
       "sources": [
         {
-          "source_id": "src_patil",
+          "source_id": "src_kanoon_164693074",
           "kind": "judgment",
           "title": "Patil Automation Pvt. Ltd. v. Rakheja Engineers Pvt. Ltd.",
           "court": "Supreme Court of India",
           "date": "2022-08-17",
-          "paragraph": "—",
-          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+          "paragraph": "92",
+          "snippet": "Section 12A of the Commercial Courts Act, 2015 is mandatory and a commercial suit instituted without exhausting pre-institution mediation must be rejected under Order VII Rule 11 CPC.",
+          "url": "https://indiankanoon.org/doc/164693074/"
         }
       ]
     },

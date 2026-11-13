@@ -1,7 +1,7 @@
 {
   "limitation_expires": "2026-12-24",
   "days_left": 41,
-  "article": "MOCK — legal lead to fill the correct Limitation Act article",
+  "article": "Limitation Act, 1963 — Schedule, Art. 65 (12 yrs adverse possession / title)",
   "excluded_periods": [
     {
       "from": "2020-03-15",
@@ -10,7 +10,7 @@
     }
   ],
   "forum": {
-    "court": "Civil Judge Senior Division, Mapusa (MOCK — check pecuniary limits)",
+    "court": "Civil Judge Senior Division, Mapusa",
     "basis": "territorial + pecuniary"
   },
   "commercial_court": false,
@@ -20,14 +20,14 @@
   ],
   "sources": [
     {
-      "source_id": "src_lim_act",
+      "source_id": "src_kanoon_1317393",
       "kind": "statute",
       "title": "Limitation Act, 1963 — Schedule",
       "court": "",
       "date": "1963-01-01",
-      "paragraph": "—",
-      "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-      "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+      "paragraph": "Art. 65",
+      "snippet": "Schedule Art. 65: For possession of immovable property or any interest therein based on title — Twelve years from when the possession of the defendant becomes adverse to the plaintiff.",
+      "url": "https://indiankanoon.org/doc/1317393/"
     }
   ]
 }

@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { FileText, FileUp, Mic, Square, Trash2, Upload } from 'lucide-react'
+import { FileText, FileUp, Mic, PenLine, Sparkles, Square, Trash2, Upload } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { CaseType, Matter, MatterDocument } from '@/lib/types'
 import { Chip, Glass, Label, Title, Well, ease } from '@/components/primitives'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { ShimmerButton } from '@/components/magicui/shimmer-button'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
@@ -18,7 +19,42 @@ const types: { k: CaseType; label: string; hint: string }[] = [
 ]
 const langs: { k: NonNullable<Matter['client_language']>; label: string }[] = [{ k: 'en', label: 'English' }, { k: 'kok', label: 'कोंकणी' }, { k: 'mr', label: 'मराठी' }, { k: 'hi', label: 'हिन्दी' }]
 
-/** F4 intake: real file picking + in-browser voice recording, then the pipeline runs. */
+const SAMPLES: Record<CaseType, { filename: string; label: string; content: string }[]> = {
+  property: [
+    {
+      filename: 'agreement_of_sale_gpa.txt',
+      label: 'Sale Agreement + GPA',
+      content: 'AGREEMENT OF SALE AND GENERAL POWER OF ATTORNEY executed on 2009-02-14 at Mapusa, Goa between Shri Naik (bhatkar representative) and Smt. Maria Fernandes regarding Survey No. 44/2, Sub-Division 3. Unregistered notarised instrument; Stamp duty paid at Rs. 100. Buyer has paid Rs. 8,50,000 in instalments (receipt for final payment pending); Form I & XIV still stands in opposite party name.',
+    },
+    {
+      filename: 'client_voice_transcript_kok.json',
+      label: 'Konkani client note',
+      content: JSON.stringify({
+        language: 'kok',
+        duration_range: '00:12–00:24',
+        original_text: 'हांव २००९ सावन ह्या जमनीर रावतां. म्हाका मुखत्यारपत्र आनी करार दिलो, पूण रजिस्टर विक्री खत जावंक ना.',
+        english_translation: 'I have lived on this plot since 2009. I was given a power of attorney and agreement, but no registered sale deed was executed.',
+        translation_confidence: 'medium',
+      }),
+    },
+  ],
+  civil_recovery: [
+    {
+      filename: 'shetty_commercial_invoices.txt',
+      label: 'Invoices + s.18 Ack',
+      content: 'Commercial dispute Rs. 4,20,000 against 6 invoices (Jan–Apr 2026) supplied by Shetty Traders to Coastal Hospitality. Written email acknowledgment dated 2026-05-12 confirms Rs. 4,20,000 balance. Statutory demand notice sent by email; no postal acknowledgment on file. Commercial Courts Act s.12A pre-institution mediation required.',
+    },
+  ],
+  criminal: [
+    {
+      filename: 'bns_303_chargesheet.txt',
+      label: 'BNS s.303(2) Chargesheet',
+      content: 'FIR & Chargesheet under BNS s.303(2) (punishable up to 3 years imprisonment, below 7 years) filed before JMFC Mapusa on 2026-09-03. Offence is not a socio-economic offence and is not committed against a woman or child under 14. Antecedents verification report awaited; complainant open to restitution under BNSS s.290.',
+    },
+  ],
+}
+
+/** F4 intake: real file picking, pasted briefs, sample presets, & voice recording, then the live pipeline runs. */
 export default function NewMatter() {
   const nav = useNavigate()
   const [step, setStep] = useState<0 | 1 | 2>(0)
@@ -28,6 +64,9 @@ export default function NewMatter() {
   const [forum, setForum] = useState('')
   const [matter, setMatter] = useState<Matter | null>(null)
   const [docs, setDocs] = useState<MatterDocument[]>([])
+  const [composeOpen, setComposeOpen] = useState(false)
+  const [docName, setDocName] = useState('chamber_brief_notes.txt')
+  const [docText, setDocText] = useState('')
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -47,6 +86,18 @@ export default function NewMatter() {
     if (!files || !matter) return
     setBusy(true)
     for (const f of Array.from(files)) { const d = await api.addDocument(matter.id, f); setDocs((x) => [...x, d]); sfx.tick() }
+    setBusy(false)
+  }
+
+  const attachText = async (name: string, text: string) => {
+    if (!matter || !text.trim()) return
+    setBusy(true)
+    const file = new File([text.trim()], name.trim() || 'case_notes.txt', { type: 'text/plain' })
+    const d = await api.addDocument(matter.id, file)
+    setDocs((x) => [...x, d])
+    sfx.accept()
+    setDocText('')
+    setComposeOpen(false)
     setBusy(false)
   }
 
@@ -105,13 +156,36 @@ export default function NewMatter() {
                 </button>
                 <Recorder onDone={async (file) => { const d = await api.addDocument(matter.id, file); setDocs((x) => [...x, d]) }} />
               </div>
-              <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,audio/*" className="hidden" onChange={(e) => onFiles(e.target.files)} />
+              <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.txt,audio/*" className="hidden" onChange={(e) => onFiles(e.target.files)} />
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="ghost" onClick={() => { sfx.tick(); setComposeOpen((o) => !o) }} className="h-9 rounded-full border border-marble/10 px-3.5 text-[12px] text-pewter hover:border-brass/40 hover:text-marble">
+                  <PenLine size={13} /> Paste facts / FIR / clause
+                </Button>
+                {SAMPLES[type].map((s) => (
+                  <Button key={s.filename} variant="ghost" disabled={busy} onClick={() => attachText(s.filename, s.content)} className="h-9 rounded-full border border-brass/25 bg-brass/8 px-3 text-[11px] text-brass hover:bg-brass/15">
+                    <Sparkles size={12} /> + {s.label}
+                  </Button>
+                ))}
+              </div>
+
+              {composeOpen && (
+                <Glass className="space-y-3">
+                  <Label>Paste case notes, contract text, or FIR excerpt</Label>
+                  <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="filename.txt" className="glass-well h-10 border-0 text-[13px] text-marble placeholder:text-smoke" />
+                  <Textarea value={docText} onChange={(e) => setDocText(e.target.value)} rows={4} placeholder="Paste facts, payment dates (YYYY-MM-DD), sections (e.g. IPC 420 / BNS 318), or party statements…" className="glass-well resize-none border-0 text-[13px] text-marble placeholder:text-smoke" />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" className="h-9 rounded-full" onClick={() => setComposeOpen(false)}>Cancel</Button>
+                    <Button disabled={busy || !docText.trim()} onClick={() => attachText(docName, docText)} className="h-9 rounded-full bg-brass px-4 text-void uppercase tracking-[0.08em] hover:bg-[#d6b676]">Attach document</Button>
+                  </div>
+                </Glass>
+              )}
 
               <div
                 onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); onFiles(e.dataTransfer.files) }}
                 className="glass-well flex items-center justify-center gap-2 border-dashed py-4 text-[12px] text-smoke"
               >
-                <Upload size={14} /> drop files here
+                <Upload size={14} /> drop PDF, DOCX, TXT, or audio files here
               </div>
 
               {docs.length > 0 && (
@@ -122,14 +196,14 @@ export default function NewMatter() {
                       <li key={d.id} className="flex items-center gap-3 py-2.5">
                         {d.kind === 'voice' ? <Mic size={15} className="text-steel" /> : <FileText size={15} className="text-steel" />}
                         <span className="min-w-0 flex-1 truncate text-[13px] text-marble">{d.name}</span>
-                        <span className="text-[11px] text-smoke">{(d.size / 1024).toFixed(0)} KB</span>
+                        <span className="text-[11px] text-smoke">{Math.max(1, Math.round(d.size / 1024))} KB</span>
                         <button aria-label="Remove" onClick={async () => { await api.removeDocument(matter.id, d.id); setDocs((x) => x.filter((y) => y.id !== d.id)) }} className="p-1 text-smoke hover:text-overruled"><Trash2 size={13} /></button>
                       </li>
                     ))}
                   </ul>
                 </Glass>
               )}
-              <p className="text-[11px] text-smoke">Files stay on your device until a backend is connected. Nothing is uploaded elsewhere.</p>
+              <p className="text-[11px] text-smoke">Files are processed strictly within Chamber A’s workspace with source-span tracking.</p>
             </>
           )}
         </motion.div>
@@ -140,10 +214,9 @@ export default function NewMatter() {
         {step < 2 ? (
           <Button disabled={busy || (step === 1 && !title.trim())} onClick={next} className="h-12 flex-1 rounded-full bg-brass text-void uppercase tracking-[0.1em] hover:bg-[#d6b676]">{busy ? 'Creating…' : 'Continue'}</Button>
         ) : (
-          <ShimmerButton onClick={next} background="#c9a868" shimmerColor="#fff6dc" className="h-12 flex-1 text-[13px] font-medium uppercase tracking-[0.1em] text-void">Run the pipeline{docs.length === 0 ? ' with demo documents' : ''}</ShimmerButton>
+          <ShimmerButton onClick={next} background="#c9a868" shimmerColor="#fff6dc" className="h-12 flex-1 text-[13px] font-medium uppercase tracking-[0.1em] text-void">Run live 11-stage pipeline</ShimmerButton>
         )}
       </div>
-      {step === 2 && <p className="text-center text-[11px] text-smoke">You can run with no files: the engine uses the bundled demo documents for this case type.</p>}
     </div>
   )
 }

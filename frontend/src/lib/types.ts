@@ -134,7 +134,16 @@ export interface ReviewInput {
   target_id: string
   reason_code: ReasonCode
   note?: string
-  diff?: string
+  diff?: string | Record<string, unknown>
+}
+
+export interface AccessLogEntry {
+  id: number
+  actor: string
+  role: string
+  matter_id: string
+  endpoint: string
+  at: string
 }
 
 export interface LedgerEntry {
