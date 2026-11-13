@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { AnimatePresence, motion } from 'motion/react'
 import { ArrowLeft, Hourglass } from 'lucide-react'
 import { useDB } from '@/lib/store'
 import type { SourceRef } from '@/lib/types'
-import { Chip, SourceSheet, type Tone } from '@/components/primitives'
+import { Chip, Glass, SourceSheet, type Tone } from '@/components/primitives'
 import ReviewDrawer, { type ReviewRequest } from '@/components/ReviewDrawer'
-import { ConnChip } from '@/components/Shell'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 import Pipeline from './matter/Pipeline'
@@ -22,14 +21,34 @@ import Radar from './matter/Radar'
 import LedgerTab from './matter/LedgerTab'
 
 export const TABS = [
-  ['pipeline', 'Pipeline'], ['facts', 'Facts'], ['proof', 'Proof'], ['clock', 'Clock'], ['precedents', 'Precedents'],
-  ['draft', 'Draft'], ['citations', 'Citations'], ['score', 'Score'], ['advice', 'Advice'], ['radar', 'Law radar'], ['ledger', 'Ledger'],
+  ['pipeline', 'Pipeline'],
+  ['facts', 'Facts'],
+  ['proof', 'Proof'],
+  ['clock', 'Clock'],
+  ['precedents', 'Precedents'],
+  ['draft', 'Draft'],
+  ['citations', 'Citations'],
+  ['score', 'Score'],
+  ['advice', 'Advice'],
+  ['radar', 'Law radar'],
+  ['ledger', 'Ledger'],
 ] as const
 export type Tab = (typeof TABS)[number][0]
 
-const statusTone: Record<string, Tone> = { draft: 'smoke', running: 'steel', ready: 'brass', in_review: 'distinguished', approved: 'followed' }
+const statusTone: Record<string, Tone> = {
+  draft: 'smoke',
+  running: 'steel',
+  ready: 'brass',
+  in_review: 'distinguished',
+  approved: 'followed',
+}
 
-export interface TabProps { id: string; onOpen: (s: SourceRef) => void; onReview: (r: ReviewRequest) => void; onJump: (t: Tab) => void }
+export interface TabProps {
+  id: string
+  onOpen: (s: SourceRef) => void
+  onReview: (r: ReviewRequest) => void
+  onJump: (t: Tab) => void
+}
 
 export default function Matter() {
   const { id = '' } = useParams()
@@ -37,67 +56,112 @@ export default function Matter() {
   const [params, setParams] = useSearchParams()
   const tab = (params.get('tab') as Tab) || 'pipeline'
   const autorun = params.get('run') === '1'
-  const setTab = (t: Tab) => { sfx.tick(); setParams({ tab: t }, { replace: true }) }
+  const setTab = (t: Tab) => {
+    sfx.tick()
+    setParams({ tab: t }, { replace: true })
+  }
   const m = useDB((d) => d.matters.find((x) => x.id === id))
   const hasStages = useDB((d) => !!d.stages[id])
   const [source, setSource] = useState<SourceRef | null>(null)
   const [review, setReview] = useState<ReviewRequest | null>(null)
-  const railRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    railRef.current?.querySelector<HTMLButtonElement>(`[data-tab="${tab}"]`)?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
-  }, [tab])
-
-  if (!m) return <div className="space-y-4 pt-6"><p className="text-marble">Matter not found.</p><button onClick={() => nav('/')} className="text-brass">Back to queue</button></div>
+  if (!m) {
+    return (
+      <Glass className="space-y-4">
+        <p className="text-[15px] text-marble">Matter not found.</p>
+        <Button variant="ghost" onClick={() => nav('/')} className="h-9 rounded-md border border-seam text-brass">
+          Back to docket
+        </Button>
+      </Glass>
+    )
+  }
 
   const locked = !hasStages && tab !== 'pipeline'
   const props: TabProps = { id, onOpen: setSource, onReview: setReview, onJump: setTab }
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center gap-3">
-        <button onClick={() => { sfx.tap(); nav(-1) }} className="rounded-full p-2 text-pewter hover:text-marble" aria-label="Back"><ArrowLeft size={20} /></button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] text-marble">{m.title.replace(' (FICTIONAL)', '')}</p>
-          <p className="flex items-center gap-2 text-[11px] text-smoke"><span className="capitalize">{m.case_type.replace('_', ' ')}</span>{m.days_left != null && <span className="inline-flex items-center gap-1"><Hourglass size={10} />{m.days_left}d</span>}</p>
+      {/* Matter Workspace Header */}
+      <Glass className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <button onClick={() => { sfx.tap(); nav('/') }} className="rounded-md border border-seam bg-graphite p-2 text-pewter hover:text-marble" aria-label="Back">
+            <ArrowLeft size={16} />
+          </button>
+          <div className="min-w-0">
+            <h1 className="truncate text-[18px] font-medium text-marble">{m.title.replace(' (FICTIONAL)', '')}</h1>
+            <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[12px] text-smoke">
+              <span className="capitalize">{m.case_type.replace('_', ' ')}</span>
+              <span>·</span>
+              <span>{m.forum_hint || 'District Court'}</span>
+              {m.client_language && (
+                <>
+                  <span>·</span>
+                  <span className="uppercase">{m.client_language}</span>
+                </>
+              )}
+              {m.days_left != null && (
+                <>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1 font-mono text-brass">
+                    <Hourglass size={11} /> {m.days_left} days left
+                  </span>
+                </>
+              )}
+            </p>
+          </div>
         </div>
-        <Chip tone={statusTone[m.status]}>{m.status.replace('_', ' ')}</Chip>
-        <ConnChip />
-      </header>
+        <div className="flex items-center gap-2">
+          <Chip tone={statusTone[m.status]}>{m.status.replace('_', ' ')}</Chip>
+          <Button variant="ghost" onClick={() => setTab('draft')} className="h-8 rounded-md border border-seam px-3 text-[11px] uppercase tracking-[0.06em] text-pewter hover:text-marble">
+            Open Pleading
+          </Button>
+        </div>
+      </Glass>
 
-      <div ref={railRef} className="no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-5">
+      {/* Full-Width Desktop Tab Bar */}
+      <div className="flex flex-wrap gap-1 border-b border-seam pb-2">
         {TABS.map(([k, label]) => (
-          <button key={k} data-tab={k} onClick={() => setTab(k)} className={cn('relative shrink-0 rounded-full px-3.5 py-2 text-[12px] uppercase tracking-[0.1em] transition-colors', tab === k ? 'text-marble' : 'text-smoke hover:text-pewter')}>
-            {tab === k && <motion.span layoutId="tab-pill" className="absolute inset-0 rounded-full border border-marble/10 bg-marble/8" transition={{ type: 'spring', stiffness: 420, damping: 36 }} />}
-            <span className="relative">{label}</span>
+          <button
+            key={k}
+            data-tab={k}
+            onClick={() => setTab(k)}
+            className={cn(
+              'rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors',
+              tab === k
+                ? 'border border-brass/35 bg-brass/12 text-brass'
+                : 'border border-transparent text-smoke hover:bg-graphite hover:text-pewter',
+            )}
+          >
+            {label}
           </button>
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div key={tab} initial={{ opacity: 0, y: 10, filter: 'blur(3px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -6, filter: 'blur(3px)' }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}>
-          {locked ? (
-            <div className="glass flex flex-col items-center gap-3 py-10 text-center">
-              <p className="text-[14px] text-pewter">Run the pipeline first.</p>
-              <button onClick={() => setTab('pipeline')} className="text-[12px] uppercase tracking-[0.1em] text-brass">Go to pipeline</button>
-            </div>
-          ) : (
-            <>
-              {tab === 'pipeline' && <Pipeline {...props} autorun={autorun} />}
-              {tab === 'facts' && <Facts {...props} />}
-              {tab === 'proof' && <Proof {...props} />}
-              {tab === 'clock' && <Clock {...props} />}
-              {tab === 'precedents' && <Precedents {...props} />}
-              {tab === 'draft' && <DraftTab {...props} />}
-              {tab === 'citations' && <Citations {...props} />}
-              {tab === 'score' && <ScoreTab {...props} />}
-              {tab === 'advice' && <AdviceTab {...props} />}
-              {tab === 'radar' && <Radar {...props} />}
-              {tab === 'ledger' && <LedgerTab id={id} />}
-            </>
-          )}
-        </motion.div>
-      </AnimatePresence>
+      {/* Tab Content */}
+      <div>
+        {locked ? (
+          <Glass className="flex flex-col items-center gap-3 py-12 text-center">
+            <p className="text-[14px] text-pewter">Run the pipeline first.</p>
+            <Button onClick={() => setTab('pipeline')} className="h-9 rounded-md bg-brass px-4 text-[12px] font-medium uppercase tracking-[0.06em] text-void">
+              Go to pipeline
+            </Button>
+          </Glass>
+        ) : (
+          <>
+            {tab === 'pipeline' && <Pipeline {...props} autorun={autorun} />}
+            {tab === 'facts' && <Facts {...props} />}
+            {tab === 'proof' && <Proof {...props} />}
+            {tab === 'clock' && <Clock {...props} />}
+            {tab === 'precedents' && <Precedents {...props} />}
+            {tab === 'draft' && <DraftTab {...props} />}
+            {tab === 'citations' && <Citations {...props} />}
+            {tab === 'score' && <ScoreTab {...props} />}
+            {tab === 'advice' && <AdviceTab {...props} />}
+            {tab === 'radar' && <Radar {...props} />}
+            {tab === 'ledger' && <LedgerTab id={id} />}
+          </>
+        )}
+      </div>
 
       <SourceSheet s={source} onClose={() => setSource(null)} />
       <ReviewDrawer matterId={id} req={review} onClose={() => setReview(null)} />

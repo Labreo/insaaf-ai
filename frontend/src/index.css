@@ -13,50 +13,50 @@
    ------------------------------------------------------------------ */
 @theme {
   /* surfaces */
-  --color-void: #0a0a0c;        /* page canvas — warm near-black velvet */
-  --color-velvet: #111113;      /* raised sheet / bottom nav */
-  --color-graphite: #18181c;    /* input wells, rails */
-  --color-seam: #26262c;        /* hairline separators only */
+  --color-void: #0b0d11;        /* page canvas — deep slate-obsidian */
+  --color-velvet: #11141b;      /* sidebar / elevated panel surface */
+  --color-graphite: #161a23;    /* input wells, rails */
+  --color-seam: #222734;        /* crisp 1px structural borders */
 
-  /* statue greys (text) */
+  /* neutral typography */
   --color-marble: #f2f1ee;      /* primary text, warm white */
-  --color-pewter: #a9a9ad;      /* secondary */
-  --color-smoke: #74747b;       /* tertiary / labels */
+  --color-pewter: #b4b7c0;      /* secondary */
+  --color-smoke: #7c8290;       /* tertiary / labels */
 
   /* accents */
-  --color-brass: #c9a868;       /* the single action colour */
+  --color-brass: #c9a868;       /* single authoritative legal accent */
   --color-brass-deep: #9c7f45;
-  --color-ray: #e9e7e1;         /* light-ray highlight */
+  --color-ray: #e9e7e1;
 
   /* legal states */
-  --color-followed: #6fae8d;    /* citation still good law */
+  --color-followed: #6fae8d;    /* good law / verified */
   --color-distinguished: #d9a441;
   --color-overruled: #d95c54;
-  --color-steel: #8fa3bd;       /* informational */
+  --color-steel: #8fa3bd;       /* informational / citations */
 
   /* type */
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: "Instrument Serif", "Times New Roman", serif;
   --font-devanagari: "Noto Sans Devanagari", "Inter", sans-serif;
 
-  --text-display: clamp(44px, 12vw, 64px);
-  --text-display--line-height: 0.95;
-  --text-display--letter-spacing: -0.04em;
-  --text-heading: clamp(28px, 7.5vw, 34px);
-  --text-heading--line-height: 1.02;
-  --text-heading--letter-spacing: -0.03em;
-  --text-title: 21px;
-  --text-title--line-height: 1.15;
-  --text-title--letter-spacing: -0.02em;
+  --text-display: 30px;
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.025em;
+  --text-heading: 22px;
+  --text-heading--line-height: 1.15;
+  --text-heading--letter-spacing: -0.02em;
+  --text-title: 16px;
+  --text-title--line-height: 1.25;
+  --text-title--letter-spacing: -0.015em;
   --text-label: 11px;
   --text-label--line-height: 1.2;
-  --text-label--letter-spacing: 0.12em;
+  --text-label--letter-spacing: 0.08em;
 
-  --radius-sheet: 28px;
-  --radius-card: 22px;
+  --radius-sheet: 10px;
+  --radius-card: 8px;
 
   --ease-cine: cubic-bezier(0.16, 1, 0.3, 1);
-  --shadow-warm: 0 1px 0 rgba(242, 241, 238, 0.04) inset, 0 10px 30px -12px rgba(20, 14, 6, 0.6);
+  --shadow-warm: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 @layer base {
@@ -64,7 +64,7 @@
     @apply font-sans; }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    font-weight: 300;
+    font-weight: 400;
     min-height: 100dvh;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
@@ -88,19 +88,17 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
 
-  /* glass pane over velvet: the only card surface */
+  /* crisp structural surface */
   .glass {
-    background: linear-gradient(180deg, rgba(242, 241, 238, 0.055) 0%, rgba(242, 241, 238, 0.025) 100%);
-    backdrop-filter: blur(14px) saturate(120%);
-    -webkit-backdrop-filter: blur(14px) saturate(120%);
-    border: 1px solid rgba(242, 241, 238, 0.07);
+    background: #11141b;
+    border: 1px solid #222734;
     box-shadow: var(--shadow-warm);
     border-radius: var(--radius-card);
   }
   .glass-well {
-    background: rgba(10, 10, 12, 0.45);
-    border: 1px solid rgba(242, 241, 238, 0.05);
-    border-radius: 14px;
+    background: #0d1017;
+    border: 1px solid #1e2330;
+    border-radius: 6px;
   }
   .lamp { background: radial-gradient(60% 50% at 50% 0%, rgba(201, 168, 104, 0.18) 0%, rgba(201, 168, 104, 0) 70%); }
   .ray-text {
@@ -228,36 +226,36 @@
   }}
 
 :root, .dark {
-  --background: #0a0a0c;
+  --background: #0b0d11;
   --foreground: #f2f1ee;
-  --card: #111113;
+  --card: #11141b;
   --card-foreground: #f2f1ee;
-  --popover: #141418;
+  --popover: #141821;
   --popover-foreground: #f2f1ee;
   --primary: #c9a868;
-  --primary-foreground: #0a0a0c;
-  --secondary: #1a1a1f;
+  --primary-foreground: #0b0d11;
+  --secondary: #161a23;
   --secondary-foreground: #f2f1ee;
-  --muted: #1a1a1f;
-  --muted-foreground: #a9a9ad;
-  --accent: #1f1f25;
+  --muted: #161a23;
+  --muted-foreground: #b4b7c0;
+  --accent: #1c212c;
   --accent-foreground: #f2f1ee;
   --destructive: #d95c54;
-  --border: rgba(242, 241, 238, 0.08);
-  --input: rgba(242, 241, 238, 0.10);
+  --border: #222734;
+  --input: #1e2330;
   --ring: rgba(201, 168, 104, 0.55);
   --chart-1: #c9a868;
   --chart-2: #8fa3bd;
   --chart-3: #6fae8d;
   --chart-4: #d9a441;
   --chart-5: #d95c54;
-  --radius: 0.875rem;
-  --sidebar: #111113;
+  --radius: 0.5rem;
+  --sidebar: #11141b;
   --sidebar-foreground: #f2f1ee;
   --sidebar-primary: #c9a868;
-  --sidebar-primary-foreground: #0a0a0c;
-  --sidebar-accent: #1a1a1f;
+  --sidebar-primary-foreground: #0b0d11;
+  --sidebar-accent: #161a23;
   --sidebar-accent-foreground: #f2f1ee;
-  --sidebar-border: rgba(242, 241, 238, 0.08);
+  --sidebar-border: #222734;
   --sidebar-ring: rgba(201, 168, 104, 0.55);
 }
