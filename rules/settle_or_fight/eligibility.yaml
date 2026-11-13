@@ -1,0 +1,37 @@
+routes:
+  lok_adalat:
+    applies_to: ["property", "civil_recovery"]
+    why: "Award is final with no appeal; court fee refunded."
+    sources:
+      - source_id: src_kanoon_139325262
+        kind: statute
+        title: Legal Services Authorities Act, 1987 — s.21
+        court: ""
+        date: "1987-01-01"
+        paragraph: "1"
+        doc_id: "139325262"
+        url: https://indiankanoon.org/doc/139325262/
+
+  pre_institution_mediation_12A:
+    applies_to: ["civil_recovery"]
+    why_eligible: "Mandatory under s.12A Commercial Courts Act before filing suit."
+    why_ineligible: "Not a commercial dispute."
+    sources:
+      - source_id: src_kanoon_164693074
+        kind: judgment
+        title: Patil Automation Pvt. Ltd. v. Rakheja Engineers Pvt. Ltd.
+        court: Supreme Court of India
+        date: "2022-08-17"
+        paragraph: "1"
+        doc_id: "164693074"
+        url: https://indiankanoon.org/doc/164693074/
+
+  plea_bargain:
+    applies_to: ["criminal"]
+    why_eligible: "Eligible under BNSS s.289: offence carries ≤ 7 yrs, first-time accused, not against woman/child <14 or socio-economic."
+    why_ineligible: "Plea bargaining applies only to eligible criminal offences (≤ 7 yrs)."
+    sources: []
+
+  fight:
+    applies_to: ["property", "civil_recovery", "criminal"]
+

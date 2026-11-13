@@ -1,0 +1,89 @@
+{
+  "version": "b-score-0.1",
+  "features": [
+    "registered_deed_present",
+    "stamp_duty_paid",
+    "possession_evidence",
+    "revenue_record_form_1_14",
+    "payment_trail",
+    "within_limitation",
+    "precedent_support_ratio",
+    "court_prior_rate"
+  ],
+  "feature_labels": {
+    "registered_deed_present": "Registered sale deed",
+    "stamp_duty_paid": "Stamp duty paid",
+    "possession_evidence": "Possession evidence",
+    "revenue_record_form_1_14": "Form I & XIV record",
+    "payment_trail": "Payment trail",
+    "within_limitation": "Within limitation",
+    "precedent_support_ratio": "Precedent alignment",
+    "court_prior_rate": "Court-level baseline"
+  },
+  "coefficients": {
+    "registered_deed_present": 2.6845,
+    "stamp_duty_paid": 0.8018,
+    "possession_evidence": 0.7133,
+    "revenue_record_form_1_14": 0.3463,
+    "payment_trail": 0.2919,
+    "within_limitation": 1.0027,
+    "precedent_support_ratio": 0.9506,
+    "court_prior_rate": -0.0834
+  },
+  "intercept": -3.0048,
+  "heldout_correct": 38,
+  "heldout_total": 50,
+  "accuracy": 0.76,
+  "brier": 0.1527,
+  "lgbm_benchmark": {
+    "accuracy": 0.78,
+    "brier": 0.1333
+  },
+  "calibration": {
+    "prob_true": [
+      0.2222,
+      0.6667,
+      1.0,
+      1.0,
+      0.96
+    ],
+    "prob_pred": [
+      0.0756,
+      0.3019,
+      0.5128,
+      0.7366,
+      0.9778
+    ]
+  },
+  "court_hierarchy": {
+    "District Court, North Goa": {
+      "n_judgments": 12,
+      "local_rate": 0.41,
+      "pooled_from": "Bombay High Court (Goa bench)",
+      "parent_rate": 0.49,
+      "shrinkage_k": 30
+    },
+    "Commercial Court, Panaji": {
+      "n_judgments": 19,
+      "local_rate": 0.62,
+      "pooled_from": "Bombay High Court (Goa bench)",
+      "parent_rate": 0.54,
+      "shrinkage_k": 30
+    },
+    "Bombay High Court (Goa bench)": {
+      "n_judgments": 84,
+      "local_rate": 0.49,
+      "pooled_from": "Supreme Court of India",
+      "parent_rate": 0.5,
+      "shrinkage_k": 30
+    },
+    "Judicial Magistrate First Class, Mapusa": {
+      "n_judgments": 24,
+      "local_rate": 0.55,
+      "pooled_from": "Bombay High Court (Goa bench)",
+      "parent_rate": 0.52,
+      "shrinkage_k": 30
+    }
+  },
+  "limit_note": "Reported judgments over-represent contested and appealed cases; calibrated on 190 train / 50 held-out cases."
+}

@@ -1,0 +1,35 @@
+cutoff_date: "2024-07-01"
+mappings:
+  - old: "IPC 302"
+    aliases: ["section 302 ipc", "302 ipc", "ipc 302", "s.302 ipc", "s. 302 ipc"]
+    new: "BNS 103"
+    reason: "Offence date after 1 July 2024 — Bharatiya Nyaya Sanhita, 2023 replaced IPC."
+  - old: "IPC 420"
+    aliases: ["section 420 ipc", "420 ipc", "ipc 420", "s.420 ipc"]
+    new: "BNS 318(4)"
+    reason: "Cheating and dishonestly inducing delivery of property now under BNS s.318(4)."
+  - old: "IPC 406"
+    aliases: ["section 406 ipc", "406 ipc", "ipc 406", "s.406 ipc"]
+    new: "BNS 316(2)"
+    reason: "Criminal breach of trust now governed by BNS s.316(2)."
+  - old: "IPC 379"
+    aliases: ["section 379 ipc", "379 ipc", "ipc 379", "s.379 ipc"]
+    new: "BNS 303(2)"
+    reason: "Punishment for theft now governed by BNS s.303(2) for post-1 July 2024 offences."
+  - old: "CrPC 438"
+    aliases: ["section 438 crpc", "438 crpc", "crpc 438", "s.438 crpc"]
+    new: "BNSS 482"
+    reason: "Anticipatory bail now governed by BNSS s.482."
+  - old: "CrPC 265A"
+    aliases: ["265a crpc", "crpc 265a", "chapter xxia crpc"]
+    new: "BNSS 289"
+    reason: "Plea bargaining chapter moved from CrPC Ch. XXIA (s.265A) to BNSS Ch. XXIII (s.289)."
+  - old: "IEA 65B"
+    aliases: ["65b", "section 65b", "iea 65b", "evidence act 65b"]
+    new: "BSA 63"
+    reason: "Admissibility of electronic records is now under Bharatiya Sakshya Adhiniyam, 2023 s.63."
+  - old: "IEA 126"
+    aliases: ["section 126 evidence act", "126 evidence act", "iea 126"]
+    new: "BSA 132"
+    reason: "Advocate-client privilege is now codified in Bharatiya Sakshya Adhiniyam, 2023 s.132."
+
