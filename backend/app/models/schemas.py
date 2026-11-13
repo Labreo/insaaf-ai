@@ -240,6 +240,23 @@ class FlipRequest(BaseModel):
     identity: IdentityType
 
 
+class PrecedentSearchRequest(BaseModel):
+    query: str
+
+
+class ClockRecalculateRequest(BaseModel):
+    cause_date: str
+
+
+class AccessLogEntry(BaseModel):
+    id: int
+    actor: str
+    role: str
+    matter_id: str
+    endpoint: str
+    at: str
+
+
 class AdviceOption(BaseModel):
     route: str
     eligible: bool

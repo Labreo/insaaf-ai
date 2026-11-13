@@ -241,27 +241,19 @@ def run_single_identity_flip(
     statute_clock: dict[str, Any],
     precedents: dict[str, Any],
     identity: str,
-    baseline_score: float,
+    baseline_score: float | None = None,
 ) -> dict[str, Any]:
-    bundle, meta = _ensure_model_loaded()
-    model = bundle["model"]
-    features_order = meta["features"]
-    court_name = statute_clock.get("forum", {}).get("court", "District Court, North Goa")
-    raw_text = " ".join(f.get("statement", "") for f in facts)
-    masked = mask_identity_markers(f"[Claimant profile: {identity}] " + raw_text)
-    feat_dict = extract_features_for_matter(
-        case_type=matter["case_type"],
+    firewall, _ = compute_bias_firewall_and_score(
+        matter=matter,
+        facts=facts,
         proof_ledger=proof_ledger,
         statute_clock=statute_clock,
         precedents=precedents,
-        court_name=court_name,
-        meta=meta,
-        masked_text=masked,
     )
-    X = np.array([[feat_dict[f] for f in features_order]], dtype=float)
-    prob = round(float(model.predict_proba(X)[0, 1]), 2)
-    delta = round(abs(prob - baseline_score), 2)
-    return {"identity": identity, "score": prob, "delta": delta}
+    for row in firewall["rows"]:
+        if row["identity"] == identity:
+            return row
+    return firewall["rows"][0]
 
 
 def retrain_from_overrides() -> dict[str, Any]:
