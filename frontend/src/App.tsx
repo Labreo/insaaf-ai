@@ -13,7 +13,7 @@ import Alerts from './screens/Alerts'
 import Me from './screens/Me'
 
 export default function App() {
-  const [intro, setIntro] = useState(false)
+  const [intro, setIntro] = useState(true)
 
   useEffect(() => {
     api.bootstrap()

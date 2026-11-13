@@ -33,7 +33,7 @@
 |---|---|
 | Semantic search over past judgments / precedents | F3 Time-Boxed Kanoon Search, F8 RAG Pipeline (Authority Lock) |
 | Outcome prediction from public judgments | F9 Insaaf AI-B Score (trained model), F10 Court-Aware |
-| Use of public judgment data | Indian Kanoon API → training set + live retrieval |
+| Use of public judgment data | Public Indian Kanoon Scraper (`indiankanoon.org`) + SerpAPI (`site:indiankanoon.org`) + SQLite Judgment Cache (no paid API token required) |
 | (any trust / explainability clause) | F2 Bias Firewall, F7 Citation Health Check, confidence + snippet on every conclusion |
 | (any usability / impact clause) | F1 Whole Pipeline (junior-lawyer automation), F6 Settle-or-Fight, F12 Nyaya Queue |
 
@@ -109,14 +109,17 @@ Intake → Fact Card → Proof Ledger → Statute Clock → Precedent Search →
 
 ### F3 🔴⭐ Time-Boxed Kanoon Search — "50 million → 20"
 
-**What**: precedent search that costs the same no matter how big the corpus is.
+**What**: precedent search that costs the same no matter how big the corpus is — running with **zero paid API tokens**.
 
 **How**:
 1. The query planner turns the Fact Card into 2–3 Kanoon queries (act + section + key facts), with filters for court (`doctypes`), date (`fromdate`) and page number.
-2. Fetch at most **20 judgments**, then call `/docfragment/` per document to pull only the matching paragraphs.
-3. Rerank with legal embeddings (InLegalBERT) → top 5 for the RAG stage.
+2. **3-tier keyless retrieval** (falls back to `api.indiankanoon.org` only if `KANOON_API_TOKEN` is optionally set):
+   - **Tier 1 (Free, Keyless)**: Direct public HTML search parsing of `https://indiankanoon.org/search/?formInput=...` and paragraph extraction (`p[id^='p_']`) from `/doc/{doc_id}/` using `BeautifulSoup`.
+   - **Tier 2 (SerpAPI Fallback)**: Google search via `SERPAPI_API_KEY` (`site:indiankanoon.org/doc <query>`) if direct scraping returns empty or times out.
+   - **Tier 3 (Pre-warmed Local Corpus)**: SQLite `kanoon_cache` + landmark corpus (`Suraj Lamp`, `Patil Automation`, `Registration Act s.17`, etc.) for deterministic offline replay.
+3. Fetch at most **20 judgments**, rerank with legal relevance → top 5 for the RAG stage.
 4. **Hard time budget** (e.g. 8 seconds) with async fetch + timeout. Return the best results so far, labelled "searched 20 of N matches".
-5. Cache every Kanoon response in Postgres. The demo runs fully from cache if the network fails.
+5. Cache every Kanoon response in SQLite (`insaaf.db`). The demo runs fully from cache if the network fails.
 
 **Real-world example for the PPT**:
 - India has **5 crore+ pending cases** (National Judicial Data Grid).
@@ -132,9 +135,9 @@ Intake → Fact Card → Proof Ledger → Statute Clock → Precedent Search →
 **What**: accepts the documents a junior actually receives, and turns them into checkable facts.
 
 **How**:
-- **Inputs**: PDF (PyMuPDF, with Tesseract OCR fallback for scans), DOCX (python-docx), and a voice note in Konkani, Marathi or Hindi (Bhashini speech-to-text + translation).
+- **Inputs**: PDF (PyMuPDF, with Tesseract OCR fallback for scans), DOCX (python-docx), and voice notes/statements in Konkani, Marathi or Hindi processed via **Gemini 2.5 Flash Multimodal Audio ASR + Devanagari Translation** (`GEMINI_API_KEY` free tier) + free keyless Google Translate GTX fallback (no gated ULCA Bhashini keys required; optional `BHASHINI_*` drop-in supported if present).
 - **Each fact card holds**: the statement; status (*alleged / backed by a document / disputed / unknown*); the source span (document + page/para); and, for voice, the original-language quote next to the English translation with a confidence flag.
-- **Goa glossary**: *mundkar*, *comunidade*, *bhatkar*, Form I & XIV, so the LLM doesn't mistranslate local land terms.
+- **Goa glossary**: deterministic normalization for *mundkar*, *comunidade*, *bhatkar*, Form I & XIV, so neither Gemini nor fallback translation mistranslates local land terms.
 
 **Real-world examples for the PPT**:
 - **Konkani** has been in the **Eighth Schedule since 1992** and is Goa's official language. Clients explain disputes in Konkani, but pleadings are in English. That gap is where facts get lost.
@@ -195,8 +198,8 @@ Intake → Fact Card → Proof Ledger → Statute Clock → Precedent Search →
 **What**: Dhanshri's rule: check whether each cited case is still valid, overruled, distinguished or limited.
 
 **How**:
-1. For each cited judgment, search Kanoon for later judgments that cite it (`citedby:` query), filtered to the same or higher courts.
-2. Pull the citing paragraph via `/docfragment/`.
+1. For each cited judgment, search via the keyless 3-tier Kanoon client (`indiankanoon.org` HTML + SerpAPI `site:indiankanoon.org/doc` + SQLite `kanoon_cache`) for later judgments that cite it (`citedby:` query), filtered to the same or higher courts.
+2. Pull the citing paragraph directly from `/doc/{doc_id}/` (`p[id^='p_']` parsing) or cache.
 3. **Classify the treatment** in two layers:
    - rule layer: phrases like "overruled", "no longer good law", "per incuriam", "distinguishable on facts", "followed";
    - LLM verification of the label, which must quote the paragraph.
@@ -348,48 +351,46 @@ $$P = \alpha \cdot \frac{1}{\text{days to deadline}} + \beta \cdot \text{stakes}
 
 ```mermaid
 flowchart TD
-    A["Mobile app (Expo / React Native)"] -->|"HTTPS + SSE"| B["API Gateway (FastAPI)"]
-    B --> C["Auth + Org RLS (Supabase/Postgres)"]
+    A["Web App (React 19 + Vite + Tailwind v4 · Paper & Ink Workbench + Dark Landing Intro)"] -->|"HTTPS + REST/SSE"| B["API Gateway (FastAPI)"]
+    B --> C["Chamber Roles & Audit Context"]
     B --> D["Pipeline Orchestrator (job state machine)"]
-    D --> E["Intake: PDF/DOCX/OCR + Bhashini voice"]
+    D --> E["Intake: PDF/DOCX/OCR + Gemini 2.5 Flash Audio/Indic + GTX Fallback"]
     D --> F["Proof Ledger + Statute Clock + Settle rules (YAML engine)"]
-    D --> G["Time-Boxed Search → Indian Kanoon API"]
-    G --> H["Kanoon cache (Postgres)"]
-    D --> I["RAG + Authority Lock (LLM API)"]
+    D --> G["Time-Boxed Search → Public Indian Kanoon Scraper + SerpAPI"]
+    G --> H["Kanoon cache (SQLite)"]
+    D --> I["RAG + Authority Lock (Gemini 2.5 Flash / Claude)"]
     D --> J["Citation Health Check (citedby + classifier)"]
     D --> K["Bias Firewall → Insaaf B Score model service"]
     K --> L["Court-Aware pooling"]
     D --> M["Draft export (DOCX)"]
-    B --> N["Reviewer Ledger (hash chain)"]
+    B --> N["Reviewer Ledger (SHA-256 hash chain)"]
     N -->|"daily Merkle root"| O["Solana devnet anchor"]
     N --> P["Retraining job → model registry"]
-    B --> Q["Push notifications (Statute Clock / Nyaya Queue)"]
+    B --> Q["Deadline Alerts (Telegram Bot + Twilio)"]
 ```
 
-**Stack suggestion** (swap freely for what the team knows):
+**Implemented web & backend stack**:
 
-| Layer | Suggested stack |
+| Layer | Implemented stack |
 |---|---|
-| App | Expo + TypeScript + Expo Router |
-| Backend | FastAPI (Python): the ML, Kanoon client and document parsing all live in Python anyway |
-| Data | Postgres + pgvector, Redis for the job queue |
-| Model | scikit-learn / LightGBM + SHAP, InLegalBERT embeddings |
-| Builds | EAS Build for the APK |
+| Web UI | React 19 + TypeScript + Vite + Tailwind v4 (`editorial-tactile-ui`: Paper & Ink legal workbench + dark cinematic landing website with Lady Justice SVG intro) |
+| Backend | FastAPI (Python): pipeline orchestrator, 3-tier keyless Kanoon client, Gemini 2.5 Flash multimodal Indic ASR, PyMuPDF / python-docx parsing |
+| Data | SQLite (`insaaf.db`) with `kanoon_cache`, hash-chained `ledger_entries`, and YAML legal rule packs (`rules/`) |
+| Model | scikit-learn / LightGBM + SHAP + hierarchical Court-Aware pooling |
 
 ---
 
-## 5. The 4 APIs
+## 5. The 4 APIs (Zero-Blocker Free Stack)
 
-| # | API | Role | Fallback if it fails at the demo |
-|---|---|---|---|
-| 1 | **Indian Kanoon API** | precedent search, fragments, citedby, metadata, training data | Postgres cache replay |
-| 2 | **LLM API** (Claude / Gemini) | structured extraction, constrained drafting, treatment-label verification | cached stage outputs for the demo matter |
-| 3 | **Bhashini** | Konkani/Marathi/Hindi speech-to-text + translation | pre-transcribed clip |
-| 4 | **Push / Calendar** (Expo Push or Google Calendar) | Statute Clock deadlines, Nyaya Queue alerts | in-app alert banner |
-| + | Solana devnet (optional 5th) | ledger anchoring | show the local hash chain only |
+| # | API / Provider | Role | Paid Key Required? | Fallback if network fails |
+|---|---|---|---|---|
+| 1 | **Public Indian Kanoon Scraper + SerpAPI (`site:indiankanoon.org/doc`)** *(replaces paid `KANOON_API_TOKEN`)* | precedent search, `/doc/{id}/` paragraph extraction, `citedby` lookup | **No** (`indiankanoon.org` HTML is free; `SERPAPI_API_KEY` free tier fallback) | SQLite `kanoon_cache` + `LANDMARK_DOCS` corpus replay |
+| 2 | **LLM API** (Gemini 2.5 Flash / Flash-Lite + Concentrate Claude) | structured extraction, constrained drafting, treatment-label verification | **No** (Google AI Studio free tier) | deterministic regex/template stage outputs |
+| 3 | **Gemini 2.5 Flash Multimodal Audio + Keyless GTX Indic** *(replaces gated `BHASHINI_*` keys)* | Konkani/Marathi/Hindi voice ASR, Devanagari translation + Goa Land Glossary | **No** (free tier via `GEMINI_API_KEY` + keyless `translate.googleapis.com` GTX) | Goa glossary + pre-transcribed fixture |
+| 4 | **Telegram Bot API (`@BotFather`) + Twilio Sandbox + Solana Devnet RPC** | Statute Clock T−30/T−7/T−1 alerts + daily Merkle root ledger anchoring | **No** (all free on devnet / bot token) | in-app alert banner + local SHA-256 hash chain |
 
 > [!TIP]
-> Confirm with the mentors whether "4 APIs" means exactly four or at least four. Check Kanoon's free-credit limits on day 0 and cache everything from the first call.
+> You do **not** need `KANOON_API_TOKEN`, `BHASHINI_USER_ID`, or `BHASHINI_API_KEY`. Leave them blank in `backend/.env`—Tier 1/2/3 Kanoon search and Gemini 2.5 Flash + GTX Konkani/Marathi/Hindi audio/text translation activate automatically and cache every fetched paragraph in SQLite (`insaaf.db`).
 
 ---
 
@@ -411,7 +412,7 @@ flowchart TD
 
 ### Phase 0 — Before the event (allowed prep only)
 - [ ] Paste the exact PS into §1; finalise the PS → feature map.
-- [ ] Get the Kanoon API token; check credit limits; list 1,500 candidate judgment IDs for the chosen category.
+- [ ] Configure free API keys (`GEMINI_API_KEY`, `SERPAPI_API_KEY`, `TELEGRAM_BOT_TOKEN`) in `backend/.env` and warm the SQLite `kanoon_cache` via Public Indian Kanoon Scraper (`kanoon_client.warm_landmark_cache()`).
 - [ ] Dhanshri drafts the YAML rule packs: Proof Ledger (property), Statute Clock (limitation articles), Settle-or-Fight eligibility.
 - [ ] Write 3 fictional demo matters (property-strong, property-weak, criminal/plea-eligible), each with PDF/DOCX + a Konkani voice clip.
 - [ ] Moodboard + screen list (§9); pick the animation library.
@@ -443,7 +444,7 @@ flowchart TD
 - [ ] No secrets in the app bundle; all API calls go through the backend.
 - [ ] Every screen has loading, empty, error and offline states. Nothing spins forever.
 - [ ] **Demo mode**: if any API fails, stages replay from cache, labelled "cached".
-- [ ] `/health/deep` endpoint: Kanoon, LLM, Bhashini, DB, model version.
+- [ ] `/health/deep` endpoint: Kanoon (public scraper + SerpAPI), LLM, Gemini Audio/Indic GTX, DB, model version.
 - [ ] Golden eval suite (30 cases): fact-source accuracy, Authority Lock rejection, citation treatment, firewall Δ, score accuracy. Results table in the README.
 - [ ] Tests: rule engines (Proof Ledger, Statute Clock incl. the COVID exclusion window), hash chain, RLS isolation.
 - [ ] Accessibility: dynamic type, contrast, screen-reader labels. Devanagari fonts for Konkani/Marathi/Hindi (e.g. Noto Sans Devanagari).
@@ -579,5 +580,5 @@ Verify each item against a primary source before it goes on a slide; Dhanshri sh
 - [ ] Kerala HC 2025 AI policy wording
 - [ ] P&H HC 2023 ChatGPT bail order details
 - [ ] France 2019 judge-analytics provision
-- [ ] Kanoon API endpoints, `citedby:` operator, credit limits
-- [ ] Bhashini Konkani support (speech-to-text and translation)
+- [ ] Public Indian Kanoon `/search/` + `/doc/{id}/` HTML structure, `citedby:` operator, SerpAPI fallback
+- [ ] Gemini 2.5 Flash Konkani/Marathi/Hindi ASR & translation + Goa Land Glossary accuracy

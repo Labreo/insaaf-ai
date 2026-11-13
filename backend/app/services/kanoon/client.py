@@ -236,7 +236,23 @@ class KanoonClient:
             async def _do_search() -> dict[str, Any]:
                 if token:
                     return await self._api_search(query, max_results, doctypes, fromdate, token=token)
-                return await self._web_search(query, max_results, doctypes, fromdate)
+                # Tier 1: Direct keyless public Indian Kanoon HTML search
+                try:
+                    res = await self._web_search(query, max_results, doctypes, fromdate)
+                    if res.get("docs"):
+                        return res
+                except Exception:
+                    pass
+                # Tier 2: SerpAPI site:indiankanoon.org/doc fallback
+                if settings.serpapi_api_key:
+                    try:
+                        res = await self._serpapi_search(query, max_results, doctypes, fromdate)
+                        if res.get("docs"):
+                            return res
+                    except Exception:
+                        pass
+                # Tier 3: Local landmark & SQLite kanoon_cache fallback
+                return self._landmark_fallback_search(query, max_results)
 
             result = await asyncio.wait_for(_do_search(), timeout=budget / 1000.0)
             elapsed = int((time.perf_counter() - t0) * 1000)
@@ -320,6 +336,127 @@ class KanoonClient:
         return {
             "searched": len(docs),
             "total_matches": max(total_matches, len(docs)),
+            "docs": docs,
+        }
+
+    async def _serpapi_search(
+        self,
+        query: str,
+        max_results: int,
+        doctypes: str | None = None,
+        fromdate: str | None = None,
+    ) -> dict[str, Any]:
+        """Tier 2 fallback using SerpAPI Google index filtered to indiankanoon.org/doc."""
+        q_parts = [f"site:indiankanoon.org/doc {query}"]
+        if doctypes:
+            q_parts.append(doctypes)
+        if fromdate:
+            q_parts.append(f"after:{fromdate}")
+        params = {
+            "engine": "google",
+            "q": " ".join(q_parts),
+            "api_key": settings.serpapi_api_key,
+            "num": min(max_results, 20),
+        }
+        async with httpx.AsyncClient(timeout=7.0) as client:
+            r = await client.get("https://serpapi.com/search.json", params=params)
+            r.raise_for_status()
+            data = r.json()
+        docs: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for item in data.get("organic_results", []):
+            link = item.get("link", "")
+            m = re.search(r"indiankanoon\.org/doc(?:fragment)?/(\d+)", link)
+            if not m:
+                continue
+            doc_id = m.group(1)
+            if doc_id in seen:
+                continue
+            seen.add(doc_id)
+            raw_title = _clean_text(item.get("title", f"Indian Kanoon Doc {doc_id}"))
+            clean_title = re.sub(r"\s*[-|]\s*Indian Kanoon.*$", "", raw_title, flags=re.IGNORECASE)
+            clean_title = re.sub(r"\s+on\s+\d{1,2}\s+[A-Za-z]+,?\s+\d{4}$", "", clean_title)
+            meta = LANDMARK_DOCS.get(doc_id, {})
+            docs.append(
+                {
+                    "doc_id": doc_id,
+                    "title": clean_title or meta.get("title", f"Indian Kanoon Doc {doc_id}"),
+                    "court": meta.get("court", "Indian Court"),
+                    "date": _parse_date_from_title(raw_title) if " on " in raw_title else meta.get("date", "2020-01-01"),
+                    "snippet": _clean_text(item.get("snippet", ""))[:500] or meta.get("default_snippet", ""),
+                    "url": f"https://indiankanoon.org/doc/{doc_id}/",
+                }
+            )
+            if len(docs) >= max_results:
+                break
+        return {
+            "searched": len(docs),
+            "total_matches": len(docs),
+            "docs": docs,
+        }
+
+    def _landmark_fallback_search(self, query: str, max_results: int) -> dict[str, Any]:
+        """Tier 3 local fallback over SQLite kanoon_cache doc entries and LANDMARK_DOCS."""
+        terms = [t.lower() for t in re.findall(r"[A-Za-z0-9]{3,}", query)]
+        scored: list[tuple[int, dict[str, Any]]] = []
+        seen: set[str] = set()
+
+        try:
+            with db_session() as conn:
+                rows = conn.execute(
+                    "SELECT payload_json FROM kanoon_cache WHERE kind = 'doc' LIMIT 100"
+                ).fetchall()
+            for row in rows:
+                doc = json.loads(row["payload_json"])
+                doc_id = str(doc.get("source_id", "")).replace("src_kanoon_", "")
+                if not doc_id or doc_id in seen:
+                    continue
+                hay = f"{doc.get('title', '')} {doc.get('court', '')} {doc.get('snippet', '')}".lower()
+                score = sum(1 for t in terms if t in hay)
+                if score > 0 or not terms:
+                    seen.add(doc_id)
+                    scored.append(
+                        (
+                            score,
+                            {
+                                "doc_id": doc_id,
+                                "title": doc.get("title", ""),
+                                "court": doc.get("court", "Indian Court"),
+                                "date": doc.get("date", "2020-01-01"),
+                                "snippet": doc.get("snippet", ""),
+                                "url": doc.get("url", f"https://indiankanoon.org/doc/{doc_id}/"),
+                            },
+                        )
+                    )
+        except Exception:
+            pass
+
+        for doc_id, meta in LANDMARK_DOCS.items():
+            if doc_id in seen:
+                continue
+            hay = f"{meta.get('title', '')} {meta.get('court', '')} {meta.get('default_snippet', '')}".lower()
+            score = sum(1 for t in terms if t in hay)
+            if score > 0 or not terms:
+                seen.add(doc_id)
+                scored.append(
+                    (
+                        score,
+                        {
+                            "doc_id": doc_id,
+                            "title": meta.get("title", ""),
+                            "court": meta.get("court", "Indian Court"),
+                            "date": meta.get("date", "2020-01-01"),
+                            "snippet": meta.get("default_snippet", ""),
+                            "url": f"https://indiankanoon.org/doc/{doc_id}/",
+                        },
+                    )
+                )
+
+        scored.sort(key=lambda pair: pair[0], reverse=True)
+        docs = [d for _, d in scored[:max_results]]
+        return {
+            "searched": len(docs),
+            "total_matches": len(docs),
             "docs": docs,
         }
 

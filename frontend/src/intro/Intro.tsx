@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import outline from './lady-outline.json'
 import Rays from './Rays'
 
@@ -12,10 +12,9 @@ import Rays from './Rays'
  *  4.2s  outline dissolves, wordmark rises over a scrim
  *  5.6s  push-in: the stage scales into the scales of justice and cuts to the app
  *
- * Tap anywhere to skip. Honours prefers-reduced-motion.
+ * Tap anywhere or click Skip to jump straight into Insaaf.
  */
 export default function Intro({ onDone }: { onDone: () => void }) {
-  const reduce = useReducedMotion()
   const [phase, setPhase] = useState<'trace' | 'reveal' | 'title' | 'zoom'>('trace')
   const done = useRef(false)
 
@@ -26,14 +25,13 @@ export default function Intro({ onDone }: { onDone: () => void }) {
   }
 
   useEffect(() => {
-    if (reduce) { const t = setTimeout(finish, 900); return () => clearTimeout(t) }
     const t1 = setTimeout(() => setPhase('reveal'), 2200)
     const t2 = setTimeout(() => setPhase('title'), 4200)
     const t3 = setTimeout(() => setPhase('zoom'), 5600)
     const t4 = setTimeout(finish, 6700)
     return () => [t1, t2, t3, t4].forEach(clearTimeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduce])
+  }, [])
 
   const { w, h, d } = outline as { w: number; h: number; d: string }
   const origin = useMemo(() => `${(240 / w) * 100}% ${(430 / h) * 100}%`, [w, h])
@@ -122,7 +120,16 @@ export default function Intro({ onDone }: { onDone: () => void }) {
         )}
       </AnimatePresence>
 
-      <p className="absolute bottom-4 right-5 text-[11px] uppercase tracking-[0.18em] text-smoke/70">tap to skip</p>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          finish()
+        }}
+        className="absolute bottom-5 right-5 z-10 inline-flex items-center gap-2 rounded-full border border-bone/25 bg-night/80 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-bone/90 backdrop-blur-sm transition hover:border-bone/50 hover:bg-night-3"
+      >
+        Skip intro →
+      </button>
     </motion.div>
   )
 }

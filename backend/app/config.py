@@ -39,6 +39,7 @@ class Settings:
     gemini_api_key_secondary: str = os.getenv("GEMINI_API_KEY_SECONDARY", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     anthropic_base_url: str = os.getenv("ANTHROPIC_BASE_URL", "")
+    serpapi_api_key: str = os.getenv("SERPAPI_API_KEY", "")
     bhashini_user_id: str = os.getenv("BHASHINI_USER_ID", "")
     bhashini_api_key: str = os.getenv("BHASHINI_API_KEY", "")
     telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
