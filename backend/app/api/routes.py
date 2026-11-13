@@ -1,6 +1,7 @@
 """FastAPI routes implementing docs/API_CONTRACT.md."""
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from datetime import datetime, timezone
@@ -13,7 +14,7 @@ from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
 from fastapi.responses import Response, StreamingResponse
 
 from app.config import UPLOADS_DIR, settings
-from app.db import db_session, get_stage_result, log_access
+from app.db import db_session, get_stage_result, init_db, log_access, save_stage_result
 from app.ledger.chain import (
     append_ledger_entry,
     check_solana_devnet_health,
@@ -193,10 +194,11 @@ async def create_matter(
 async def get_matter(
     matter_id: str,
     x_actor: Optional[str] = Header(default="junior_1"),
-    x_role: Optional[str] = Header(default="junior"),
+    x_role: Optional[str] = Header(default=None),
 ) -> dict[str, Any]:
     m = _get_matter_or_404(matter_id)
-    log_access(x_actor or "junior_1", x_role or "junior", matter_id, f"GET /matters/{matter_id}")
+    actor, role = _actor_from_headers(x_actor, x_role)
+    log_access(actor, role, matter_id, f"GET /matters/{matter_id}")
     return m
 
 
@@ -357,7 +359,22 @@ async def verify_citation(matter_id: str, body: VerifyCitationRequest) -> dict[s
             corpus_sources.append(ch["cited"])
         if ch.get("by"):
             corpus_sources.append(ch["by"])
-    return llm_client.verify_citation_against_corpus(body.text, corpus_sources)
+    res = llm_client.verify_citation_against_corpus(body.text, corpus_sources)
+    if res.get("verified") and res.get("source"):
+        draft = await ensure_stage(matter_id, "draft")
+        paragraphs = list(draft.get("paragraphs", []))
+        if not any(p.get("text", "").strip() == body.text.strip() for p in paragraphs):
+            paragraphs.append(
+                {
+                    "id": f"p{len(paragraphs) + 1}",
+                    "text": body.text.strip(),
+                    "confidence": "high",
+                    "sources": [res["source"]],
+                }
+            )
+            draft["paragraphs"] = paragraphs
+            save_stage_result(matter_id, "draft", draft)
+    return res
 
 
 @router.get("/matters/{matter_id}/draft/export")
@@ -378,8 +395,8 @@ async def export_draft(matter_id: str, format: str = Query(default="docx")) -> R
 async def create_review(
     matter_id: str,
     body: ReviewRequest,
-    x_actor: Optional[str] = Header(default="senior_1"),
-    x_role: Optional[str] = Header(default="senior"),
+    x_actor: Optional[str] = Header(default="junior_1"),
+    x_role: Optional[str] = Header(default=None),
 ) -> dict[str, Any]:
     _get_matter_or_404(matter_id)
     actor, role = _actor_from_headers(x_actor, x_role)
@@ -394,9 +411,35 @@ async def create_review(
         note=body.note or "",
         diff={"text": body.diff} if isinstance(body.diff, str) else body.diff,
     )
+    if body.action == "override":
+        if body.target == "citation":
+            c_health = await ensure_stage(matter_id, "citation_health")
+            for item in c_health:
+                if item.get("cited", {}).get("source_id") == body.target_id:
+                    item["blocks_draft"] = False
+            save_stage_result(matter_id, "citation_health", c_health)
+        elif body.target == "proof":
+            proof = await ensure_stage(matter_id, "proof_ledger")
+            for item in proof.get("items", []):
+                if item.get("requirement") == body.target_id:
+                    item["state"] = "present"
+            save_stage_result(matter_id, "proof_ledger", proof)
+        elif body.target == "score":
+            sc = await ensure_stage(matter_id, "score")
+            sc["band"] = "strong" if sc.get("band") in ("weak", "uncertain", "moderate") else "moderate"
+            save_stage_result(matter_id, "score", sc)
+
     if body.action == "approve" and body.target == "draft":
+        draft = await ensure_stage(matter_id, "draft")
+        if role == "senior":
+            draft["watermark"] = f"APPROVED BY {actor} ({role.upper()}) — FOR ADVOCATE USE"
+            new_status = "approved"
+        else:
+            draft["watermark"] = "AWAITING SENIOR APPROVAL — NOT FOR FILING"
+            new_status = "in_review"
+        save_stage_result(matter_id, "draft", draft)
         with db_session() as conn:
-            conn.execute("UPDATE matters SET status = 'approved' WHERE id = ?", (matter_id,))
+            conn.execute("UPDATE matters SET status = ? WHERE id = ?", (new_status, matter_id))
     else:
         with db_session() as conn:
             conn.execute("UPDATE matters SET status = 'in_review' WHERE id = ?", (matter_id,))
@@ -416,6 +459,40 @@ async def verify_ledger() -> dict[str, Any]:
     if res["anchored_root"] and bh:
         res["anchored_root"]["tx"] = bh
     return res
+
+
+@router.post("/ledger/tamper")
+async def tamper_ledger() -> dict[str, Any]:
+    suffix = " [edited after the fact]"
+    with db_session() as conn:
+        row = conn.execute("SELECT id, note FROM ledger_entries ORDER BY seq ASC LIMIT 1").fetchone()
+        if not row:
+            return {"tampered": False, "broken_at": None}
+        note = row["note"] or ""
+        if note.endswith(suffix):
+            new_note = note[: -len(suffix)]
+            tampered = False
+        else:
+            new_note = note + suffix
+            tampered = True
+        conn.execute("UPDATE ledger_entries SET note = ? WHERE id = ?", (new_note, row["id"]))
+        return {"tampered": tampered, "broken_at": row["id"] if tampered else None}
+
+
+@router.post("/demo/reset")
+async def reset_demo() -> dict[str, Any]:
+    global _ACTIVE_ROLE
+    _ACTIVE_ROLE = "junior"
+    with db_session() as conn:
+        conn.execute("DELETE FROM ledger_entries WHERE id NOT IN ('led_001', 'led_002')")
+        conn.execute("UPDATE ledger_entries SET note = 'Client confirmed payment date' WHERE id = 'led_001'")
+        conn.execute("DELETE FROM matters WHERE id NOT IN ('mat_001', 'mat_002', 'mat_003')")
+        conn.execute("UPDATE matters SET status = 'ready' WHERE id = 'mat_001'")
+        conn.execute("UPDATE matters SET status = 'in_review' WHERE id = 'mat_002'")
+        conn.execute("UPDATE matters SET status = 'draft' WHERE id = 'mat_003'")
+        conn.execute("DELETE FROM stage_results")
+    init_db()
+    return {"reset": True}
 
 
 @router.get("/ml/model", response_model=ModelInfoResponse)
@@ -509,9 +586,11 @@ async def deep_health() -> dict[str, Any]:
     except Exception:
         db_status = "down"
 
-    kanoon_status = await kanoon_client.ping()
-    llm_status = await llm_client.ping()
-    bhashini_status = await bhashini_client.ping()
+    kanoon_status, llm_status, bhashini_status = await asyncio.gather(
+        kanoon_client.ping(),
+        llm_client.ping(),
+        bhashini_client.ping(),
+    )
     return {
         "kanoon": kanoon_status,
         "llm": llm_status,
