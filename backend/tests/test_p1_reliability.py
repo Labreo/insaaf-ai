@@ -27,9 +27,10 @@ def test_f10_every_ui_forum_resolves_to_itself():
             assert res.status_code == 200, res.text
             ca = res.json()["court_aware"]
             assert ca["court"] == court
-            seen_rates[court] = ca["pooled_rate"]
-        # Distinct priors -> distinct pooled rates; no silent collapse onto the district court.
-        assert len(set(seen_rates.values())) == len(UI_FORUMS)
+            seen_rates[ca["tier"]] = ca["pooled_rate"]
+        # Priors come from real judgments per court tier: trial, High Court and Supreme Court differ.
+        assert set(seen_rates) == {"Trial / district forum", "High Court", "Supreme Court"}
+        assert len(set(seen_rates.values())) == 3
 
 
 def test_f10_civil_judge_pools_toward_district_parent():

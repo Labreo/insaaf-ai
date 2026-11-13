@@ -264,6 +264,8 @@ class PrecedentResult(BaseModel):
     similarity: float
     why_similar: str
     outcome: Optional[str] = None
+    issue: Optional[str] = None
+    holding: Optional[str] = None
     locality: Optional[str] = None
     origin: Optional[str] = None
     sources: list[SourceRef] = Field(default_factory=list)
@@ -299,6 +301,7 @@ class ScoreFactor(BaseModel):
 class CourtAwareInfo(BaseModel):
     court: str
     prior_bucket: Optional[str] = None
+    tier: Optional[str] = None
     n_judgments: int
     pooled_from: str
     shrinkage_k: int
@@ -475,7 +478,10 @@ class LedgerEntry(BaseModel):
 class AnchoredRoot(BaseModel):
     hash: str
     chain: str
-    tx: str
+    tx: Optional[str] = None  # null: no on-chain transaction is written (see anchor_kind)
+    anchor_kind: str = "blockhash_beacon"
+    beacon_blockhash: Optional[str] = None
+    note: Optional[str] = None
 
 
 class LedgerVerify(BaseModel):

@@ -182,3 +182,22 @@ Demo passwords are in `backend/.demo_credentials` (generated on first start). `b
 - `GET /matters/{id}/precedents` now includes `outcome_stats`.
 - `POST /v1/ledger/tamper` now returns the drill detail: `{tampered, broken_at, entry_id, field, before, after, stored_hash, recomputed_hash, merkle_root_before, merkle_root_after, chain_valid, explanation}`.
 - `GET /matters/{id}/events?live=true` forces a fresh live pipeline run. Without it, in `DEMO_MODE`, an already-analysed matter replays its cached stages with realistic pacing. Add a "Re-analyse live" button that uses `?live=true`.
+
+## Update 2 (backend verification pass)
+
+API changes. All are additive, so nothing existing breaks.
+
+- **`GET /ledger` and `GET /ledger/verify`, `anchored_root`:**
+  - `tx` is now always `null`. Nothing is written on-chain.
+  - New fields: `anchor_kind: "blockhash_beacon"`, `beacon_blockhash` (latest finalized Solana devnet blockhash, or null when offline) and `note`.
+  - **UI wording:** "Merkle root timestamped against Solana devnet blockhash". Never "transaction" or "stored on blockchain".
+- **`GET /matters/{id}/score`:**
+  - `court_aware` now comes from real judgments in the index (n = judgments with a known outcome from that court tier in this practice area), pooled toward the area-wide rate with k = 12.
+  - New field: `court_aware.tier` ("Supreme Court" | "High Court" | "Trial / district forum").
+  - `prediction_basis` weights are now evidence 0.50, similar judgments 0.30, court prior 0.20.
+- **`POST /precedents/search`:** each result has a new `excerpt` field (the clean paragraph that best matches the query). `headnote` now prefers the LLM-written one-line holding and skips cause-title and signature boilerplate.
+- **`POST /translate` and voice transcripts:** Konkani (`kok`) results always come back with `confidence: "medium"`. Show a "verify translation" hint for medium or low confidence.
+  - Gemini audio fallback reports `engine: "<model> (multimodal)"`.
+  - Whisper is not trained on Konkani, so Konkani audio may be transcribed in Devanagari Marathi. The translation step uses a land-law glossary (bhatkar = landowner, mundkar = protected occupant).
+- **Precedent results** (both `POST /precedents/search` results and matter `search` docs): new `issue` field, a one-line legal question written per judgment. Show it as the card subtitle and the holding (`headnote`) under it.
+- **Matter precedents** (`GET /matters/{id}/precedents` `results[]`): new `issue` and `holding` fields per card.

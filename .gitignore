@@ -36,3 +36,4 @@ ml/data/cache/
 *.joblib
 *.onnx
 *.pt
+*.json.tmp

@@ -15,7 +15,7 @@ from typing import Any
 
 from app.db import db_session
 from app.services.precedents import corpus
-from app.services.precedents.harvest import doc_id_from_url, fetch_judgment, record_from_serper, serper_key, serper_search
+from app.services.precedents.harvest import doc_id_from_url, is_boilerplate, fetch_judgment, record_from_serper, serper_key, serper_search
 from app.services.precedents.index import STATE_HC, precedent_index
 
 LEGAL_SITES = "site:indiankanoon.org/doc"
@@ -26,7 +26,7 @@ def _tokens(s: str) -> set[str]:
 
 
 def _best_paragraph(rec: dict[str, Any], hint: str) -> tuple[str, str]:
-    paras = rec.get("paras") or []
+    paras = [p for p in (rec.get("paras") or []) if not is_boilerplate(p.get("text", ""))] or (rec.get("paras") or [])
     if not paras:
         return "1", rec.get("headnote") or rec.get("holding") or ""
     want = _tokens(hint)
@@ -35,6 +35,17 @@ def _best_paragraph(rec: dict[str, Any], hint: str) -> tuple[str, str]:
         return str(p.get("n", 1)), p.get("text", "")
     best = max(paras, key=lambda p: len(want & _tokens(p.get("text", ""))))
     return str(best.get("n", 1)), best.get("text", "")
+
+
+def display_summary(rec: dict[str, Any], hint: str = "") -> str:
+    """What a lawyer should read first: the labelled holding, else the most query-relevant clean paragraph."""
+    hs = rec.get("holding_summary") or ""
+    if hs and not re.search(r"does not (?:state|contain|specify|mention)|not stated|not provided|provided text|no (?:final )?decision", hs, re.I):
+        return hs
+    head = rec.get("headnote") or ""
+    if head and not is_boilerplate(head):
+        return head
+    return _best_paragraph(rec, hint)[1] or head
 
 
 def to_source(rec: dict[str, Any], hint: str = "") -> dict[str, Any]:
@@ -159,7 +170,8 @@ class PrecedentClient:
                 "title": h.get("title", ""),
                 "court": h.get("court", ""),
                 "date": h.get("date", ""),
-                "snippet": (h.get("headnote") or "")[:400],
+                "snippet": display_summary(h, query)[:400],
+                "issue": h.get("issue", ""),
                 "score": h["score"],
                 "similarity_raw": h["similarity_raw"],
                 "locality_reason": h.get("locality_reason", ""),
@@ -261,7 +273,8 @@ class PrecedentClient:
                 {
                     "doc_id": h["doc_id"], "title": h.get("title", ""), "court": h.get("court", ""), "seat": h.get("seat", ""),
                     "date": h.get("date", ""), "outcome": h.get("outcome", "unknown"), "statutes": h.get("statutes", []),
-                    "headnote": (h.get("headnote") or "")[:700], "locality": h.get("locality_reason", ""), "score": h["score"],
+                    "headnote": display_summary(h, query)[:700], "issue": h.get("issue", ""), "excerpt": _best_paragraph(h, query)[1][:600],
+                    "locality": h.get("locality_reason", ""), "score": h["score"],
                     "url": h.get("url", ""), "practice_areas": h.get("practice_areas", []), "origin": h.get("source", "index"),
                 }
                 for h in hits

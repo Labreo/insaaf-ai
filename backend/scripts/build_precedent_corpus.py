@@ -43,6 +43,14 @@ AREA_QUERIES: dict[str, list[str]] = {
 }
 JURIS = ["Bombay High Court Goa", "Supreme Court", "Karnataka High Court", ""]
 
+# Second-round queries for areas whose first harvest was thin or noisy (see corpus evaluation).
+EXTRA_QUERIES: dict[str, list[str]] = {
+    "intellectual_property": ["trade marks act section 29 infringement deceptively similar mark injunction", "passing off goodwill misrepresentation trade dress", "trademark rectification prior user section 34"],
+    "property": ["agreement of sale does not create interest in property section 54 transfer of property", "suit for declaration of title and possession registered sale deed", "general power of attorney sale Suraj Lamp title"],
+    "succession_probate": ["probate proof of will section 63 succession act section 68 evidence act attesting witness", "letters of administration will genuineness suspicious circumstances"],
+    "motor_accident": ["just compensation motor accident Pranay Sethi future prospects multiplier Sarla Verma", "MACT permanent disability loss of earning capacity compensation"],
+}
+
 
 def _load_log() -> dict:
     if LOG.exists():
@@ -55,16 +63,19 @@ async def main() -> None:
     ap.add_argument("--max-queries", type=int, default=150)
     ap.add_argument("--areas", default="")
     ap.add_argument("--per-query", type=int, default=10)
+    ap.add_argument("--extra", action="store_true", help="run the second-round EXTRA_QUERIES")
     args = ap.parse_args()
 
     log = _load_log()
     records = corpus.load_records()
     by_id = {r["doc_id"]: r for r in records}
-    wanted = [a for a in (args.areas.split(",") if args.areas else areas().keys()) if a in AREA_QUERIES]
+    ap_extra = "--extra" in sys.argv
+    table = EXTRA_QUERIES if ap_extra else AREA_QUERIES
+    wanted = [a for a in (args.areas.split(",") if args.areas else areas().keys()) if a in table]
     plan: list[tuple[str, str]] = []
     for juris in JURIS:  # breadth first across jurisdictions so a capped run still covers every area
         for area in wanted:
-            for q in AREA_QUERIES[area]:
+            for q in table[area]:
                 full = f"site:indiankanoon.org/doc {q} {juris}".strip()
                 if full not in log["queries"]:
                     plan.append((area, full))

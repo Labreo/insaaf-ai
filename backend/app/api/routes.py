@@ -1156,7 +1156,7 @@ async def verify_ledger(actor: Actor = Depends(get_actor)) -> dict[str, Any]:
     res = verify_ledger_chain()
     bh = await check_solana_devnet_health()
     if res["anchored_root"] and bh:
-        res["anchored_root"]["tx"] = bh
+        res["anchored_root"]["beacon_blockhash"] = bh
     return res
 
 

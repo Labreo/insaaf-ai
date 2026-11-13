@@ -198,16 +198,9 @@ def compute_bias_firewall_and_score(
         else:
             court_name = "District Court, North Goa"
 
-    c_meta = hierarchy.get(
-        court_name,
-        {
-            "n_judgments": 12,
-            "local_rate": 0.41,
-            "pooled_from": "Bombay High Court (Goa bench)",
-            "parent_rate": 0.49,
-            "shrinkage_k": 30,
-        },
-    )
+    c_meta = corpus_court_prior(display_court, matter.get("case_type", ""), matter.get("state") or "")
+    if c_meta is None:  # empty corpus: fall back to the trained artifact's hand-set hierarchy
+        c_meta = hierarchy.get(court_name, {"n_judgments": 12, "local_rate": 0.41, "pooled_from": "Bombay High Court (Goa bench)", "parent_rate": 0.49, "shrinkage_k": 30})
     n_j = c_meta.get("n_judgments", 12)
     k_sh = c_meta.get("shrinkage_k", 30)
     p_local = c_meta.get("local_rate", 0.41)
@@ -308,7 +301,7 @@ def compute_bias_firewall_and_score(
         })
     factor_items.append({
         "name": f"Court baseline ({display_court})",
-        "effect": round((pooled_rate - 0.48) * 1.4, 2),
+        "effect": round((pooled_rate - 0.5) * 0.4, 2),
     })
 
     p_score = baseline_prob or 0.5
@@ -327,12 +320,13 @@ def compute_bias_firewall_and_score(
         "factors": factor_items,
         "probability": round(p_score, 2),
         "prediction_basis": {
-            "evidence_model_weight": 0.55, "similar_judgments_weight": 0.35, "court_prior_weight": 0.10,
+            "evidence_model_weight": 0.50, "similar_judgments_weight": 0.30, "court_prior_weight": 0.20,
             "similar_judgments_used": emp_n, "similar_judgments_allowed": emp_allowed, "similar_judgments_rate": round(empirical, 2),
         },
         "court_aware": {
             "court": display_court,
             "prior_bucket": court_name,
+            "tier": c_meta.get("tier"),
             "n_judgments": n_j,
             "pooled_from": c_meta["pooled_from"],
             "shrinkage_k": k_sh,
@@ -350,6 +344,52 @@ def compute_bias_firewall_and_score(
         "bias_firewall_passed": passed,
     }
     return firewall, score_obj
+
+
+def _court_family(court: str, state: str) -> tuple[str, str]:
+    """(corpus court name, readable tier) for a forum name typed on a matter."""
+    from app.services.precedents.index import STATE_HC
+
+    c = (court or "").lower()
+    if "supreme" in c:
+        return "Supreme Court of India", "Supreme Court"
+    hc = STATE_HC.get((state or "").lower(), ("Bombay High Court", ""))[0]
+    if "high court" in c or "bombay" in c:
+        return hc, "High Court"
+    return "", "Trial / district forum"
+
+
+def corpus_court_prior(display_court: str, area: str, state: str = "") -> dict[str, Any] | None:
+    """Court-aware prior from real judgments in the index, partially pooled toward the area-wide rate.
+
+    local  = grant rate of judgments from this court tier in this practice area
+    parent = grant rate of all judgments in this practice area
+    pooled = (n*local + k*parent) / (n + k), k = 12   (empirical-Bayes shrinkage)
+    """
+    from app.services.precedents import corpus
+
+    def rate(rs: list[dict[str, Any]]) -> tuple[float, int]:
+        known = [r for r in rs if r.get("outcome") in ("allowed", "dismissed", "partly_allowed")]
+        if not known:
+            return 0.5, 0
+        won = sum(1.0 if r["outcome"] == "allowed" else 0.5 if r["outcome"] == "partly_allowed" else 0.0 for r in known)
+        return (won + 1) / (len(known) + 2), len(known)
+
+    recs = [r for r in corpus.load_records() if r.get("kind", "judgment") == "judgment"]
+    if not recs:
+        return None
+    in_area = [r for r in recs if area in r.get("practice_areas", [])] or recs
+    parent_rate, parent_n = rate(in_area)
+    name, tier = _court_family(display_court, state)
+    if name:
+        local = [r for r in in_area if r.get("court") == name]
+    else:  # trial courts: district courts / commissions in the index, same state first
+        local = [r for r in in_area if r.get("court") and "High Court" not in r["court"] and "Supreme" not in r["court"]]
+    local_rate, n = rate(local)
+    return {
+        "n_judgments": n, "local_rate": round(local_rate, 3), "parent_rate": round(parent_rate, 3), "shrinkage_k": 12,
+        "pooled_from": f"All {area.replace('_', ' ')} judgments in the index ({parent_n})", "tier": tier,
+    }
 
 
 def _empirical_rate(precedents: dict[str, Any]) -> tuple[float, int, float]:
@@ -371,7 +411,7 @@ def _blend(model_prob: float, empirical: float, court_rate: float) -> float:
     """Outcome probability: tempered evidence model + outcomes of similar real judgments + court prior."""
     p = min(max(model_prob, 1e-4), 1 - 1e-4)
     tempered = 1 / (1 + np.exp(-0.55 * np.log(p / (1 - p))))
-    prob = 0.55 * tempered + 0.35 * empirical + 0.10 * court_rate
+    prob = 0.50 * tempered + 0.30 * empirical + 0.20 * court_rate
     return round(float(max(0.05, min(0.95, prob))), 2)
 
 

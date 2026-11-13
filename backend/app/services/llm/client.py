@@ -428,7 +428,8 @@ class LLMClient:
                 try:
                     english = await self.generate_text(
                         "Translate this client statement to plain English for an Indian advocate. Keep names, dates, "
-                        "amounts and local land terms (mundkar, bhatkar, comunidade) as-is. Return only the translation.\n\n"
+                        "amounts and local land terms (mundkar, bhatkar, comunidade) as-is. bhatkar = landowner; "
+                        "mundkar = protected occupant living on the bhatkar's land. Return only the translation.\n\n"
                         + heard["original_text"],
                         max_tokens=600,
                     )
@@ -459,6 +460,7 @@ class LLMClient:
         except Exception:
             return {}
         if isinstance(parsed, dict) and parsed.get("original_text"):
+            parsed["engine"] = f"{self.last_model or 'gemini'} (multimodal)"
             self._cache_put(ckey, "audio", parsed)
             return parsed
         return {}

@@ -168,7 +168,12 @@ def verify_ledger_chain() -> dict[str, Any]:
         "anchored_root": {
             "hash": merkle_root,
             "chain": "solana-devnet",
-            "tx": f"devnet_merkle_{merkle_root[:16]}",
+            # Nothing is written on-chain yet: the root is timestamped against the latest finalized
+            # devnet blockhash (a public, unforgeable time beacon). tx stays null until a memo tx is sent.
+            "tx": None,
+            "anchor_kind": "blockhash_beacon",
+            "beacon_blockhash": None,
+            "note": "Merkle root of the SHA-256 hash chain, timestamped against the latest Solana devnet blockhash. Not an on-chain transaction.",
         },
     }
 
@@ -204,6 +209,6 @@ def get_ledger(matter_id: str | None = None, devnet_blockhash: str | None = None
     ]
     verify = verify_ledger_chain()
     if verify["anchored_root"] and devnet_blockhash:
-        verify["anchored_root"]["tx"] = devnet_blockhash
+        verify["anchored_root"]["beacon_blockhash"] = devnet_blockhash
     return {"entries": entries, "verify": verify}
 

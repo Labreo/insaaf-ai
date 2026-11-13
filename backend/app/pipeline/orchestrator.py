@@ -824,6 +824,8 @@ async def _build_prec_results(case_type: str, query: str, search_docs: list[dict
                 "similarity": min(sim, 0.97),
                 "why_similar": why,
                 "outcome": outcome,
+                "issue": d.get("issue", ""),
+                "holding": d.get("snippet", ""),
                 "locality": reason,
                 "origin": d.get("origin", "index"),
                 "sources": [src],

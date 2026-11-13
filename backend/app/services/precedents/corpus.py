@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 from typing import Any
 
@@ -83,7 +84,9 @@ def save_records(records: list[dict[str, Any]]) -> None:
     with _lock:
         CORPUS_PATH.parent.mkdir(parents=True, exist_ok=True)
         payload = {"version": 1, "count": len(records), "judgments": sorted(records, key=lambda r: r["doc_id"])}
-        CORPUS_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=0), encoding="utf-8")
+        tmp = CORPUS_PATH.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=0), encoding="utf-8")
+        os.replace(tmp, CORPUS_PATH)  # atomic: concurrent readers never see a half-written file
         _cache = None
 
 

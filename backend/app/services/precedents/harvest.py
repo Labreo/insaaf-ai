@@ -165,6 +165,23 @@ def statutes_in(text: str) -> list[str]:
     return sorted({label for rx, label in _STATUTE_PATTERNS if rx.search(text or "")})
 
 
+_BOILER = re.compile(
+    r"\b(s/o|d/o|w/o|r/o|r/at|aged about|digitally signed|signature not verified|location:|reserved on|pronounced on|uploaded on|"
+    r"for the (?:appellant|petitioner|respondent|complainant|applicant)s?\s*:|advocate for|learned counsel|coram|hon'?ble mr|hon'?ble ms|"
+    r"whether approved for reporting|versus\s*$|\.\.\.\s*(?:petitioner|respondent|appellant)s?|occ:|tq\.|dist\.)\b",
+    re.I,
+)
+
+
+def is_boilerplate(text: str) -> bool:
+    """Cause-title / appearance / signature lines that carry no legal content."""
+    t = text or ""
+    hits = len(_BOILER.findall(t))
+    upper_ratio = sum(1 for c in t if c.isupper()) / max(1, sum(1 for c in t if c.isalpha()))
+    dot_leaders = t.count("....") >= 2 or bool(re.search(r"\bINDEX\b|table of contents|for the convenience of exposition", t))
+    return dot_leaders or hits >= 2 or (hits >= 1 and len(t) < 260) or upper_ratio > 0.6
+
+
 def _clean(s: str) -> str:
     return re.sub(r"\s+", " ", s or "").strip()
 

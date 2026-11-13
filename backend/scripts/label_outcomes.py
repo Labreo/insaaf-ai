@@ -55,8 +55,8 @@ async def main() -> None:
             await asyncio.sleep(5)
             continue
         by_id = {r["doc_id"]: r for r in chunk}
-        for lab in data.get("labels", []):
-            r = by_id.get(str(lab.get("doc_id")))
+        for lab in (data if isinstance(data, list) else data.get("labels", []) if isinstance(data, dict) else []):
+            r = by_id.get(str(lab.get("doc_id"))) if isinstance(lab, dict) else None
             if r and lab.get("outcome") in VALID:
                 r["outcome"] = lab["outcome"]
                 r["outcome_source"] = "llm"

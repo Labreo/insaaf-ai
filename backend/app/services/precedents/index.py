@@ -51,8 +51,11 @@ def expand_query(q: str) -> str:
 
 
 def _doc_text(r: dict[str, Any]) -> str:
-    paras = " ".join(p.get("text", "") for p in r.get("paras", [])[:12])
-    return " ".join([r.get("title", ""), r.get("title", ""), r.get("headnote", ""), r.get("holding", ""), paras,
+    from app.services.precedents.harvest import is_boilerplate
+
+    paras = " ".join(p.get("text", "") for p in r.get("paras", [])[:16] if not is_boilerplate(p.get("text", "")))
+    head = r.get("headnote", "") if not is_boilerplate(r.get("headnote", "")) else ""
+    return " ".join([r.get("title", ""), r.get("title", ""), r.get("issue", ""), r.get("issue", ""), r.get("holding_summary", ""), r.get("holding_summary", ""), head, r.get("holding", ""), paras,
                      " ".join(r.get("statutes", [])) * 2, " ".join(a.replace("_", " ") for a in r.get("practice_areas", []))])
 
 
@@ -67,7 +70,8 @@ class PrecedentIndex:
         self._Xc = None
 
     def _ensure(self) -> None:
-        records = [r for r in corpus.load_records() if r.get("kind", "judgment") == "judgment" or r.get("landmark")]
+        # Judgments only: statutes are cited through the rule packs, not returned as precedents.
+        records = [r for r in corpus.load_records() if r.get("kind", "judgment") == "judgment"]
         if len(records) == self._n and self._word is not None:
             return
         with self._lock:

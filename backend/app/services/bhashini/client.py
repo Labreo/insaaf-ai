@@ -49,6 +49,16 @@ def _glossary(text: str) -> str:
     return out
 
 
+# Legally decisive Konkani / Marathi land terms. Getting these backwards flips who owns the land.
+TERM_HINTS = (
+    "Glossary (keep these meanings exactly): भाटकार / bhatkar = landlord who owns the land; "
+    "मुंडकार / mundkar = occupant-tenant protected under the Goa Mundkars Act living on the bhatkar's land; "
+    "कोमुनिदाद / comunidade = village land association; राबता / रावता = lives / resides; "
+    "जमनीर = on the land; घर = house; भाडें = rent; Form I & XIV = Goa record of rights."
+)
+LOW_RESOURCE = {"kok"}  # translation quality is lower: always ask the advocate to verify
+
+
 class TranslationClient:
     engine_name = "Insaaf Translate"
 
@@ -81,12 +91,15 @@ class TranslationClient:
         prompt = (
             f"Translate this client statement from {src_name} into {tgt_name} for an Indian advocate's file. "
             "Keep names, dates, amounts, survey numbers and Goa land-law terms (mundkar, bhatkar, comunidade, "
-            "Form I & XIV) unchanged. Return only the translation, no commentary.\n\n" + text
+            "Form I & XIV) unchanged. Return only the translation, no commentary.\n"
+            + (TERM_HINTS + "\n" if source_lang in ("kok", "mr", "auto") else "")
+            + "\n" + text
         )
         try:
             out = await llm_client.generate_text(prompt, max_tokens=900, timeout=20.0)
             if out:
-                return {"text": _glossary(out.strip()), "engine": llm_client.last_model or "llm", "confidence": "high"}
+                conf = "medium" if source_lang in LOW_RESOURCE else "high"
+                return {"text": _glossary(out.strip()), "engine": llm_client.last_model or "llm", "confidence": conf}
         except Exception:
             pass
         out = await self._gtx(text, source_lang, target_lang)
