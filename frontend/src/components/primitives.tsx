@@ -21,7 +21,7 @@ export function Card({
     <div
       onClick={onClick}
       className={cn(
-        'rounded-[6px] border border-line bg-surface p-4 shadow-[var(--shadow-card)]',
+        'min-w-0 rounded-[6px] border border-line bg-surface p-4 shadow-[var(--shadow-card)]',
         onClick && 'cursor-pointer transition-colors hover:border-line-strong hover:bg-sunken/50',
         className,
       )}
@@ -210,7 +210,7 @@ export function Ring({
   value,
   size = 104,
   stroke = 6,
-  tone = '#1f3a5c',
+  tone = 'var(--color-navy)',
   children,
 }: {
   value: number
@@ -224,7 +224,7 @@ export function Ring({
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} stroke="#e5e2d9" strokeWidth={stroke} fill="none" />
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="var(--color-line-strong)" strokeWidth={stroke} fill="none" />
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -295,7 +295,7 @@ export function SourceSheet({ s, onClose }: { s: SourceRef | null; onClose: () =
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-ink/30 backdrop-blur-[1px]"
+            className="fixed inset-0 bg-night/75 backdrop-blur-[2px]"
           />
           <motion.aside
             role="dialog"
@@ -354,9 +354,9 @@ export function SourceSheet({ s, onClose }: { s: SourceRef | null; onClose: () =
                 href={s.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-navy-600"
+                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night transition-colors hover:bg-navy-600"
               >
-                Open on Indian Kanoon <ExternalLink size={13} />
+                Open judgment <ExternalLink size={13} />
               </a>
             </div>
           </motion.aside>

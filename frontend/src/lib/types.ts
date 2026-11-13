@@ -134,6 +134,13 @@ export interface StatuteClock {
   sources: SourceRef[]
 }
 
+export interface PrecedentOutcomeStats {
+  allowed: number
+  dismissed: number
+  partly_allowed: number
+  unknown: number
+}
+
 export interface Precedents {
   budget_ms: number
   elapsed_ms: number
@@ -143,6 +150,7 @@ export interface Precedents {
   index_size?: number
   web_swept?: number
   query?: string | null
+  outcome_stats?: PrecedentOutcomeStats | null
   results: {
     rank: number
     stance: 'for' | 'against'
@@ -153,6 +161,63 @@ export interface Precedents {
     origin?: string | null
     sources: SourceRef[]
   }[]
+}
+
+export interface PrecedentHit {
+  doc_id: string
+  title: string
+  court: string
+  seat: string
+  date: string
+  outcome: string
+  statutes: string[]
+  headnote: string
+  locality: string
+  score: number
+  url: string
+  practice_areas: string[]
+  origin?: string
+}
+
+export interface PrecedentExploreResult {
+  results: PrecedentHit[]
+  index_size: number
+  web_swept: number
+  outcome_stats: PrecedentOutcomeStats
+  elapsed_ms: number
+}
+
+export interface PrecedentDetail {
+  doc_id: string
+  title: string
+  court: string
+  seat: string
+  state: string
+  bench: string
+  date: string
+  outcome: string
+  statutes: string[]
+  headnote: string
+  holding: string
+  paras: { n: number; text: string }[]
+  url: string
+  practice_areas: string[]
+  paragraph_count: number
+}
+
+export interface TamperResult {
+  tampered: boolean
+  broken_at: string | null
+  entry_id?: string
+  field?: string
+  before?: string
+  after?: string
+  stored_hash?: string
+  recomputed_hash?: string
+  merkle_root_before?: string
+  merkle_root_after?: string
+  chain_valid?: boolean
+  explanation?: string
 }
 
 export interface CitationHealth {
@@ -185,6 +250,14 @@ export interface Score {
   }
   bias_firewall_passed: boolean
   probability?: number | null
+  prediction_basis?: {
+    evidence_model_weight: number
+    similar_judgments_weight: number
+    court_prior_weight: number
+    similar_judgments_used: number
+    similar_judgments_allowed: number
+    similar_judgments_rate: number
+  } | null
   model_band?: string | null
   override?: { band: string; model_band: string; by: string; note: string; reason_code?: string; at: string } | null
 }

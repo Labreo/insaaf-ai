@@ -1,5 +1,7 @@
 import { Link2, ShieldCheck, ShieldOff } from 'lucide-react'
 import { api } from '@/lib/api'
+import { DEMO_LEDGER_PREVIEW } from '@/lib/demoData'
+import { useDB } from '@/lib/store'
 import {
   Badge,
   Card,
@@ -13,7 +15,8 @@ import { cn } from '@/lib/utils'
 
 /** F11: tamper-evident SHA-256 hash-chained reviewer ledger. */
 export default function LedgerTab({ id }: { id: string }) {
-  const l = useAsync(() => api.ledger(id), [id])
+  const rev = useDB((s) => s.rev)
+  const l = useAsync(() => api.ledger(id), [id, rev])
   if (l.loading && !l.data) return <Skeleton className="h-72" />
   if (l.error && !l.data) return <ErrorBanner error={l.error} onRetry={l.reload} />
   if (!l.data) return null
@@ -50,11 +53,51 @@ export default function LedgerTab({ id }: { id: string }) {
       </Card>
 
       <p className="text-[12px] text-ink-3">
-        Records who reviewed, what changed, when, and why. Only the daily Merkle root hash is anchored on Solana Devnet; client matter files never leave chamber custody.
+        Records who reviewed, what changed, when, and why. Uses a SHA-256 hash chain anchored to a Solana devnet blockhash timestamp; client matter files never leave chamber custody.
       </p>
 
       {entries.length === 0 ? (
-        <Empty text="No reviews recorded on this matter yet. Approve or override a finding to seal an entry." />
+        <div className="space-y-4">
+          <Empty text="No reviews recorded on this matter yet. Approve or override a finding to seal an entry." />
+          <Card className="space-y-2 border-dashed border-brass-200 bg-sunken p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label>Sample Hash-Chained Audit Entries</Label>
+              <Badge tone="warn">ILLUSTRATIVE DEMO PREVIEW</Badge>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="tbl min-w-[680px]">
+                <thead>
+                  <tr>
+                    <th>Reviewer</th>
+                    <th>Action &amp; Target</th>
+                    <th>Reason &amp; Note</th>
+                    <th>SHA-256 Chain Link</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DEMO_LEDGER_PREVIEW.map((e) => (
+                    <tr key={e.id}>
+                      <td className="whitespace-nowrap">
+                        <span className="font-medium text-ink">{e.actor}</span>{' '}
+                        <Badge tone="neutral">{e.role}</Badge>
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge tone={e.action === 'approve' ? 'ok' : 'warn'}>{e.action}</Badge>
+                          <span className="font-mono text-[12px] text-ink-2">{e.target}</span>
+                        </div>
+                      </td>
+                      <td className="text-[12px] text-ink-2">{e.note}</td>
+                      <td className="whitespace-nowrap font-mono text-[11px] text-ink-3">
+                        {e.prev_hash.slice(0, 8)} → {e.hash.slice(0, 8)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="tbl min-w-[720px]">

@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Check, ShieldAlert, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useDB, can, openAuth } from '@/lib/store'
-import type { Fact, ReasonCode, ReviewInput } from '@/lib/types'
+import type { AdviceRoute, Fact, ReasonCode, ReviewInput, Score } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 import { ease, Well } from './primitives'
@@ -15,6 +15,20 @@ const reasons: { k: ReasonCode; label: string }[] = [
   { k: 'score_disagree', label: 'Score disagree' },
   { k: 'bias_concern', label: 'Bias concern' },
   { k: 'other', label: 'Other' },
+]
+
+const BANDS: { k: Score['band']; label: string }[] = [
+  { k: 'strong', label: 'Strong' },
+  { k: 'moderate', label: 'Moderate' },
+  { k: 'uncertain', label: 'Uncertain' },
+  { k: 'weak', label: 'Weak' },
+]
+
+const ADVICE_ROUTES: { k: AdviceRoute; label: string }[] = [
+  { k: 'fight', label: 'Fight / Proceed' },
+  { k: 'mediate', label: 'Mediate (s.89 / s.12A)' },
+  { k: 'settle', label: 'Settle / Lok Adalat' },
+  { k: 'plea_bargain', label: 'Plea Bargain (BNSS)' },
 ]
 
 export interface ReviewRequest {
@@ -43,11 +57,12 @@ export default function ReviewDrawer({
   const [reason, setReason] = useState<ReasonCode>('score_disagree')
   const [note, setNote] = useState('')
   const [factStatus, setFactStatus] = useState<Fact['status']>('documented')
+  const [scoreBand, setScoreBand] = useState<Score['band']>('uncertain')
+  const [adviceRoute, setAdviceRoute] = useState<AdviceRoute>('mediate')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   const action = req?.action ?? 'override'
-  // Mirrors the backend permission matrix (review.* in backend/app/auth.py); the server enforces it.
   const canDecide = can(`review.${action}`)
 
   useEffect(() => {
@@ -60,11 +75,16 @@ export default function ReviewDrawer({
     } else if (req.target === 'citation') {
       setReason('wrong_citation_treatment')
       setNote('')
-    } else if (req.target === 'proof' || req.target === 'advice') {
+    } else if (req.target === 'proof') {
       setReason('wrong_law')
+      setNote('')
+    } else if (req.target === 'advice') {
+      setReason('wrong_law')
+      setAdviceRoute('mediate')
       setNote('')
     } else {
       setReason('score_disagree')
+      setScoreBand('moderate')
       setNote('')
     }
   }, [req])
@@ -80,16 +100,32 @@ export default function ReviewDrawer({
 
   const submit = async () => {
     if (!req || !canDecide || busy) return
+    const trimmed = note.trim()
+    if (req.target === 'fact' && action === 'edit' && !trimmed) {
+      setErr('Enter the fact statement before saving.')
+      return
+    }
+    if (action === 'override' && !trimmed) {
+      setErr('Enter the senior counsel rationale for overriding this finding.')
+      return
+    }
     setBusy(true)
     setErr(null)
     try {
-      const diff = req.target === 'fact' ? { status: factStatus } : undefined
+      let diff: Record<string, unknown> | undefined
+      if (req.target === 'fact' && action !== 'delete') {
+        diff = { status: factStatus }
+      } else if (req.target === 'score' && action === 'override') {
+        diff = { band: scoreBand }
+      } else if (req.target === 'advice' && action === 'override') {
+        diff = { recommendation: adviceRoute }
+      }
       await api.review(matterId, {
         action,
         target: req.target,
         target_id: req.target_id,
         reason_code: action === 'approve' || action === 'submit' ? 'other' : reason,
-        note,
+        note: trimmed || note,
         diff,
       })
       sfx.seal()
@@ -113,7 +149,7 @@ export default function ReviewDrawer({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-ink/30 backdrop-blur-[1px]"
+            className="fixed inset-0 bg-night/75 backdrop-blur-[2px]"
           />
           <motion.aside
             role="dialog"
@@ -123,7 +159,7 @@ export default function ReviewDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ duration: 0.26, ease }}
-            className="relative z-10 flex h-full w-full max-w-lg flex-col border-l border-line bg-surface shadow-[var(--shadow-sheet)]"
+            className="relative z-10 flex h-full w-full max-w-lg flex-col border-l border-line-strong bg-surface shadow-[var(--shadow-sheet)]"
           >
             <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
               <div className="min-w-0">
@@ -151,7 +187,14 @@ export default function ReviewDrawer({
                   <div className="flex items-start gap-2">
                     <ShieldAlert size={16} className="mt-0.5 shrink-0" />
                     <p>
-                      {action === 'edit' || action === 'submit' ? 'A senior or junior advocate' : <>A <strong className="font-semibold">Senior Advocate</strong></>} is required to {action} this item. You are currently signed in as{' '}
+                      {action === 'edit' || action === 'submit' || action === 'delete'
+                        ? 'A senior or junior advocate'
+                        : (
+                          <>
+                            A <strong className="font-semibold">Senior Advocate</strong>
+                          </>
+                        )}{' '}
+                      is required to {action} this item. You are currently signed in as{' '}
                       <span className="font-medium capitalize">{role}</span>.
                     </p>
                   </div>
@@ -168,7 +211,7 @@ export default function ReviewDrawer({
                 </div>
               )}
 
-              {req.target === 'fact' && (
+              {req.target === 'fact' && action !== 'delete' && (
                 <div className="space-y-2">
                   <p className="eyebrow">Evidentiary Fact Status</p>
                   <div className="grid grid-cols-4 gap-1.5">
@@ -188,6 +231,58 @@ export default function ReviewDrawer({
                         )}
                       >
                         {st}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {req.target === 'score' && action === 'override' && (
+                <div className="space-y-2">
+                  <p className="eyebrow">Advocate Assessment Band</p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {BANDS.map((b) => (
+                      <button
+                        key={b.k}
+                        type="button"
+                        onClick={() => {
+                          sfx.tick()
+                          setScoreBand(b.k)
+                        }}
+                        className={cn(
+                          'rounded-[5px] border px-2.5 py-2 text-center text-[12px] transition-colors',
+                          scoreBand === b.k
+                            ? 'border-navy bg-navy font-semibold text-night'
+                            : 'border-line bg-sunken text-ink-2 hover:bg-hover',
+                        )}
+                      >
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {req.target === 'advice' && action === 'override' && (
+                <div className="space-y-2">
+                  <p className="eyebrow">Preferred Strategic Route</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ADVICE_ROUTES.map((rt) => (
+                      <button
+                        key={rt.k}
+                        type="button"
+                        onClick={() => {
+                          sfx.tick()
+                          setAdviceRoute(rt.k)
+                        }}
+                        className={cn(
+                          'rounded-[5px] border px-3 py-2 text-left text-[12px] transition-colors',
+                          adviceRoute === rt.k
+                            ? 'border-navy bg-navy font-semibold text-night'
+                            : 'border-line bg-sunken text-ink-2 hover:bg-hover',
+                        )}
+                      >
+                        {rt.label}
                       </button>
                     ))}
                   </div>
@@ -222,7 +317,11 @@ export default function ReviewDrawer({
 
               <div className="space-y-2">
                 <p className="eyebrow">
-                  {req.target === 'fact' ? 'Fact Statement / Verification Note' : 'Advocate Rationale & Note'}
+                  {req.target === 'fact'
+                    ? action === 'delete'
+                      ? 'Reason for Deleting Fact'
+                      : 'Fact Statement / Verification Note'
+                    : 'Advocate Rationale & Note'}
                 </p>
                 <textarea
                   value={note}
@@ -231,7 +330,9 @@ export default function ReviewDrawer({
                   placeholder={
                     action === 'approve' || action === 'submit'
                       ? 'Optional note for the chamber record…'
-                      : 'State why the finding is edited or overridden…'
+                      : req.target === 'fact' && action === 'edit'
+                        ? 'Enter the verified factual statement grounded in the record…'
+                        : 'State why the finding or score is edited or overridden…'
                   }
                   className="field"
                 />
@@ -242,7 +343,7 @@ export default function ReviewDrawer({
               </Well>
 
               {err && (
-                <div className="rounded-[5px] border border-bad-200 bg-bad-50 px-3 py-2 text-[12px] text-bad">
+                <div role="alert" className="rounded-[5px] border border-bad-200 bg-bad-50 px-3 py-2 text-[12px] text-bad">
                   {err}
                 </div>
               )}
@@ -259,8 +360,8 @@ export default function ReviewDrawer({
               <button
                 type="button"
                 disabled={!canDecide || busy}
-                onClick={submit}
-                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => void submit()}
+                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-1.5 text-[12px] font-semibold text-night transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Check size={14} />
                 {busy
@@ -269,9 +370,11 @@ export default function ReviewDrawer({
                     ? 'Approve & Seal to Ledger'
                     : action === 'submit'
                       ? 'Submit for Senior Review'
-                    : action === 'edit'
-                      ? 'Save Edit & Seal'
-                      : 'Record Override & Seal'}
+                      : action === 'delete'
+                        ? 'Confirm Delete & Seal'
+                        : action === 'edit'
+                          ? 'Save Edit & Seal'
+                          : 'Record Override & Seal'}
               </button>
             </div>
           </motion.aside>

@@ -75,13 +75,13 @@ export default function Feedback() {
 
       {req && (
         <div className="fixed inset-0 z-[90] grid place-items-center p-4">
-          <div className="fixed inset-0 bg-ink/40" onClick={() => settleConfirm(false)} />
+          <div className="fixed inset-0 bg-night/80 backdrop-blur-[2px]" onClick={() => settleConfirm(false)} />
           <div
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="confirm-title"
             aria-describedby="confirm-body"
-            className="relative w-full max-w-sm rounded-[8px] border border-line bg-surface p-5 shadow-[var(--shadow-pop)]"
+            className="relative w-full max-w-sm rounded-[8px] border border-line-strong bg-surface p-5 shadow-[var(--shadow-pop)]"
           >
             <h2 id="confirm-title" className="text-[15px] font-semibold text-ink">
               {req.title}
@@ -102,8 +102,8 @@ export default function Feedback() {
                 type="button"
                 onClick={() => settleConfirm(true)}
                 className={cn(
-                  'rounded-[5px] px-3.5 py-1.5 text-[12px] font-medium text-white',
-                  req.tone === 'danger' ? 'bg-bad hover:bg-bad/90' : 'bg-navy hover:bg-navy-600',
+                  'rounded-[5px] px-3.5 py-1.5 text-[12px] font-semibold',
+                  req.tone === 'danger' ? 'bg-bad text-night hover:bg-bad/90' : 'bg-navy text-night hover:bg-navy-600',
                 )}
               >
                 {req.confirmLabel}

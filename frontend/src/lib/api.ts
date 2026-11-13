@@ -28,6 +28,8 @@ import type {
   ModelInfo,
   OrgMemberRow,
   PipelineEvent,
+  PrecedentDetail,
+  PrecedentExploreResult,
   Precedents,
   ProofItem,
   QueueItem,
@@ -36,6 +38,7 @@ import type {
   Score,
   SourceRef,
   StatuteClock,
+  TamperResult,
 } from './types'
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/v1'
@@ -148,7 +151,7 @@ export const api = {
     }
     patchStore({ me: body.me, token: body.token, authed: true, authReady: true, matters: [] })
     closeAuth()
-    playIntro()
+    playIntro(previous ? 'switch' : 'login')
     await loadTenantData()
     bumpRev()
     return body.me
@@ -169,7 +172,7 @@ export const api = {
     }
     patchStore({ me: body.me, token: body.token, authed: true, authReady: true, matters: [] })
     closeAuth()
-    playIntro()
+    playIntro(previous ? 'switch' : 'login')
     await loadTenantData()
     bumpRev()
     return body.me
@@ -440,8 +443,24 @@ export const api = {
       `/ledger${matterId && matterId !== 'all' ? `?matter_id=${encodeURIComponent(matterId)}` : ''}`,
     ),
 
+  explorePrecedents: (body: {
+    query: string
+    area?: string
+    state?: string
+    district?: string
+    court?: string
+    outcome?: string
+    limit?: number
+  }) =>
+    req<PrecedentExploreResult>('/precedents/search', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getPrecedent: (docId: string) =>
+    req<PrecedentDetail>(`/precedents/${encodeURIComponent(docId)}`),
+
   tamperLedger: async () => {
-    const res = await req<{ tampered: boolean; broken_at: string | null }>(
+    const res = await req<TamperResult>(
       '/ledger/tamper',
       { method: 'POST' },
     )
@@ -464,9 +483,9 @@ export const api = {
     bumpRev()
   },
 
-  async *pipeline(id: string): AsyncGenerator<PipelineEvent> {
+  async *pipeline(id: string, live = false): AsyncGenerator<PipelineEvent> {
     await req<{ job_id: string }>(`/matters/${id}/run`, { method: 'POST' })
-    const res = await authFetch(`/matters/${id}/events`)
+    const res = await authFetch(`/matters/${id}/events${live ? '?live=true' : ''}`)
     if (!res.body) {
       throw new Error('Failed to open pipeline event stream')
     }

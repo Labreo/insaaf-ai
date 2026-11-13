@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Clock3, Download, FileText, Hourglass, Play } from 'lucide-react'
-import { api } from '@/lib/api'
-import { can, useDB } from '@/lib/store'
-import { run } from '@/lib/feedback'
+import { ArrowLeft, Check, Clock3, Download, FileText, Hourglass, Pencil, Play, X } from 'lucide-react'
+import { ApiError, api } from '@/lib/api'
+import { download } from '@/lib/docx'
+import { errorMessage, toast } from '@/lib/feedback'
+import { areaLabel, languageLabel, useMeta } from '@/lib/meta'
+import { bumpRev, can, useDB } from '@/lib/store'
 import type { Matter as MatterModel, SourceRef } from '@/lib/types'
 import { Badge, Card, ErrorBanner, Skeleton, SourceSheet, type Tone } from '@/components/primitives'
 import ReviewDrawer, { type ReviewRequest } from '@/components/ReviewDrawer'
@@ -84,28 +86,54 @@ export default function Matter() {
   }
 
   const me = useDB((d) => d.me)
+  const rev = useDB((d) => d.rev)
   const matterFromStore = useDB((d) => d.matters.find((x) => x.id === id))
+  const meta = useMeta()
   const [fetched, setFetched] = useState<MatterModel | null>(null)
   const [loading, setLoading] = useState(!matterFromStore)
   const [err, setErr] = useState<string | null>(null)
   const [source, setSource] = useState<SourceRef | null>(null)
   const [review, setReview] = useState<ReviewRequest | null>(null)
-  const [exporting, setExporting] = useState(false)
+  const [exportingFormat, setExportingFormat] = useState<'docx' | 'pdf' | null>(null)
+  const [savingLang, setSavingLang] = useState(false)
+  const [editingMeta, setEditingMeta] = useState(false)
+  const [savingMeta, setSavingMeta] = useState(false)
+  const [metaForm, setMetaForm] = useState({
+    forum_hint: '',
+    state: '',
+    district: '',
+    court_seat: '',
+    cause_date: '',
+    client_name: '',
+    opposite_party: '',
+    summary: '',
+  })
 
   // Keep the active tab visible when the tab bar scrolls horizontally (narrow screens).
   useEffect(() => {
     document.querySelector<HTMLElement>(`[data-tab="${tab}"]`)?.scrollIntoView({ inline: 'center', block: 'nearest' })
   }, [tab, loading])
 
-  const exportDocx = async () => {
-    if (exporting) return
-    setExporting(true)
-    const file = await run('DOCX export', () => api.exportDraft(id, 'docx'), 'DOCX downloaded')
-    setExporting(false)
-    if (!file) return
-    const url = URL.createObjectURL(file.blob)
-    Object.assign(document.createElement('a'), { href: url, download: file.filename }).click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  const exportDocument = async (format: 'docx' | 'pdf') => {
+    if (exportingFormat) return
+    setExportingFormat(format)
+    sfx.tick()
+    try {
+      const file = await api.exportDraft(id, format)
+      download(file.blob, file.filename)
+      sfx.accept()
+      toast('ok', `${format.toUpperCase()} downloaded`, file.filename)
+    } catch (e) {
+      sfx.reject()
+      if (e instanceof ApiError && e.code === 'citation_blocks_draft') {
+        toast('bad', 'Export blocked by Citation Gate', errorMessage(e))
+        setTab('citations')
+      } else {
+        toast('bad', `${format.toUpperCase()} export failed`, errorMessage(e))
+      }
+    } finally {
+      setExportingFormat(null)
+    }
   }
 
   useEffect(() => {
@@ -130,7 +158,7 @@ export default function Matter() {
       alive = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  }, [id, rev])
 
   const m = matterFromStore ?? fetched
 
@@ -148,11 +176,13 @@ export default function Matter() {
     return (
       <Card className="space-y-4">
         {err && <ErrorBanner error={err} />}
-        <p className="text-[14px] text-ink-2">Matter &ldquo;{id}&rdquo; was not found in Chamber A.</p>
+        <p className="text-[14px] text-ink-2">
+          Matter &ldquo;{id}&rdquo; was not found in {me?.org.name || 'this chamber'}.
+        </p>
         <button
           type="button"
           onClick={() => nav('/docket')}
-          className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white"
+          className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
         >
           Back to Chamber Docket
         </button>
@@ -164,12 +194,74 @@ export default function Matter() {
 
   const canExport = can('draft.export')
   const canRun = can('analysis.run')
+  const canEditMeta = can('matter.edit_meta') || can('matter.edit') || can('review.edit')
   const tabLabel = Object.fromEntries(TABS) as Record<Tab, string>
   const title = m.title.replace(' (FICTIONAL)', '')
   const updated = new Date(m.updated_at)
   const updatedLabel = Number.isNaN(updated.getTime())
     ? m.updated_at
     : updated.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+  const openMetaEditor = () => {
+    setMetaForm({
+      forum_hint: m.forum_hint ?? '',
+      state: m.state ?? '',
+      district: m.district ?? '',
+      court_seat: m.court_seat ?? '',
+      cause_date: m.cause_date ?? '',
+      client_name: m.client_name ?? '',
+      opposite_party: m.opposite_party ?? '',
+      summary: m.summary ?? '',
+    })
+    setEditingMeta(true)
+  }
+
+  const changeLanguage = async (language: string) => {
+    if (!canEditMeta || savingLang || language === m.client_language) return
+    setSavingLang(true)
+    sfx.tick()
+    try {
+      const next = await api.setLanguage(id, language)
+      setFetched(next)
+      bumpRev()
+      sfx.accept()
+      toast('ok', 'Client language updated', languageLabel(meta, next.client_language))
+    } catch (e) {
+      sfx.reject()
+      toast('bad', 'Could not update language', errorMessage(e))
+    } finally {
+      setSavingLang(false)
+    }
+  }
+
+  const saveMeta = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!canEditMeta || savingMeta) return
+    setSavingMeta(true)
+    sfx.tick()
+    try {
+      const next = await api.updateMatter(id, {
+        forum_hint: metaForm.forum_hint.trim() || undefined,
+        state: metaForm.state.trim() || undefined,
+        district: metaForm.district.trim() || undefined,
+        court_seat: metaForm.court_seat.trim() || undefined,
+        cause_date: metaForm.cause_date.trim() || undefined,
+        client_name: metaForm.client_name.trim() || undefined,
+        opposite_party: metaForm.opposite_party.trim() || undefined,
+        summary: metaForm.summary.trim() || undefined,
+      })
+      setFetched(next)
+      setEditingMeta(false)
+      bumpRev()
+      sfx.accept()
+      toast('ok', 'Matter metadata saved', next.forum_hint || next.title)
+    } catch (errUpdate) {
+      sfx.reject()
+      toast('bad', 'Could not update metadata', errorMessage(errUpdate))
+    } finally {
+      setSavingMeta(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -192,6 +284,7 @@ export default function Matter() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded border border-line bg-sunken px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{m.id}</span>
                 <Badge tone={statusTone[m.status]}>{statusLabel[m.status]}</Badge>
+                <Badge tone={m.moot ? 'warn' : 'brass'}>{m.moot ? 'DEMO / MOOT' : 'CHAMBER RECORD'}</Badge>
                 {m.days_left != null && (
                   <Badge tone={m.days_left <= 45 ? 'bad' : 'brass'}>
                     <Hourglass size={11} /> {m.days_left}d to limitation
@@ -199,21 +292,42 @@ export default function Matter() {
                 )}
               </div>
               <h1 className="mt-1.5 text-[20px] font-semibold leading-snug tracking-[-0.02em] text-ink">{title}</h1>
-              <dl className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[12px] text-ink-3">
+              <dl className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ink-3">
                 <div className="flex gap-1.5">
                   <dt className="sr-only">Court</dt>
                   <dd className="font-medium text-ink-2">{m.forum_hint || 'Forum not set'}</dd>
                 </div>
                 <div className="flex gap-1.5">
-                  <dt>Case type</dt>
-                  <dd className="capitalize text-ink-2">{m.case_type.replace('_', ' ')}</dd>
+                  <dt>Area</dt>
+                  <dd className="text-ink-2">{areaLabel(meta, m.case_type)}</dd>
                 </div>
-                {m.client_language && (
-                  <div className="flex gap-1.5">
-                    <dt>Client language</dt>
-                    <dd className="uppercase text-ink-2">{m.client_language}</dd>
-                  </div>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <dt>Client language</dt>
+                  <dd>
+                    {canEditMeta ? (
+                      <select
+                        aria-label="Client language"
+                        value={m.client_language || 'en'}
+                        disabled={savingLang}
+                        onChange={(e) => void changeLanguage(e.target.value)}
+                        className="rounded-[4px] border border-line bg-sunken px-1.5 py-0.5 text-[11px] font-medium text-ink focus:border-navy focus:outline-none disabled:opacity-50"
+                      >
+                        {meta.languages.map((l) => (
+                          <option key={l.code} value={l.code}>
+                            {l.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span
+                        title={`The ${me.role} role cannot change matter language`}
+                        className="font-medium text-ink-2"
+                      >
+                        {languageLabel(meta, m.client_language)}
+                      </span>
+                    )}
+                  </dd>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <dt className="sr-only">Last updated</dt>
                   <Clock3 size={11} />
@@ -226,6 +340,15 @@ export default function Matter() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              disabled={!canEditMeta}
+              title={canEditMeta ? undefined : `The ${me.role} role cannot edit matter metadata`}
+              onClick={() => (editingMeta ? setEditingMeta(false) : openMetaEditor())}
+              className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {editingMeta ? <X size={12} /> : <Pencil size={12} />} {editingMeta ? 'Close metadata' : 'Edit metadata'}
+            </button>
+            <button
+              type="button"
               disabled={!canRun}
               title={canRun ? undefined : `The ${me.role} role cannot run analysis`}
               onClick={() => setTab('pipeline')}
@@ -235,22 +358,126 @@ export default function Matter() {
             </button>
             <button
               type="button"
-              disabled={!canExport || exporting}
+              disabled={!canExport || exportingFormat !== null}
               title={canExport ? undefined : `The ${me.role} role cannot export drafts`}
-              onClick={exportDocx}
+              onClick={() => void exportDocument('docx')}
               className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-45"
             >
-              <Download size={12} /> {exporting ? 'Exporting…' : 'Export DOCX'}
+              <Download size={12} /> {exportingFormat === 'docx' ? 'Exporting…' : '.DOCX'}
+            </button>
+            <button
+              type="button"
+              disabled={!canExport || exportingFormat !== null}
+              title={canExport ? undefined : `The ${me.role} role cannot export drafts`}
+              onClick={() => void exportDocument('pdf')}
+              className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <Download size={12} /> {exportingFormat === 'pdf' ? 'Exporting…' : '.PDF'}
             </button>
             <button
               type="button"
               onClick={() => setTab('draft')}
-              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
+              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
             >
               <FileText size={13} /> Open pleading
             </button>
           </div>
         </div>
+
+        {editingMeta && (
+          <form onSubmit={(e) => void saveMeta(e)} className="mt-4 border-t border-line pt-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="block space-y-1 text-[11px] font-medium text-ink-2">
+                <span>Forum / Court hint</span>
+                <input
+                  value={metaForm.forum_hint}
+                  onChange={(e) => setMetaForm((f) => ({ ...f, forum_hint: e.target.value }))}
+                  placeholder="e.g. Bombay High Court at Goa"
+                  className="w-full rounded-[5px] border border-line bg-sunken px-2.5 py-1.5 text-[12px] text-ink focus:border-navy focus:outline-none"
+                />
+              </label>
+              <label className="block space-y-1 text-[11px] font-medium text-ink-2">
+                <span>State</span>
+                <input
+                  value={metaForm.state}
+                  onChange={(e) => setMetaForm((f) => ({ ...f, state: e.target.value }))}
+                  placeholder="e.g. Goa"
+                  className="w-full rounded-[5px] border border-line bg-sunken px-2.5 py-1.5 text-[12px] text-ink focus:border-navy focus:outline-none"
+                />
+              </label>
+              <label className="block space-y-1 text-[11px] font-medium text-ink-2">
+                <span>District</span>
+                <input
+                  value={metaForm.district}
+                  onChange={(e) => setMetaForm((f) => ({ ...f, district: e.target.value }))}
+                  placeholder="e.g. North Goa"
+                  className="w-full rounded-[5px] border border-line bg-sunken px-2.5 py-1.5 text-[12px] text-ink focus:border-navy focus:outline-none"
+                />
+              </label>
+              <label className="block space-y-1 text-[11px] font-medium text-ink-2">
+                <span>Court seat / Bench</span>
+                <input
+                  value={metaForm.court_seat}
+                  onChange={(e) => setMetaForm((f) => ({ ...f, court_seat: e.target.value }))}
+                  placeholder="e.g. Panaji / Mapusa"
+                  className="w-full rounded-[5px] border border-line bg-sunken px-2.5 py-1.5 text-[12px] text-ink focus:border-navy focus:outline-none"
+                />
+              </label>
+              <label className="block space-y-1 text-[11px] font-medium text-ink-2">
+                <span>Client / Petitioner</span>
+                <input
+                  value={metaForm.client_name}
+                  onChange={(e) => setMetaForm((f) => ({ ...f, client_name: e.target.value }))}
+                  placeholder="Client party name"
+                  className="w-full rounded-[5px] border border-line bg-sunken px-2.5 py-1.5 text-[12px] text-ink focus:border-navy focus:outline-none"
+                />
+              </label>
+              <label className="block space-y-1 text-[11px] font-medium text-ink-2">
+                <span>Opposite Party</span>
+                <input
+                  value={metaForm.opposite_party}
+                  onChange={(e) => setMetaForm((f) => ({ ...f, opposite_party: e.target.value }))}
+                  placeholder="Respondent / Opposite party"
+                  className="w-full rounded-[5px] border border-line bg-sunken px-2.5 py-1.5 text-[12px] text-ink focus:border-navy focus:outline-none"
+                />
+              </label>
+              <label className="block space-y-1 text-[11px] font-medium text-ink-2">
+                <span>Cause / Incident date</span>
+                <input
+                  type="date"
+                  value={metaForm.cause_date}
+                  onChange={(e) => setMetaForm((f) => ({ ...f, cause_date: e.target.value }))}
+                  className="w-full rounded-[5px] border border-line bg-sunken px-2.5 py-1.5 font-mono text-[12px] text-ink focus:border-navy focus:outline-none"
+                />
+              </label>
+              <label className="block space-y-1 text-[11px] font-medium text-ink-2 sm:col-span-2 lg:col-span-1">
+                <span>Summary</span>
+                <input
+                  value={metaForm.summary}
+                  onChange={(e) => setMetaForm((f) => ({ ...f, summary: e.target.value }))}
+                  placeholder="Concise procedural posture"
+                  className="w-full rounded-[5px] border border-line bg-sunken px-2.5 py-1.5 text-[12px] text-ink focus:border-navy focus:outline-none"
+                />
+              </label>
+            </div>
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingMeta(false)}
+                className="rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={savingMeta}
+                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600 disabled:opacity-50"
+              >
+                <Check size={13} /> {savingMeta ? 'Saving…' : 'Save metadata'}
+              </button>
+            </div>
+          </form>
+        )}
       </header>
 
       {/* Grouped tab navigation */}
@@ -310,7 +537,7 @@ export default function Matter() {
       </div>
 
       <SourceSheet s={source} onClose={() => setSource(null)} />
-      <ReviewDrawer matterId={id} req={review} onClose={() => setReview(null)} />
+      <ReviewDrawer matterId={id} req={review} onClose={() => setReview(null)} onDone={() => bumpRev()} />
     </div>
   )
 }

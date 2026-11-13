@@ -3,54 +3,52 @@
 /* ------------------------------------------------------------------
    Insaaf design tokens
 
-   Workbench (default): paper & ink. Warm off-white canvas, white
-   working surfaces, near-black ink, one navy action colour and a
-   brass mark used sparingly for seals and authority. Dense, quiet,
-   built for eight hours a day.
-
-   Landing (.night scope): the velvet + pewter palette of the Justice
-   intro, used only on the public site.
+   Unified Justice-inspired night palette across intro, landing and
+   workbench: deep obsidian canvas (#0a0b0e), elevated night-2 surfaces
+   (#111318), bone ink (#efede7), fog/smoke secondary hierarchy, and
+   Statue-of-Justice antique gold (#c9a868) for primary actions and
+   chamber seals.
    ------------------------------------------------------------------ */
 @theme {
-  /* paper */
-  --color-canvas: #f5f4ef;
-  --color-surface: #ffffff;
-  --color-sunken: #faf9f6;
-  --color-hover: #f1efe9;
-  --color-line: #e5e2d9;
-  --color-line-strong: #d4d0c4;
+  /* night surfaces (from Intro / Landing .night palette) */
+  --color-canvas: #0a0b0e;
+  --color-surface: #111318;
+  --color-sunken: #0d0f13;
+  --color-hover: #1a1d24;
+  --color-line: #23262e;
+  --color-line-strong: #323744;
 
   /* ink */
-  --color-ink: #17191e;
-  --color-ink-2: #464b55;
-  --color-ink-3: #737885;
-  --color-ink-4: #a2a6ae;
+  --color-ink: #efede7;
+  --color-ink-2: #c2c6cf;
+  --color-ink-3: #8e94a0;
+  --color-ink-4: #656b78;
 
-  /* action + authority */
-  --color-navy: #1f3a5c;
-  --color-navy-600: #284a73;
-  --color-navy-800: #172c47;
-  --color-navy-50: #eef2f7;
-  --color-navy-100: #dde5ef;
-  --color-brass: #9a7a3c;
-  --color-brass-50: #f7f1e4;
-  --color-brass-200: #e6d6b2;
+  /* action + authority (Justice statue antique gold) */
+  --color-navy: #c9a868;
+  --color-navy-600: #d8b878;
+  --color-navy-800: #9c7f45;
+  --color-navy-50: rgba(201, 168, 104, 0.12);
+  --color-navy-100: rgba(201, 168, 104, 0.28);
+  --color-brass: #c9a868;
+  --color-brass-50: rgba(201, 168, 104, 0.14);
+  --color-brass-200: rgba(201, 168, 104, 0.34);
 
-  /* legal states */
-  --color-ok: #2e7350;
-  --color-ok-50: #ecf5ef;
-  --color-ok-200: #c4e0cf;
-  --color-warn: #a86514;
-  --color-warn-50: #fbf3e6;
-  --color-warn-200: #efd5ad;
-  --color-bad: #b03a2e;
-  --color-bad-50: #fbeeec;
-  --color-bad-200: #efc5bf;
-  --color-info: #2c5a8a;
-  --color-info-50: #edf3f9;
-  --color-info-200: #c6d8ea;
+  /* legal states (tuned for AA+ contrast on dark obsidian surfaces) */
+  --color-ok: #4ade80;
+  --color-ok-50: rgba(74, 222, 128, 0.11);
+  --color-ok-200: rgba(74, 222, 128, 0.28);
+  --color-warn: #fbbf24;
+  --color-warn-50: rgba(251, 191, 36, 0.12);
+  --color-warn-200: rgba(251, 191, 36, 0.3);
+  --color-bad: #f87171;
+  --color-bad-50: rgba(248, 113, 113, 0.13);
+  --color-bad-200: rgba(248, 113, 113, 0.32);
+  --color-info: #7dd3fc;
+  --color-info-50: rgba(125, 211, 252, 0.11);
+  --color-info-200: rgba(125, 211, 252, 0.28);
 
-  /* night (landing) */
+  /* night aliases */
   --color-night: #0a0b0e;
   --color-night-2: #111318;
   --color-night-3: #1a1d24;
@@ -80,9 +78,9 @@
   --radius-lg: 8px;
   --radius-xl: 12px;
 
-  --shadow-card: 0 1px 0 rgba(23, 25, 30, 0.03), 0 1px 2px rgba(23, 25, 30, 0.04);
-  --shadow-pop: 0 1px 2px rgba(23, 25, 30, 0.06), 0 8px 24px -6px rgba(23, 25, 30, 0.16);
-  --shadow-sheet: -1px 0 0 rgba(23, 25, 30, 0.06), -24px 0 48px -24px rgba(23, 25, 30, 0.22);
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.45), 0 4px 16px -4px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.5), 0 16px 36px -6px rgba(0, 0, 0, 0.72);
+  --shadow-sheet: -1px 0 0 rgba(201, 168, 104, 0.16), -24px 0 48px -16px rgba(0, 0, 0, 0.78);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -91,6 +89,7 @@
   html {
     background: var(--color-canvas);
     color: var(--color-ink);
+    color-scheme: dark;
     font-family: var(--font-sans);
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
@@ -98,11 +97,14 @@
     text-rendering: optimizeLegibility;
     font-feature-settings: "cv11", "ss01", "ss03";
   }
-  body { min-height: 100dvh; }
-  ::selection { background: color-mix(in oklab, var(--color-navy) 18%, transparent); }
+  body {
+    min-height: 100dvh;
+    background-image: radial-gradient(ellipse 80% 45% at 50% -10%, rgba(201, 168, 104, 0.065), transparent 65%);
+  }
+  ::selection { background: color-mix(in oklab, var(--color-navy) 28%, transparent); }
   button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
   button:not(:disabled), [role="button"]:not([aria-disabled="true"]), a, label[for], select { cursor: pointer; }
-  :focus-visible { outline: 2px solid color-mix(in oklab, var(--color-navy) 55%, transparent); outline-offset: 2px; border-radius: 4px; }
+  :focus-visible { outline: 2px solid color-mix(in oklab, var(--color-navy) 65%, transparent); outline-offset: 2px; border-radius: 4px; }
   input, textarea, select { font: inherit; color: inherit; }
   h1, h2, h3 { text-wrap: balance; }
   p { text-wrap: pretty; }
@@ -121,25 +123,26 @@
   .tbl tbody td { padding: 10px 12px; border-bottom: 1px solid var(--color-line); vertical-align: top; }
   .tbl tbody tr:last-child td { border-bottom: 0; }
   .tbl tbody tr.row-link { transition: background-color 120ms; }
-  .tbl tbody tr.row-link:hover { background: var(--color-sunken); }
+  .tbl tbody tr.row-link:hover { background: var(--color-hover); }
 
   .field {
     width: 100%; height: 34px; padding: 0 10px;
-    background: var(--color-surface); border: 1px solid var(--color-line-strong); border-radius: var(--radius-md);
+    background: var(--color-sunken); color: var(--color-ink);
+    border: 1px solid var(--color-line-strong); border-radius: var(--radius-md);
     font-size: 13px; transition: border-color 120ms, box-shadow 120ms;
   }
   textarea.field { height: auto; padding: 8px 10px; line-height: 1.5; resize: vertical; }
   .field::placeholder { color: var(--color-ink-4); }
-  .field:focus { outline: none; border-color: var(--color-navy-600); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-navy) 14%, transparent); }
+  .field:focus { outline: none; border-color: var(--color-navy); box-shadow: 0 0 0 3px rgba(201, 168, 104, 0.18); }
 
   .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-ink-3); }
 
-  /* the pleading: a real page */
+  /* the pleading: chamber-dark editorial folio framed in antique gold hairline */
   .page-doc {
-    background: #fffefb;
-    box-shadow: 0 0 0 1px var(--color-line), 0 2px 4px rgba(23, 25, 30, 0.04), 0 18px 40px -20px rgba(23, 25, 30, 0.18);
+    background: linear-gradient(180deg, #13161d 0%, #0f1218 100%);
+    box-shadow: 0 0 0 1px rgba(201, 168, 104, 0.24), 0 4px 12px rgba(0, 0, 0, 0.4), 0 22px 48px -20px rgba(0, 0, 0, 0.72);
     font-family: var(--font-serif);
-    font-size: 16px; line-height: 1.75; color: #1b1c1f;
+    font-size: 16px; line-height: 1.75; color: var(--color-bone);
   }
 }
 
@@ -151,6 +154,10 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
   .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-line-strong) transparent; }
+
+  /* High-contrast guarantee when antique gold (.bg-navy) carries text */
+  .bg-navy, .bg-navy.text-white { color: #0a0b0e; }
+  .hover\:bg-navy:hover.hover\:text-white:hover { color: #0a0b0e; }
 }
 
 /* ----------------------------------------------------------------- landing */
@@ -180,10 +187,10 @@
 }
 
 @keyframes shimmer { 100% { transform: translateX(100%); } }
-.skeleton { position: relative; overflow: hidden; background: #eeece5; border-radius: 4px; }
+.skeleton { position: relative; overflow: hidden; background: #14171f; border-radius: 4px; }
 .skeleton::after {
   content: ""; position: absolute; inset: 0; transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 104, 0.12), transparent);
   animation: shimmer 1.4s infinite;
 }
 

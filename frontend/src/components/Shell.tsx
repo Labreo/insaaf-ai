@@ -22,6 +22,7 @@ import {
   Scale,
   ScanSearch,
   ScrollText,
+  Search,
   ShieldCheck,
   Sparkles,
   Users,
@@ -30,6 +31,7 @@ import {
 } from 'lucide-react'
 import AuthModal from './AuthModal'
 import { api } from '@/lib/api'
+import { areaTag, useMeta } from '@/lib/meta'
 import { can, openAuth, useDB } from '@/lib/store'
 import type { Matter } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -50,6 +52,16 @@ interface NavItem {
 }
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
+    title: 'Legal Intelligence',
+    items: [
+      { label: 'Precedent Discovery', icon: Search, to: '/precedents' },
+      { label: 'Matter Precedents', icon: BookOpenCheck, tab: 'precedents' },
+      { label: 'AI-B Score & Bias Firewall', icon: Scale, tab: 'score' },
+      { label: 'Citation Health', icon: ScanSearch, tab: 'citations' },
+      { label: 'Law Change Radar', icon: Radar, tab: 'radar' },
+    ],
+  },
+  {
     title: 'Workspace',
     items: [
       { label: 'Overview', icon: LayoutDashboard, to: '/docket' },
@@ -63,15 +75,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { label: 'Matter intake', icon: FolderPlus, to: '/new' },
       { label: 'Matter list', icon: LayoutList, to: '/docket', hash: 'matters' },
       { label: 'Documents & facts', icon: FileText, tab: 'facts' },
-    ],
-  },
-  {
-    title: 'Legal Intelligence',
-    items: [
-      { label: 'Precedents', icon: BookOpenCheck, tab: 'precedents' },
-      { label: 'AI-B score & Bias Firewall', icon: Scale, tab: 'score' },
-      { label: 'Citation health', icon: ScanSearch, tab: 'citations' },
-      { label: 'Law Change Radar', icon: Radar, tab: 'radar' },
     ],
   },
   {
@@ -94,12 +97,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   },
 ]
 
-const caseTag: Record<Matter['case_type'], string> = {
-  property: 'PRP',
-  civil_recovery: 'CIV',
-  criminal: 'CRM',
-}
-
 const statusDot: Record<Matter['status'], string> = {
   draft: 'bg-ink-4',
   running: 'bg-info',
@@ -113,6 +110,7 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
   const nav = useNavigate()
   const [params] = useSearchParams()
   const [mobileNav, setMobileNav] = useState(false)
+  const meta = useMeta()
 
   const me = useDB((s) => s.me)
   const matters = useDB((s) => s.matters)
@@ -243,7 +241,7 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
             >
               <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDot[mt.status])} />
               <span className="rounded border border-line bg-sunken px-1 py-0.5 font-mono text-[9px] font-medium text-ink-3">
-                {caseTag[mt.case_type]}
+                {areaTag(meta, mt.case_type)}
               </span>
               <span className="min-w-0 flex-1 truncate text-[12px] font-medium">{mt.title.replace(' (FICTIONAL)', '')}</span>
               {mt.days_left != null && <span className="tabular shrink-0 font-mono text-[10px] text-ink-3">{mt.days_left}d</span>}
@@ -259,7 +257,7 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
             <p className="truncate text-[12px] font-medium text-ink">{me.name}</p>
             <p className="truncate font-mono text-[10px] text-ink-3">{me.email ?? me.user_id}</p>
           </div>
-          <span className="shrink-0 rounded-[4px] bg-navy px-2 py-0.5 text-[10px] font-medium uppercase text-white">{me.role}</span>
+          <span className="shrink-0 rounded-[4px] bg-navy px-2 py-0.5 text-[10px] font-semibold uppercase text-night">{me.role}</span>
         </div>
         <div className="flex items-center justify-between gap-2">
           <span
@@ -294,7 +292,7 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded focus:bg-navy focus:px-3 focus:py-1.5 focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded focus:bg-navy focus:px-3 focus:py-1.5 focus:font-semibold focus:text-night"
       >
         Skip to content
       </a>
@@ -353,7 +351,7 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
                   sfx.tap()
                   nav('/new')
                 }}
-                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
+                className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3 py-1.5 text-[12px] font-semibold text-night hover:bg-navy-600"
               >
                 <FolderPlus size={13} /> New matter
               </button>
@@ -398,7 +396,7 @@ export default function Shell({ onReplayIntro }: { onReplayIntro: () => void }) 
         {/* Mobile Drawer Rail */}
         {mobileNav && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
-            <div className="fixed inset-0 bg-ink/30" onClick={() => setMobileNav(false)} />
+            <div className="fixed inset-0 bg-night/75 backdrop-blur-[2px]" onClick={() => setMobileNav(false)} />
             <aside className="relative z-10 h-full w-72 border-r border-line bg-surface shadow-[var(--shadow-sheet)]">
               <button
                 type="button"

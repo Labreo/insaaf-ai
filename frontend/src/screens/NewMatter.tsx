@@ -1,65 +1,16 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, FileUp, Mic, PenLine, Play, Sparkles, Square, Trash2, Upload } from 'lucide-react'
+import { FileText, FileUp, Mic, PenLine, Play, Search, Sparkles, Trash2, Upload } from 'lucide-react'
 import { api } from '@/lib/api'
+import { DEMO_INTAKE_SAMPLES, type DemoIntakeSample } from '@/lib/demoData'
 import { toast } from '@/lib/feedback'
-import type { CaseType, Matter } from '@/lib/types'
+import { areaOf, useMeta } from '@/lib/meta'
+import { useDB } from '@/lib/store'
+import { sfx } from '@/lib/sound'
+import type { CaseType } from '@/lib/types'
+import { Recorder } from '@/components/Recorder'
 import { Badge, Card, ErrorBanner, Label, PageHeader, Section } from '@/components/primitives'
 import { cn } from '@/lib/utils'
-import { sfx } from '@/lib/sound'
-
-const types: { k: CaseType; label: string; hint: string }[] = [
-  { k: 'property', label: 'Property', hint: 'title · possession · injunction' },
-  { k: 'civil_recovery', label: 'Civil recovery', hint: 'money suits · contracts · s.12A' },
-  { k: 'criminal', label: 'Criminal', hint: 'bail · BNS/BNSS · plea eligibility' },
-]
-
-const langs: { k: NonNullable<Matter['client_language']>; label: string }[] = [
-  { k: 'en', label: 'English' },
-  { k: 'kok', label: 'कोंकणी' },
-  { k: 'mr', label: 'मराठी' },
-  { k: 'hi', label: 'हिन्दी' },
-]
-
-const SAMPLES: Record<CaseType, { filename: string; label: string; content: string }[]> = {
-  property: [
-    {
-      filename: 'agreement_of_sale_gpa.txt',
-      label: 'Sale Agreement + GPA',
-      content:
-        'AGREEMENT OF SALE AND GENERAL POWER OF ATTORNEY executed on 2009-02-14 at Mapusa, Goa between Shri Naik (bhatkar representative) and Smt. Maria Fernandes regarding Survey No. 44/2, Sub-Division 3. Unregistered notarised instrument; Stamp duty paid at Rs. 100. Buyer has paid Rs. 8,50,000 in instalments (receipt for final payment pending); Form I & XIV still stands in opposite party name.',
-    },
-    {
-      filename: 'client_voice_transcript_kok.json',
-      label: 'Konkani client note',
-      content: JSON.stringify({
-        language: 'kok',
-        duration_range: '00:12–00:24',
-        original_text:
-          'हांव २००९ सावन ह्या जमनीर रावतां. म्हाका मुखत्यारपत्र आनी करार दिलो, पूण रजिस्टर विक्री खत जावंक ना.',
-        english_translation:
-          'I have lived on this plot since 2009. I was given a power of attorney and agreement, but no registered sale deed was executed.',
-        translation_confidence: 'medium',
-      }),
-    },
-  ],
-  civil_recovery: [
-    {
-      filename: 'shetty_commercial_invoices.txt',
-      label: 'Invoices + s.18 Ack',
-      content:
-        'Commercial dispute Rs. 4,20,000 against 6 invoices (Jan–Apr 2026) supplied by Shetty Traders to Coastal Hospitality. Written email acknowledgment dated 2026-05-12 confirms Rs. 4,20,000 balance. Statutory demand notice sent by email; no postal acknowledgment on file. Commercial Courts Act s.12A pre-institution mediation required.',
-    },
-  ],
-  criminal: [
-    {
-      filename: 'bns_303_chargesheet.txt',
-      label: 'BNS s.303(2) Chargesheet',
-      content:
-        'FIR & Chargesheet under BNS s.303(2) (punishable up to 3 years imprisonment, below 7 years) filed before JMFC Mapusa on 2026-09-03. Offence is not a socio-economic offence and is not committed against a woman or child under 14. Antecedents verification report awaited; complainant open to restitution under BNSS s.290.',
-    },
-  ],
-}
 
 interface StagedDoc {
   id: string
@@ -69,10 +20,23 @@ interface StagedDoc {
 
 export default function NewMatter() {
   const nav = useNavigate()
+  const me = useDB((s) => s.me)
+  const meta = useMeta()
+
   const [type, setType] = useState<CaseType>('property')
-  const [lang, setLang] = useState<NonNullable<Matter['client_language']>>('kok')
+  const [areaFilter, setAreaFilter] = useState('')
+  const [groupFilter, setGroupFilter] = useState<string>('all')
+  const [lang, setLang] = useState<string>('kok')
   const [title, setTitle] = useState('')
   const [forum, setForum] = useState('')
+  const [stateName, setStateName] = useState('')
+  const [district, setDistrict] = useState('')
+  const [courtSeat, setCourtSeat] = useState('')
+  const [clientName, setClientName] = useState('')
+  const [oppositeParty, setOppositeParty] = useState('')
+  const [causeDate, setCauseDate] = useState('')
+  const [summary, setSummary] = useState('')
+
   const [staged, setStaged] = useState<StagedDoc[]>([])
   const [composeOpen, setComposeOpen] = useState(false)
   const [docName, setDocName] = useState('chamber_brief_notes.txt')
@@ -82,13 +46,26 @@ export default function NewMatter() {
   const [titleTouched, setTitleTouched] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const groups = ['all', ...Array.from(new Set(meta.areas.map((a) => a.group)))]
+  const visibleAreas = meta.areas.filter((a) => {
+    if (groupFilter !== 'all' && a.group !== groupFilter) return false
+    const needle = areaFilter.trim().toLowerCase()
+    if (!needle) return true
+    return (
+      a.label.toLowerCase().includes(needle) ||
+      a.forum.toLowerCase().includes(needle) ||
+      a.statutes.some((s) => s.toLowerCase().includes(needle))
+    )
+  })
+  const selectedArea = areaOf(meta, type)
+
   const addFiles = (files: FileList | null) => {
     if (!files) return
     const items: StagedDoc[] = Array.from(files).map((f, idx) => ({
       id: `${Date.now()}-${idx}-${f.name}`,
       file: f,
       kind:
-        f.type.startsWith('audio/') || f.name.endsWith('.wav') || f.name.endsWith('.webm')
+        f.type.startsWith('audio/') || f.name.endsWith('.wav') || f.name.endsWith('.webm') || f.name.endsWith('.m4a')
           ? 'voice'
           : 'doc',
     }))
@@ -109,6 +86,23 @@ export default function NewMatter() {
     setComposeOpen(false)
   }
 
+  const applyDemoSample = (sample: DemoIntakeSample) => {
+    setType(sample.area)
+    setLang(sample.client_language)
+    setTitle(sample.title)
+    setForum(sample.forum_hint)
+    setStateName(sample.state)
+    setDistrict(sample.district)
+    setCourtSeat(sample.court_seat)
+    setClientName(sample.client_name)
+    setOppositeParty(sample.opposite_party)
+    setCauseDate(sample.cause_date)
+    setSummary(sample.summary)
+    setTitleTouched(false)
+    stageText(sample.filename, sample.content)
+    toast('ok', 'Demo intake preset loaded', `${sample.label} — ready to create & run pipeline`)
+  }
+
   const launchPipeline = async () => {
     if (!title.trim()) {
       setTitleTouched(true)
@@ -123,9 +117,15 @@ export default function NewMatter() {
         title: title.trim(),
         case_type: type,
         client_language: lang,
-        forum_hint: forum.trim() || undefined,
+        forum_hint: forum.trim() || selectedArea?.forum || undefined,
+        state: stateName.trim() || undefined,
+        district: district.trim() || undefined,
+        court_seat: courtSeat.trim() || undefined,
+        cause_date: causeDate.trim() || undefined,
+        client_name: clientName.trim() || undefined,
+        opposite_party: oppositeParty.trim() || undefined,
+        summary: summary.trim() || undefined,
       })
-      // The matter now exists: a failed upload must not strand the user on this form (a retry would duplicate it).
       const failed: string[] = []
       for (const item of staged) {
         try {
@@ -134,8 +134,15 @@ export default function NewMatter() {
           failed.push(`${item.file.name}: ${e instanceof Error ? e.message : String(e)}`)
         }
       }
-      if (failed.length) toast('bad', `${failed.length} document(s) did not upload`, `${failed.join(' · ')}. The matter was created — attach them from its Case record.`)
-      else toast('ok', 'Matter created')
+      if (failed.length) {
+        toast(
+          'bad',
+          `${failed.length} document(s) did not upload`,
+          `${failed.join(' · ')}. The matter was created — attach them from its Facts tab.`,
+        )
+      } else {
+        toast('ok', 'Matter created')
+      }
       nav(`/matters/${m.id}?tab=pipeline${failed.length < staged.length || staged.length === 0 ? '&run=1' : ''}`)
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
@@ -149,13 +156,13 @@ export default function NewMatter() {
       <PageHeader
         kicker="Matter Intake & Evidence Ingestion"
         title="Create Matter & Launch 11-Stage Pipeline"
-        description="Classify the dispute, select the client's primary language for Bhashini/Devanagari extraction, and stage evidentiary instruments."
+        description="Classify the dispute across all 15 practice areas, select client vernacular for Insaaf Translate (12 Indian languages), and stage evidentiary instruments."
         right={
           <button
             type="button"
             disabled={busy}
-            onClick={launchPipeline}
-            className="inline-flex items-center gap-2 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => void launchPipeline()}
+            className="inline-flex items-center gap-2 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-semibold text-night transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Play size={13} /> {busy ? 'Creating matter…' : 'Create & Run Pipeline'}
           </button>
@@ -164,43 +171,105 @@ export default function NewMatter() {
 
       {err && <ErrorBanner error={err} />}
 
+      <Card className="space-y-2.5 border-brass-200/70 bg-sunken">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Label>One-Click Illustrative Indian Demo Presets</Label>
+            <Badge tone="warn">SYNTHETIC DEMO PRESETS</Badge>
+          </div>
+          <span className="text-[11px] text-ink-3">
+            Populates parties, jurisdiction, limitation trigger date, and sample evidence
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {DEMO_INTAKE_SAMPLES.map((sample) => (
+            <button
+              key={sample.id}
+              type="button"
+              onClick={() => applyDemoSample(sample)}
+              className="inline-flex items-center gap-1 rounded-[4px] border border-brass-200 bg-brass-50 px-2.5 py-1 text-[11px] font-medium text-brass hover:bg-brass-50/75"
+            >
+              <Sparkles size={11} /> {sample.label}
+            </button>
+          ))}
+        </div>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left 5 Cols: Matter Particulars */}
         <div className="space-y-5 lg:col-span-5">
           <Section title="1 · Dispute Classification & Jurisdiction">
             <Card className="space-y-4">
-              <div>
-                <Label className="mb-2">Practice Area / Rule Pack</Label>
-                <div className="grid gap-2">
-                  {types.map((t) => (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Practice Area ({meta.areas.length} Indian Law Packs)</Label>
+                  {selectedArea && <Badge tone="navy">{selectedArea.tag}</Badge>}
+                </div>
+
+                <div className="relative">
+                  <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
+                  <input
+                    value={areaFilter}
+                    onChange={(e) => setAreaFilter(e.target.value)}
+                    placeholder="Filter areas, statutes, or forums…"
+                    className="field pl-8 text-[12px]"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {groups.map((grp) => (
                     <button
-                      key={t.k}
+                      key={grp}
+                      type="button"
+                      onClick={() => setGroupFilter(grp)}
+                      className={cn(
+                        'rounded-[4px] border px-2 py-0.5 text-[10.5px] font-medium capitalize transition-colors',
+                        groupFilter === grp
+                          ? 'border-navy bg-navy text-night font-semibold'
+                          : 'border-line bg-sunken text-ink-2 hover:bg-hover',
+                      )}
+                    >
+                      {grp}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="scroll-thin max-h-60 space-y-1.5 overflow-y-auto pr-1">
+                  {visibleAreas.map((a) => (
+                    <button
+                      key={a.id}
                       type="button"
                       onClick={() => {
                         sfx.tick()
-                        setType(t.k)
+                        setType(a.id)
                       }}
                       className={cn(
-                        'flex items-center justify-between rounded-[5px] border px-3 py-2.5 text-left transition-colors',
-                        type === t.k
+                        'flex w-full items-center justify-between gap-2 rounded-[5px] border px-3 py-2 text-left transition-colors',
+                        type === a.id
                           ? 'border-navy bg-navy-50'
                           : 'border-line bg-sunken hover:bg-hover',
                       )}
                     >
-                      <span>
-                        <p className={cn('text-[13px] font-medium', type === t.k ? 'text-navy' : 'text-ink')}>
-                          {t.label}
-                        </p>
-                        <p className="text-[11px] text-ink-3">{t.hint}</p>
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-1.5">
+                          <span className="font-mono text-[9.5px] text-ink-3">{a.tag}</span>
+                          <span className={cn('truncate text-[12.5px] font-medium', type === a.id ? 'text-navy' : 'text-ink')}>
+                            {a.label}
+                          </span>
+                        </span>
+                        <p className="mt-0.5 truncate text-[11px] text-ink-3">{a.forum}</p>
                       </span>
                       <span
                         className={cn(
-                          'h-3.5 w-3.5 rounded-full border',
-                          type === t.k ? 'border-navy bg-navy' : 'border-line-strong bg-surface',
+                          'h-3.5 w-3.5 shrink-0 rounded-full border',
+                          type === a.id ? 'border-navy bg-navy' : 'border-line-strong bg-surface',
                         )}
                       />
                     </button>
                   ))}
+                  {visibleAreas.length === 0 && (
+                    <p className="py-3 text-center text-[12px] text-ink-3">No practice area matches &ldquo;{areaFilter}&rdquo;.</p>
+                  )}
                 </div>
               </div>
 
@@ -219,36 +288,109 @@ export default function NewMatter() {
                 />
                 {titleTouched && !title.trim() && (
                   <p id="title-err" role="alert" className="mt-1 text-[11px] text-bad">
-                    Enter the parties and subject, e.g. “Desai v. Naik — plot possession”. Required to open a matter.
+                    Enter the parties and subject, e.g. &ldquo;Desai v. Naik — plot possession&rdquo;. Required to open a matter.
                   </p>
                 )}
               </div>
 
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="mb-1">Client / Petitioner</Label>
+                  <input
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="e.g. Smt. Maria Fernandes"
+                    className="field text-[12px]"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1">Opposite Party</Label>
+                  <input
+                    value={oppositeParty}
+                    onChange={(e) => setOppositeParty(e.target.value)}
+                    placeholder="e.g. Shri Ramesh Naik"
+                    className="field text-[12px]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="mb-1">Forum / Court Hint</Label>
+                  <input
+                    value={forum}
+                    onChange={(e) => setForum(e.target.value)}
+                    placeholder={selectedArea?.forum || 'Civil Judge Senior Division'}
+                    className="field text-[12px]"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1">Cause / Trigger Date</Label>
+                  <input
+                    type="date"
+                    value={causeDate}
+                    onChange={(e) => setCauseDate(e.target.value)}
+                    className="field font-mono text-[12px]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                <div>
+                  <Label className="mb-1">State</Label>
+                  <input
+                    value={stateName}
+                    onChange={(e) => setStateName(e.target.value)}
+                    placeholder="Goa"
+                    className="field text-[12px]"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1">District</Label>
+                  <input
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    placeholder="North Goa"
+                    className="field text-[12px]"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1">Court Seat</Label>
+                  <input
+                    value={courtSeat}
+                    onChange={(e) => setCourtSeat(e.target.value)}
+                    placeholder="Mapusa"
+                    className="field text-[12px]"
+                  />
+                </div>
+              </div>
+
               <div>
-                <Label className="mb-1.5">Forum / Court Hint (Optional)</Label>
-                <input
-                  value={forum}
-                  onChange={(e) => setForum(e.target.value)}
-                  placeholder="Civil Judge Senior Division, Mapusa"
-                  className="field"
+                <Label className="mb-1">Brief Dispute Summary (Optional)</Label>
+                <textarea
+                  rows={2}
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="Concise legal posture for precedent retrieval and outcome weighting…"
+                  className="field text-[12px]"
                 />
               </div>
 
               <div>
-                <Label className="mb-2">Client Statement Language</Label>
+                <Label className="mb-2">Client Statement Language ({meta.languages.length} Supported)</Label>
                 <div className="flex flex-wrap gap-1.5">
-                  {langs.map((l) => (
+                  {meta.languages.map((l) => (
                     <button
-                      key={l.k}
+                      key={l.code}
                       type="button"
                       onClick={() => {
                         sfx.tick()
-                        setLang(l.k)
+                        setLang(l.code)
                       }}
                       className={cn(
-                        'rounded-[5px] border px-3 py-1.5 text-[12px] transition-colors',
-                        lang === l.k
-                          ? 'border-navy bg-navy text-white font-medium'
+                        'rounded-[5px] border px-2.5 py-1 text-[11.5px] transition-colors',
+                        lang === l.code
+                          ? 'border-navy bg-navy text-night font-semibold'
                           : 'border-line bg-sunken text-ink-2 hover:bg-hover',
                       )}
                     >
@@ -263,34 +405,7 @@ export default function NewMatter() {
 
         {/* Right 7 Cols: Evidence Ingestion */}
         <div className="space-y-5 lg:col-span-7">
-          <Section
-            title="2 · Client Documents & Voice Statements"
-            right={
-              <div className="flex flex-wrap items-center gap-1.5">
-                {SAMPLES[type].map((s) => (
-                  <button
-                    key={s.filename}
-                    type="button"
-                    onClick={() => {
-                      if (!title.trim()) {
-                        setTitle(
-                          type === 'property'
-                            ? 'Desai v. Naik — unregistered agreement possession'
-                            : type === 'civil_recovery'
-                              ? 'Coastal Supply v. Zenith — ₹4.2L invoice recovery'
-                              : 'State v. Kamat — BNS s.303(2) plea eligibility',
-                        )
-                      }
-                      stageText(s.filename, s.content)
-                    }}
-                    className="inline-flex items-center gap-1 rounded-[4px] border border-brass-200 bg-brass-50 px-2.5 py-1 text-[11px] font-medium text-brass hover:bg-brass-50/70"
-                  >
-                    <Sparkles size={11} /> Load {s.label}
-                  </button>
-                ))}
-              </div>
-            }
-          >
+          <Section title="2 · Client Documents & Voice Statements">
             <Card className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-3">
                 <button
@@ -308,7 +423,7 @@ export default function NewMatter() {
                   ref={fileRef}
                   type="file"
                   multiple
-                  accept=".pdf,.docx,.doc,.txt,.json,audio/*,.wav,.webm,.mp3"
+                  accept=".pdf,.docx,.doc,.txt,.json,audio/*,.wav,.webm,.mp3,.m4a"
                   className="hidden"
                   onChange={(e) => addFiles(e.target.files)}
                 />
@@ -368,7 +483,7 @@ export default function NewMatter() {
                       type="button"
                       disabled={!docText.trim()}
                       onClick={() => stageText(docName, docText)}
-                      className="rounded-[5px] bg-navy px-3 py-1 text-[12px] font-medium text-white disabled:opacity-50"
+                      className="rounded-[5px] bg-navy px-3 py-1 text-[12px] font-semibold text-night disabled:opacity-50"
                     >
                       Stage Document
                     </button>
@@ -391,7 +506,7 @@ export default function NewMatter() {
                 <Label className="mb-2">Staged Documents ({staged.length})</Label>
                 {staged.length === 0 ? (
                   <p className="rounded-[5px] border border-line bg-sunken px-3.5 py-2.5 text-[12px] text-ink-3">
-                    No files staged yet. Attach a file, record a voice note, or load a sample instrument above.
+                    No files staged yet. Attach a file, record a voice note, or load a demo intake preset above.
                   </p>
                 ) : (
                   <ul className="divide-y divide-line rounded-[5px] border border-line bg-surface">
@@ -422,13 +537,13 @@ export default function NewMatter() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
                 <p className="text-[11px] text-ink-3">
-                  Processed inside Chamber A with paragraph-level source tracking.
+                  Processed inside {me.org.name && me.org.name !== 'No chamber' ? me.org.name : 'your chamber'} with paragraph-level source tracking.
                 </p>
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={launchPipeline}
-                  className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white hover:bg-navy-600 disabled:opacity-50"
+                  onClick={() => void launchPipeline()}
+                  className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-semibold text-night hover:bg-navy-600 disabled:opacity-50"
                 >
                   <Play size={13} /> {busy ? 'Running…' : 'Create & Run Pipeline'}
                 </button>
@@ -438,58 +553,5 @@ export default function NewMatter() {
         </div>
       </div>
     </div>
-  )
-}
-
-function Recorder({ onDone }: { onDone: (f: File) => void }) {
-  const [rec, setRec] = useState<MediaRecorder | null>(null)
-  const [secs, setSecs] = useState(0)
-  const chunks = useRef<Blob[]>([])
-  const timer = useRef<number | null>(null)
-
-  const start = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const r = new MediaRecorder(stream)
-      chunks.current = []
-      r.ondataavailable = (e) => chunks.current.push(e.data)
-      r.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop())
-        const blob = new Blob(chunks.current, { type: r.mimeType || 'audio/webm' })
-        onDone(new File([blob], `client_note_${Date.now()}.webm`, { type: blob.type }))
-        if (timer.current) window.clearInterval(timer.current)
-        setSecs(0)
-        setRec(null)
-      }
-      r.start()
-      setRec(r)
-      sfx.accept()
-      timer.current = window.setInterval(() => setSecs((s) => s + 1), 1000)
-    } catch {
-      alert('Microphone not available. Upload an audio file instead.')
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => (rec ? rec.stop() : start())}
-      className={cn(
-        'flex items-start gap-3 rounded-[5px] border p-3 text-left transition-colors',
-        rec ? 'border-bad-200 bg-bad-50' : 'border-line bg-sunken hover:bg-hover',
-      )}
-    >
-      {rec ? (
-        <Square size={17} className="mt-0.5 shrink-0 text-bad" />
-      ) : (
-        <Mic size={17} className="mt-0.5 shrink-0 text-navy" />
-      )}
-      <div>
-        <p className="text-[13px] font-medium text-ink">
-          {rec ? `Recording (${secs}s) — Stop` : 'Record Voice Note'}
-        </p>
-        <p className="text-[11px] text-ink-3">Konkani · Marathi · Hindi</p>
-      </div>
-    </button>
   )
 }

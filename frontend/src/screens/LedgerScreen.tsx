@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Bug, Cpu, RotateCw } from 'lucide-react'
+import { Bug, Cpu, RotateCw, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { api } from '@/lib/api'
 import { can } from '@/lib/store'
 import { confirmAction, toast } from '@/lib/feedback'
-import type { RetrainResult } from '@/lib/types'
+import type { RetrainResult, TamperResult } from '@/lib/types'
 import {
   Badge,
   Card,
@@ -24,6 +24,7 @@ export default function LedgerScreen() {
   const [result, setResult] = useState<RetrainResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [tampering, setTampering] = useState(false)
+  const [tamperDetail, setTamperDetail] = useState<TamperResult | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
   const isTampered = ledgerRes.data ? !ledgerRes.data.verify.valid : false
@@ -47,9 +48,9 @@ export default function LedgerScreen() {
 
   const toggleTamper = async () => {
     const ok = isTampered || await confirmAction({
-      title: 'Run tamper simulation?',
-      body: 'This alters a stored ledger entry on the server to demonstrate hash-chain detection. Use it only for the demonstration; click again to restore.',
-      confirmLabel: 'Simulate tamper',
+      title: 'Run integrity drill?',
+      body: 'Simulates an unauthorized insider database edit on one ledger entry so you can verify SHA-256 hash-chain and Merkle root detection. Click again to restore.',
+      confirmLabel: 'Simulate Insider DB Edit',
       tone: 'primary',
     })
     if (!ok) return
@@ -57,12 +58,14 @@ export default function LedgerScreen() {
     setErr(null)
     try {
       const res = await api.tamperLedger()
+      setTamperDetail(res)
+      ledgerRes.reload()
       if (res.tampered) {
         sfx.reject()
-        toast('bad', 'Ledger tampered', `Verification now fails at ${res.broken_at ?? 'an entry'}.`)
+        toast('bad', 'Integrity breach detected', `Hash chain broken at ${res.broken_at ?? res.entry_id ?? 'entry'}.`)
       } else {
         sfx.accept()
-        toast('ok', 'Ledger restored', 'Hash chain verifies again.')
+        toast('ok', 'Ledger integrity restored', 'SHA-256 hash chain and Merkle root verify cleanly.')
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
@@ -76,21 +79,98 @@ export default function LedgerScreen() {
       <PageHeader
         kicker="Chamber Governance & Calibration Loop"
         title="Audit Ledger & Model Retraining"
-        description="Every senior override is SHA-256 hash-chained onto the reviewer ledger and converted into supervised calibration data."
+        description="Every senior override is recorded on a SHA-256 hash chain anchored to a Solana devnet blockhash timestamp and converted into supervised calibration data."
         right={
           <button
             type="button"
             disabled={tampering || !can('ledger.tamper')}
-            title={can('ledger.tamper') ? undefined : 'Only a senior advocate can run the tamper simulation'}
+            title={can('ledger.tamper') ? undefined : 'Only a senior advocate can run the integrity drill'}
             onClick={toggleTamper}
             className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:border-bad-200 hover:bg-bad-50 hover:text-bad disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <Bug size={13} /> {isTampered ? 'Restore Intact Chain' : 'Simulate Tamper'}
+            <Bug size={13} /> {isTampered ? 'Restore Intact Chain' : 'Integrity Drill: Simulate Insider DB Edit'}
           </button>
         }
       />
 
       {err && <ErrorBanner error={err} />}
+
+      {tamperDetail && (
+        <Card className={tamperDetail.tampered ? 'space-y-3 border-bad-200 bg-bad-50/40' : 'space-y-2 border-ok-200 bg-ok-50/40'}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              {tamperDetail.tampered ? (
+                <ShieldAlert size={16} className="text-bad" />
+              ) : (
+                <ShieldCheck size={16} className="text-ok" />
+              )}
+              <Label>
+                {tamperDetail.tampered
+                  ? 'Integrity Drill · Cryptographic Tamper Diff Exposed'
+                  : 'Integrity Drill · Chain Restored & Verified'}
+              </Label>
+            </div>
+            <Badge tone={tamperDetail.tampered ? 'bad' : 'ok'}>
+              {tamperDetail.tampered ? `BROKEN AT ${tamperDetail.broken_at ?? tamperDetail.entry_id ?? 'ENTRY'}` : 'CHAIN VALID'}
+            </Badge>
+          </div>
+
+          <p className="text-[12.5px] text-ink-2">
+            {tamperDetail.explanation ||
+              'Mutating a stored record invalidates its deterministic SHA-256 link and shifts the Merkle root checked against the Solana devnet blockhash timestamp anchor.'}
+          </p>
+
+          {(tamperDetail.entry_id || tamperDetail.stored_hash || tamperDetail.merkle_root_after) && (
+            <div className="grid gap-3 border-t border-line pt-3 font-mono text-[11px] sm:grid-cols-2 lg:grid-cols-3">
+              {tamperDetail.entry_id && (
+                <Well className="space-y-1">
+                  <Label>Mutated Entry &amp; Field</Label>
+                  <p className="text-ink">
+                    {tamperDetail.entry_id}
+                    {tamperDetail.field ? ` · ${tamperDetail.field}` : ''}
+                  </p>
+                  {tamperDetail.before != null && (
+                    <p className="text-ok">Before: &ldquo;{tamperDetail.before}&rdquo;</p>
+                  )}
+                  {tamperDetail.after != null && (
+                    <p className="text-bad">After: &ldquo;{tamperDetail.after}&rdquo;</p>
+                  )}
+                </Well>
+              )}
+              {(tamperDetail.stored_hash || tamperDetail.recomputed_hash) && (
+                <Well className="space-y-1">
+                  <Label>SHA-256 Entry Hash Check</Label>
+                  {tamperDetail.stored_hash && (
+                    <p className="truncate text-ink-2" title={tamperDetail.stored_hash}>
+                      Stored: {tamperDetail.stored_hash}
+                    </p>
+                  )}
+                  {tamperDetail.recomputed_hash && (
+                    <p className="truncate text-bad" title={tamperDetail.recomputed_hash}>
+                      Recomputed: {tamperDetail.recomputed_hash}
+                    </p>
+                  )}
+                </Well>
+              )}
+              {(tamperDetail.merkle_root_before || tamperDetail.merkle_root_after) && (
+                <Well className="space-y-1">
+                  <Label>Solana Devnet Blockhash Anchor Diff</Label>
+                  {tamperDetail.merkle_root_before && (
+                    <p className="truncate text-ok" title={tamperDetail.merkle_root_before}>
+                      Anchored Root: {tamperDetail.merkle_root_before}
+                    </p>
+                  )}
+                  {tamperDetail.merkle_root_after && (
+                    <p className="truncate text-bad" title={tamperDetail.merkle_root_after}>
+                      Post-Edit Root: {tamperDetail.merkle_root_after}
+                    </p>
+                  )}
+                </Well>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-4">
@@ -125,7 +205,7 @@ export default function LedgerScreen() {
               </div>
 
               <p className="text-[12.5px] leading-relaxed text-ink-2">
-                Every senior advocate disagreement becomes a labelled training example. Retraining is opt-in per chamber; public Indian Kanoon judgments remain the baseline prior.
+                Every senior advocate disagreement becomes a labelled training example. Retraining is opt-in per chamber; public Insaaf Precedent Index judgments remain the baseline prior.
               </p>
 
               <div className="flex items-center justify-between gap-3">
@@ -134,7 +214,7 @@ export default function LedgerScreen() {
                   disabled={busy || !can('ml.retrain')}
                   title={can('ml.retrain') ? undefined : 'Only a senior advocate can retrain the model'}
                   onClick={retrain}
-                  className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-semibold text-night transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <RotateCw size={13} className={busy ? 'animate-spin' : ''} />
                   {busy ? 'Training…' : 'Retrain Model Now'}

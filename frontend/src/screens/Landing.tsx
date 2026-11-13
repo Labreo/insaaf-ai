@@ -27,7 +27,7 @@ const GUARANTEES = [
     kicker: 'Authority Lock',
     title: 'Zero fabricated citations. Ever.',
     summary:
-      'Every legal proposition in a generated pleading must bind to an indexed paragraph in Indian Kanoon or a statutory rule on record. Any unsupported assertion is quarantined and replaced with "No verified authority found."',
+      'Every legal proposition in a generated pleading must bind to an indexed paragraph in Insaaf Precedent Index or a statutory rule on record. Any unsupported assertion is quarantined and replaced with "No verified authority found."',
     evidence: 'Prevents Mata v. Avianca (S.D.N.Y. 2023) style LLM hallucinations by architectural refusal, not prompt disclaimers.',
     previewTitle: 'Pleading Paragraph Gate',
     previewRows: [
@@ -73,11 +73,11 @@ const GUARANTEES = [
 ] as const
 
 const PIPELINE_STEPS = [
-  { n: '01', name: 'Intake & OCR', engine: 'PyMuPDF · Bhashini', tab: 'facts', desc: 'PDF, DOCX, Konkani/Marathi voice' },
+  { n: '01', name: 'Intake & OCR', engine: 'PyMuPDF · Insaaf Translate', tab: 'facts', desc: 'PDF, DOCX, 12-language voice' },
   { n: '02', name: 'Bilingual Facts', engine: 'Source-Span Lock', tab: 'facts', desc: 'Separates allegation from record' },
   { n: '03', name: 'Proof Ledger', engine: 'Deterministic YAML', tab: 'proof', desc: 'Flags missing statutory instruments' },
   { n: '04', name: 'Statute Clock', engine: 'Deterministic Rules', tab: 'clock', desc: 'Limitation + COVID tolling + forum' },
-  { n: '05', name: 'Kanoon Search', engine: '8s Time-Boxed', tab: 'precedents', desc: '50M corpus → top 20 judgments' },
+  { n: '05', name: 'Precedent Search', engine: '8s Time-Boxed', tab: 'precedents', desc: 'Verified corpus → top 20 judgments' },
   { n: '06', name: 'Authority Lock', engine: 'Corpus Binding', tab: 'draft', desc: 'No stored paragraph, no legal claim' },
   { n: '07', name: 'Citation Health', engine: 'Downstream Check', tab: 'citations', desc: 'Blocks overruled precedents' },
   { n: '08', name: 'Bias Firewall', engine: '6-Identity Flip', tab: 'score', desc: 'ε = 0.02 counterfactual gate' },
@@ -91,7 +91,7 @@ const BENCHMARKS = [
     caseName: 'Mata v. Avianca',
     court: 'S.D.N.Y. (2023)',
     failure: 'LLM brief cited six non-existent judicial opinions; counsel sanctioned $5,000.',
-    defence: 'Authority Lock refuses to emit any legal proposition lacking a stored Indian Kanoon SourceRef.',
+    defence: 'Authority Lock refuses to emit any legal proposition lacking a stored Insaaf Precedent Index SourceRef.',
   },
   {
     caseName: 'Suraj Lamp & Industries v. State of Haryana',
@@ -221,8 +221,8 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
             </h1>
 
             <p className="max-w-2xl text-[15px] leading-[1.65] text-fog">
-              Insaaf AI turns raw client PDFs, DOCX briefs, and Konkani or Marathi voice notes into an
-              authority-locked pleading. Every paragraph binds to an Indian Kanoon judgment or statute,
+              Insaaf AI turns raw client PDFs, DOCX briefs, and Indian-language voice notes into an
+              authority-locked pleading. Every paragraph binds to a verified Insaaf Precedent Index judgment or statute,
               passes a 6-identity counterfactual bias firewall, and logs every senior advocate decision onto
               a SHA-256 hash-chained ledger.
             </p>
@@ -237,6 +237,16 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
                 className="inline-flex items-center gap-2 rounded-[6px] bg-gold px-5 py-2.5 text-[13px] font-semibold text-night transition-colors hover:bg-[#d8b878]"
               >
                 Open Chamber Docket <ArrowRight size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  sfx.tap()
+                  nav('/precedents')
+                }}
+                className="inline-flex items-center gap-2 rounded-[6px] border border-gold/40 bg-gold/10 px-4 py-2.5 text-[13px] font-medium text-gold transition-colors hover:bg-gold/20"
+              >
+                <Search size={14} /> Search Precedents
               </button>
               <button
                 type="button"
@@ -270,16 +280,18 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
                 </p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.1em] text-smoke">Kanoon Search</p>
+                <p className="text-[10px] uppercase tracking-[0.1em] text-smoke">Precedent Search</p>
                 <p className="mt-1 font-mono text-[13px] text-bone">8s Time-Boxed</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-[0.1em] text-smoke">Authority Corpus</p>
-                <p className="mt-1 font-mono text-[13px] text-gold">50M+ Precedents</p>
+                <p className="mt-1 font-mono text-[13px] text-gold">Insaaf Precedent Index</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-[0.1em] text-smoke">Active Matters</p>
-                <p className="mt-1 font-mono text-[13px] text-bone">{matters.length} in Chamber A</p>
+                <p className="mt-1 font-mono text-[13px] text-bone">
+                  {matters.length} in {me.org.name && me.org.name !== 'No chamber' ? me.org.name : 'Demo Chamber'}
+                </p>
               </div>
             </div>
           </motion.div>
@@ -400,7 +412,7 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
               </div>
 
               <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
-                <span className="font-mono text-[11px] text-smoke">Verified against Indian Kanoon &amp; Statutory Corpus</span>
+                <span className="font-mono text-[11px] text-smoke">Verified against Insaaf Precedent Index &amp; Statutory Corpus</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -494,7 +506,9 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
         <div className="mx-auto max-w-[1280px] px-5 lg:px-8">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-gold">Live Chamber A Docket</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-gold">
+                Live {me.org.name && me.org.name !== 'No chamber' ? me.org.name : 'Demo Chamber'} Docket
+              </p>
               <h2 className="display mt-1 text-[32px] leading-tight text-bone">
                 Open a fictional matter in the Paper &amp; Ink Workbench
               </h2>
@@ -586,7 +600,7 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
           <div className="flex items-center gap-4">
             <span className="font-medium text-fog">Insaaf AI · PS 29</span>
             <span className="inline-flex items-center gap-1"><BookCheck size={13} /> Authority-Locked RAG</span>
-            <span className="inline-flex items-center gap-1"><Search size={13} /> 8s Kanoon Search</span>
+            <span className="inline-flex items-center gap-1"><Search size={13} /> 8s Precedent Search</span>
             <span className="inline-flex items-center gap-1"><Clock size={13} /> Deterministic Limitation</span>
           </div>
           <p>Chamber drafting &amp; verification tool for advocates. Fictional demo matters only.</p>
