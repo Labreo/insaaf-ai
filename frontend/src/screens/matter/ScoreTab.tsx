@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
-import { ShieldCheck, ShieldOff } from 'lucide-react'
+import { Building2, ShieldCheck, ShieldOff } from 'lucide-react'
 import { api } from '@/lib/api'
-import { useDB } from '@/lib/store'
-import type { BiasFirewall, Identity } from '@/lib/types'
-import { Chip, Glass, Label, Skeleton, ease, useAsync } from '@/components/primitives'
+import type { BiasFirewall, Identity, Score } from '@/lib/types'
+import {
+  Badge,
+  Card,
+  ErrorBanner,
+  Label,
+  Skeleton,
+  ease,
+  useAsync,
+} from '@/components/primitives'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 import type { TabProps } from '../Matter'
@@ -18,81 +25,172 @@ const identities: { k: Identity; label: string }[] = [
   { k: 'non_english_speaking', label: 'Non-English' },
 ]
 
-/** F9 + F10 + F2: Outcome band, court-aware pooling, and live counterfactual bias firewall. */
+const FORUMS = [
+  'Civil Judge Senior Division, Mapusa',
+  'District Court, North Goa',
+  'Bombay High Court (Goa bench)',
+  'Supreme Court of India',
+]
+
+/** F9 + F10 + F2: Outcome band, court-aware pooling, and live 6-identity Bias Firewall. */
 export default function ScoreTab({ id, onReview }: TabProps) {
-  const v = useDB((d) => d.stages[id]?.score.band + ':' + d.stages[id]?.score.model_version)
-  const s = useAsync(() => api.score(id), [id, v])
-  const b = useAsync(() => api.biasFirewall(id), [id, v])
-  if (s.loading || !s.data) return <Skeleton className="h-96" />
-  const sc = s.data
-  const bandTone = sc.band === 'strong' ? 'text-followed' : sc.band === 'weak' ? 'text-overruled' : 'text-distinguished'
+  const s = useAsync(() => api.score(id), [id])
+  const b = useAsync(() => api.biasFirewall(id), [id])
+  const [liveScore, setLiveScore] = useState<Score | null>(null)
+  const [switchingCourt, setSwitchingCourt] = useState(false)
+
+  useEffect(() => {
+    if (s.data) setLiveScore(s.data)
+  }, [s.data])
+
+  const sc = liveScore ?? s.data
+  if (s.loading && !sc) return <Skeleton className="h-96" />
+  if (s.error && !sc) return <ErrorBanner error={s.error} onRetry={s.reload} />
+  if (!sc) return null
+
+  const switchCourt = async (court: string) => {
+    if (switchingCourt || court === sc.court_aware.court) return
+    setSwitchingCourt(true)
+    sfx.tick()
+    try {
+      const next = await api.setCourt(id, court)
+      setLiveScore(next)
+      sfx.accept()
+    } finally {
+      setSwitchingCourt(false)
+    }
+  }
+
+  const bandColor =
+    sc.band === 'strong' ? 'text-ok' : sc.band === 'weak' ? 'text-bad' : 'text-warn'
   const maxAbs = Math.max(...sc.factors.map((f) => Math.abs(f.effect)), 0.01)
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
-      {/* Left 6 Cols: Score Band, Feature Attribution & Court Pooling */}
       <div className="space-y-4 lg:col-span-6">
-        <Glass className="space-y-3">
-          <div className="flex items-start justify-between">
+        <Card className="space-y-3">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <Label>Insaaf AI-B score · {sc.model_version}</Label>
-              <p className={cn('mt-1 text-[34px] leading-none font-medium capitalize', bandTone)}>{sc.band}</p>
+              <Label>Insaaf AI-B Outcome Band · {sc.model_version}</Label>
+              <p className={cn('mt-1 text-[32px] leading-none font-semibold capitalize', bandColor)}>
+                {sc.band}
+              </p>
             </div>
-            <button onClick={() => onReview({ target: 'score', target_id: 'score', title: `Disagree with "${sc.band}"` })} className="rounded-md border border-seam bg-graphite px-2.5 py-1 text-[11px] font-medium text-brass hover:border-brass/40">
-              disagree →
+            <button
+              type="button"
+              onClick={() =>
+                onReview({
+                  target: 'score',
+                  target_id: 'score',
+                  title: `Disagree with "${sc.band}" outcome band`,
+                })
+              }
+              className="rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-navy hover:bg-navy-50"
+            >
+              Disagree / Override →
             </button>
           </div>
-          <p className="text-[12px] text-smoke">Calibrated outcome band (not an uncalibrated percentage). <strong className="text-pewter">B</strong> = released strictly after counterfactual bias verification.</p>
-        </Glass>
+          <p className="text-[12px] text-ink-3">
+            Calibrated outcome band rather than an uncalibrated percentage.{' '}
+            <strong className="font-medium text-ink">B</strong> denotes scores released strictly after counterfactual bias verification.
+          </p>
+        </Card>
 
-        <Glass>
-          <Label>Feature attributions</Label>
+        <Card>
+          <Label>Feature Attributions</Label>
           <div className="mt-3 space-y-3">
             {sc.factors.map((f, i) => (
               <div key={f.name}>
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-marble">{f.name}</span>
-                  <span className={cn('font-mono tabular-nums', f.effect >= 0 ? 'text-followed' : 'text-overruled')}>
-                    {f.effect > 0 ? '+' : ''}{f.effect.toFixed(2)}
+                <div className="flex justify-between gap-3 text-[13px]">
+                  <span className="text-ink">{f.name}</span>
+                  <span className={cn('tabular font-mono font-medium', f.effect >= 0 ? 'text-ok' : 'text-bad')}>
+                    {f.effect > 0 ? '+' : ''}
+                    {f.effect.toFixed(2)}
                   </span>
                 </div>
-                <div className="relative mt-1.5 h-1.5 w-full rounded-sm bg-marble/8">
-                  <span className="absolute left-1/2 top-0 h-full w-px bg-marble/25" />
+                <div className="relative mt-1.5 h-2 w-full rounded-sm bg-sunken border border-line">
+                  <span className="absolute left-1/2 top-0 h-full w-px bg-line-strong" />
                   <motion.div
-                    className={cn('absolute top-0 h-full rounded-sm', f.effect >= 0 ? 'bg-followed left-1/2' : 'bg-overruled right-1/2')}
+                    className={cn(
+                      'absolute top-0 h-full rounded-[2px]',
+                      f.effect >= 0 ? 'left-1/2 bg-ok' : 'right-1/2 bg-bad',
+                    )}
                     initial={{ width: 0 }}
-                    animate={{ width: `${(Math.abs(f.effect) / maxAbs) * 50}%` }}
-                    transition={{ duration: 0.7, delay: 0.05 * i, ease }}
+                    animate={{ width: `${(Math.abs(f.effect) / maxAbs) * 48}%` }}
+                    transition={{ duration: 0.45, delay: 0.04 * i, ease }}
                   />
                 </div>
               </div>
             ))}
           </div>
-        </Glass>
+        </Card>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Glass>
-            <Label>Court-aware shrinkage</Label>
-            <p className="mt-1.5 text-[14px] font-medium text-marble">{sc.court_aware.court}</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-smoke">
-              {sc.court_aware.n_judgments} local judgments pooled with {sc.court_aware.pooled_from} (k = {sc.court_aware.shrinkage_k}). Court level only, never named judges.
+          <Card className="space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <Label>F10 · Court-Aware Shrinkage</Label>
+                <p className="mt-1.5 text-[14px] font-semibold text-ink">{sc.court_aware.court}</p>
+              </div>
+              {sc.court_aware.pooled_rate != null && (
+                <Badge tone="navy">p̂ = {(sc.court_aware.pooled_rate * 100).toFixed(1)}%</Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {FORUMS.map((court) => {
+                const active = sc.court_aware.court === court
+                return (
+                  <button
+                    key={court}
+                    type="button"
+                    disabled={switchingCourt}
+                    onClick={() => switchCourt(court)}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-[4px] border px-2 py-1 text-[11px] font-medium transition-colors',
+                      active
+                        ? 'border-navy bg-navy text-white'
+                        : 'border-line bg-sunken text-ink-2 hover:bg-hover hover:text-ink',
+                    )}
+                  >
+                    <Building2 size={10} /> {court}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-[12px] leading-relaxed text-ink-3">
+              {sc.court_aware.n_judgments} local judgments pooled with {sc.court_aware.pooled_from} (k ={' '}
+              {sc.court_aware.shrinkage_k}
+              {sc.court_aware.local_rate != null
+                ? ` · local ${(sc.court_aware.local_rate * 100).toFixed(0)}% / parent ${((sc.court_aware.parent_rate ?? 0) * 100).toFixed(0)}%`
+                : ''}
+              ). Court level only, never named judges.
             </p>
-          </Glass>
-          <Glass>
-            <Label>Held-out evaluation</Label>
-            <p className="mt-1.5 font-mono text-[14px] font-medium text-marble">
-              {sc.eval.heldout_total ? `${sc.eval.heldout_correct} / ${sc.eval.heldout_total} unseen cases` : 'Pending retrain'}
+          </Card>
+
+          <Card className="space-y-2.5">
+            <Label>Held-Out Calibration Eval</Label>
+            <p className="tabular mt-1 font-mono text-[14px] font-semibold text-ink">
+              {sc.eval.heldout_total
+                ? `${sc.eval.heldout_correct} / ${sc.eval.heldout_total} unseen cases`
+                : 'Pending retrain'}
+              {sc.eval.brier != null ? ` · Brier ${sc.eval.brier}` : ''}
             </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-smoke">
-              {sc.eval.brier != null ? `Brier ${sc.eval.brier} · ` : ''}Measured directly on held-out eval split.
-            </p>
-          </Glass>
+            {sc.eval.calibration ? (
+              <CalibrationPlot pred={sc.eval.calibration.prob_pred} actual={sc.eval.calibration.prob_true} />
+            ) : null}
+            <p className="text-[12px] leading-relaxed text-ink-3">{sc.eval.note}</p>
+          </Card>
         </div>
       </div>
 
-      {/* Right 6 Cols: Interactive Counterfactual Bias Firewall */}
       <div className="lg:col-span-6">
-        {b.data && <Firewall id={id} data={b.data} />}
+        {b.loading && !b.data ? (
+          <Skeleton className="h-96" />
+        ) : b.error && !b.data ? (
+          <ErrorBanner error={b.error} onRetry={b.reload} />
+        ) : b.data ? (
+          <Firewall id={id} data={b.data} />
+        ) : null}
       </div>
     </div>
   )
@@ -101,72 +199,150 @@ export default function ScoreTab({ id, onReview }: TabProps) {
 function Firewall({ id, data }: { id: string; data: BiasFirewall }) {
   const [rows, setRows] = useState(data.rows)
   const [busy, setBusy] = useState<Identity | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    setRows(data.rows)
+  }, [data])
+
   const passed = rows.every((r) => Math.abs(r.delta) <= data.epsilon)
 
   const flip = async (k: Identity) => {
     setBusy(k)
+    setErr(null)
     sfx.tick()
-    const r = await api.flip(id, k)
-    setRows((rs) => rs.map((x) => (x.identity === k ? r : x)))
-    setBusy(null)
-    sfx.accept()
+    try {
+      const r = await api.flip(id, k)
+      setRows((rs) => rs.map((x) => (x.identity === k ? r : x)))
+      sfx.accept()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(null)
+    }
   }
 
   const W = 360
-  const H = 56
-  const pts = rows.map((r, i) => `${(i / (rows.length - 1)) * W},${H / 2 - r.delta * 900}`).join(' ')
+  const H = 64
+  const pts = rows
+    .map((r, i) => `${(i / Math.max(1, rows.length - 1)) * W},${H / 2 - r.delta * 900}`)
+    .join(' ')
 
   return (
-    <Glass className="space-y-4">
-      <div className="flex items-center justify-between border-b border-seam pb-3">
+    <Card className="space-y-4">
+      <div className="flex items-center justify-between border-b border-line pb-3">
         <div>
-          <Label>Bias firewall · ε = {data.epsilon}</Label>
-          <p className="mt-1 text-[12px] text-smoke">Counterfactual identity invariance gate</p>
+          <Label>F2 · Counterfactual Bias Firewall (ε = {data.epsilon})</Label>
+          <p className="mt-0.5 text-[12px] text-ink-3">6-identity invariance gate before score release</p>
         </div>
-        <span className={cn('inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-medium', passed ? 'border-followed/30 bg-followed/10 text-followed' : 'border-overruled/30 bg-overruled/10 text-overruled')}>
-          {passed ? <><ShieldCheck size={14} /> passed</> : <><ShieldOff size={14} /> abstaining</>}
-        </span>
+        <Badge tone={passed ? 'ok' : 'bad'}>
+          {passed ? (
+            <>
+              <ShieldCheck size={13} /> Passed
+            </>
+          ) : (
+            <>
+              <ShieldOff size={13} /> Abstaining
+            </>
+          )}
+        </Badge>
       </div>
 
-      <p className="text-[12px] leading-relaxed text-pewter">
-        Select any protected identity to inject counterfactual markers, mask via NER, and re-run scoring. If score movement exceeds ε = {data.epsilon}, Insaaf refuses to release the score.
+      {err && <ErrorBanner error={err} />}
+
+      <p className="text-[12.5px] leading-relaxed text-ink-2">
+        Click any protected identity below to inject counterfactual markers, mask via NER, and re-run scoring live. If score movement exceeds ε = {data.epsilon}, Insaaf blocks the score.
       </p>
 
-      <div className="rounded-md border border-seam bg-graphite/60 p-3">
-        <svg viewBox={`0 0 ${W} ${H}`} className="h-14 w-full overflow-visible">
-          <line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke="rgba(242,241,238,0.14)" />
-          <line x1={0} y1={H / 2 - data.epsilon * 900} x2={W} y2={H / 2 - data.epsilon * 900} stroke="rgba(242,241,238,0.14)" strokeDasharray="3 4" />
-          <line x1={0} y1={H / 2 + data.epsilon * 900} x2={W} y2={H / 2 + data.epsilon * 900} stroke="rgba(242,241,238,0.14)" strokeDasharray="3 4" />
-          <polyline points={pts} fill="none" stroke={passed ? '#6fae8d' : '#d95c54'} strokeWidth={2} strokeLinejoin="round" />
+      <div className="rounded-[5px] border border-line bg-sunken p-3">
+        <svg viewBox={`0 0 ${W} ${H}`} className="h-16 w-full overflow-visible">
+          <line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke="#d4d0c4" />
+          <line
+            x1={0}
+            y1={H / 2 - data.epsilon * 900}
+            x2={W}
+            y2={H / 2 - data.epsilon * 900}
+            stroke="#c4e0cf"
+            strokeDasharray="3 4"
+          />
+          <line
+            x1={0}
+            y1={H / 2 + data.epsilon * 900}
+            x2={W}
+            y2={H / 2 + data.epsilon * 900}
+            stroke="#c4e0cf"
+            strokeDasharray="3 4"
+          />
+          <polyline
+            points={pts}
+            fill="none"
+            stroke={passed ? '#2e7350' : '#b03a2e'}
+            strokeWidth={2}
+            strokeLinejoin="round"
+          />
           {rows.map((r, i) => (
-            <circle key={r.identity} cx={(i / (rows.length - 1)) * W} cy={H / 2 - r.delta * 900} r={3.5} fill={passed ? '#6fae8d' : '#d95c54'} />
+            <circle
+              key={r.identity}
+              cx={(i / Math.max(1, rows.length - 1)) * W}
+              cy={H / 2 - r.delta * 900}
+              r={4}
+              fill={passed ? '#2e7350' : '#b03a2e'}
+            />
           ))}
         </svg>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
         {identities.map(({ k, label }) => {
-          const r = rows.find((x) => x.identity === k)!
+          const r = rows.find((x) => x.identity === k) ?? { identity: k, score: 0, delta: 0 }
+          const ok = Math.abs(r.delta) <= data.epsilon
           return (
             <button
               key={k}
+              type="button"
               onClick={() => flip(k)}
               disabled={busy !== null}
-              className={cn('glass-well p-3 text-left transition-colors hover:border-brass/40', busy === k && 'animate-pulse')}
+              className={cn(
+                'rounded-[5px] border border-line bg-sunken p-3 text-left transition-colors hover:border-navy hover:bg-navy-50/40',
+                busy === k && 'animate-pulse',
+              )}
             >
-              <p className="text-[13px] font-medium text-marble">{label}</p>
-              <p className="mt-1 font-mono text-[11px] tabular-nums text-smoke">
-                {r.score.toFixed(2)} <span className={Math.abs(r.delta) > data.epsilon ? 'text-overruled' : 'text-followed'}>Δ{r.delta.toFixed(2)}</span>
+              <p className="text-[12.5px] font-semibold text-ink">{label}</p>
+              <p className="tabular mt-1 font-mono text-[11px] text-ink-3">
+                {r.score.toFixed(2)}{' '}
+                <span className={ok ? 'font-medium text-ok' : 'font-medium text-bad'}>
+                  Δ{r.delta.toFixed(2)}
+                </span>
               </p>
             </button>
           )
         })}
       </div>
 
-      <div className="flex flex-wrap gap-1.5 border-t border-seam pt-3">
-        <Chip tone="steel">identity masked before scoring</Chip>
-        <Chip tone="steel">counterfactual re-run verified</Chip>
+      <div className="flex flex-wrap gap-1.5 border-t border-line pt-3">
+        <Badge tone="info">NER Identity Masked</Badge>
+        <Badge tone="info">Counterfactual Re-Run Verified</Badge>
       </div>
-    </Glass>
+    </Card>
+  )
+}
+
+function CalibrationPlot({ pred, actual }: { pred: number[]; actual: number[] }) {
+  const W = 220
+  const H = 90
+  const pad = 12
+  const mapX = (v: number) => pad + v * (W - pad * 2)
+  const mapY = (v: number) => H - pad - v * (H - pad * 2)
+  const pts = pred.map((x, i) => `${mapX(x)},${mapY(actual[i] ?? x)}`).join(' ')
+  return (
+    <div className="rounded-[5px] border border-line bg-sunken p-2">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-24 w-full overflow-visible" aria-label="Calibration reliability curve">
+        <line x1={mapX(0)} y1={mapY(0)} x2={mapX(1)} y2={mapY(1)} stroke="#c8c2b4" strokeDasharray="3 3" />
+        <polyline points={pts} fill="none" stroke="#1f3a5c" strokeWidth={2} />
+        {pred.map((x, i) => (
+          <circle key={i} cx={mapX(x)} cy={mapY(actual[i] ?? x)} r={3} fill="#b8893a" />
+        ))}
+      </svg>
+    </div>
   )
 }

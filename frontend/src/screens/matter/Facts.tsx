@@ -1,86 +1,122 @@
-import { motion } from 'motion/react'
 import { FileText, Mic, Pencil, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
-import { useDB } from '@/lib/store'
 import type { Fact } from '@/lib/types'
-import { Chip, ConfidenceDot, Empty, Glass, Label, Skeleton, Well, stagger, useAsync } from '@/components/primitives'
-import { Button } from '@/components/ui/button'
+import {
+  Badge,
+  Card,
+  ConfidenceDot,
+  Empty,
+  ErrorBanner,
+  Label,
+  Skeleton,
+  Well,
+  type Tone,
+  useAsync,
+} from '@/components/primitives'
 import type { TabProps } from '../Matter'
 
-const tone: Record<Fact['status'], 'smoke' | 'followed' | 'distinguished' | 'overruled'> = {
-  alleged: 'smoke',
-  documented: 'followed',
-  disputed: 'distinguished',
-  unknown: 'overruled',
+const tone: Record<Fact['status'], Tone> = {
+  alleged: 'neutral',
+  documented: 'ok',
+  disputed: 'warn',
+  unknown: 'bad',
 }
 
-/** F4: bilingual fact cards. An allegation is never promoted to a fact; every card keeps its source span. */
+/** F4: bilingual fact cards. Allegations never silently become documented facts. */
 export default function Facts({ id, onReview }: TabProps) {
-  const v = useDB((d) => JSON.stringify(d.stages[id]?.facts.map((x) => x.statement + x.status)) + ':' + d.ledger.length)
-  const f = useAsync(() => api.facts(id), [id, v])
-  if (f.loading) return <div className="grid gap-4 md:grid-cols-2"><Skeleton className="h-32" /><Skeleton className="h-32" /></div>
+  const f = useAsync(() => api.facts(id), [id])
+  if (f.loading && !f.data) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <Skeleton className="h-32" />
+        <Skeleton className="h-32" />
+      </div>
+    )
+  }
+  if (f.error) return <ErrorBanner error={f.error} onRetry={f.reload} />
   if (!f.data?.length) return <Empty text="No facts extracted yet. Run the pipeline." />
-  const counts = f.data.reduce((a, x) => ({ ...a, [x.status]: (a[x.status] ?? 0) + 1 }), {} as Record<string, number>)
+
+  const counts = f.data.reduce(
+    (a, x) => ({ ...a, [x.status]: (a[x.status] ?? 0) + 1 }),
+    {} as Record<string, number>,
+  )
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-seam pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Label>Fact cards ({f.data.length})</Label>
+          <Label>Bilingual Fact Register ({f.data.length})</Label>
           {(['documented', 'alleged', 'disputed', 'unknown'] as const).map((s) =>
-            counts[s] ? <Chip key={s} tone={tone[s]}>{counts[s]} {s}</Chip> : null,
+            counts[s] ? (
+              <Badge key={s} tone={tone[s]}>
+                {counts[s]} {s}
+              </Badge>
+            ) : null,
           )}
         </div>
-        <Button
-          variant="ghost"
-          onClick={() => onReview({ target: 'fact', target_id: 'new', title: 'Add verified fact', action: 'edit' })}
-          className="h-8 rounded-md border border-brass/35 bg-brass/10 px-3 text-[11px] uppercase tracking-[0.06em] text-brass hover:bg-brass/20"
+        <button
+          type="button"
+          onClick={() =>
+            onReview({ target: 'fact', target_id: 'new', title: 'Add verified fact', action: 'edit' })
+          }
+          className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3 py-1.5 text-[12px] font-medium text-white hover:bg-navy-600"
         >
-          <Plus size={12} /> Add verified fact
-        </Button>
+          <Plus size={13} /> Add Verified Fact
+        </button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {f.data.map((fact, i) => (
-          <motion.div key={fact.id} {...stagger(i)}>
-            <Glass className="flex h-full flex-col justify-between gap-3">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-[14px] leading-snug text-marble">{fact.statement}</p>
-                  <Chip tone={tone[fact.status]}>{fact.status}</Chip>
-                </div>
-                {fact.original && (
-                  <Well>
-                    <div className="flex items-center justify-between">
-                      <Label>{fact.original.language === 'kok' ? 'Konkani' : fact.original.language} · original</Label>
-                      <ConfidenceDot c={fact.original.translation_confidence} />
-                    </div>
-                    <p className="devanagari mt-1 text-[14px] text-marble/90">{fact.original.text}</p>
-                    <p className="mt-1 text-[11px] text-smoke">Translation confidence shown so the advocate verifies rather than trusts.</p>
-                  </Well>
-                )}
+        {f.data.map((fact) => (
+          <Card key={fact.id} className="flex h-full flex-col justify-between gap-3">
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[13.5px] leading-snug text-ink">{fact.statement}</p>
+                <Badge tone={tone[fact.status]}>{fact.status}</Badge>
               </div>
 
-              <div className="flex items-center justify-between border-t border-seam/70 pt-2.5">
-                <p className="flex items-center gap-1.5 font-mono text-[11px] text-smoke">
-                  {fact.source ? (
-                    <>
-                      {fact.source.document_id.includes('voice') ? <Mic size={12} /> : <FileText size={12} />}
-                      {fact.source.document_id} · {fact.source.location}
-                    </>
-                  ) : (
-                    'No source · needs client confirmation'
-                  )}
-                </p>
-                <button
-                  onClick={() => onReview({ target: 'fact', target_id: fact.id, title: fact.statement, action: 'edit' })}
-                  className="inline-flex items-center gap-1 text-[11px] text-smoke hover:text-brass"
-                >
-                  <Pencil size={11} /> correct
-                </button>
-              </div>
-            </Glass>
-          </motion.div>
+              {fact.original && (
+                <Well className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label>
+                      {fact.original.language === 'kok' ? 'Konkani' : fact.original.language} · Original Statement
+                    </Label>
+                    <ConfidenceDot c={fact.original.translation_confidence} />
+                  </div>
+                  <p className="devanagari text-[14px] leading-relaxed text-ink">{fact.original.text}</p>
+                  <p className="text-[11px] text-ink-3">
+                    Original vernacular text preserved beside English translation for advocate verification.
+                  </p>
+                </Well>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-line pt-2.5">
+              <p className="flex items-center gap-1.5 font-mono text-[11px] text-ink-3">
+                {fact.source ? (
+                  <>
+                    {fact.source.document_id.includes('voice') ? <Mic size={12} /> : <FileText size={12} />}
+                    {fact.source.document_id} · {fact.source.location}
+                  </>
+                ) : (
+                  'No document span · requires client verification'
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  onReview({
+                    target: 'fact',
+                    target_id: fact.id,
+                    title: fact.statement,
+                    action: 'edit',
+                  })
+                }
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-navy hover:underline"
+              >
+                <Pencil size={11} /> Edit / Verify
+              </button>
+            </div>
+          </Card>
         ))}
       </div>
     </div>

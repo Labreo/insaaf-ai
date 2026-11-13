@@ -1,24 +1,23 @@
-import { motion } from 'motion/react'
 import { Check, Minus, X } from 'lucide-react'
 import { api } from '@/lib/api'
-import { useDB } from '@/lib/store'
 import type { ProofItem } from '@/lib/types'
-import { Chip, Skeleton, SourceChip, stagger, useAsync } from '@/components/primitives'
+import { Badge, Card, ErrorBanner, Skeleton, SourceChip, useAsync } from '@/components/primitives'
 import { cn } from '@/lib/utils'
 import type { TabProps } from '../Matter'
 
-const icon = { present: Check, weak: Minus, missing: X }
-const color = {
-  present: 'text-followed bg-followed/15 border border-followed/30',
-  weak: 'text-distinguished bg-distinguished/15 border border-distinguished/30',
-  missing: 'text-overruled bg-overruled/15 border border-overruled/30',
+const stateIcon = { present: Check, weak: Minus, missing: X }
+const iconBox = {
+  present: 'border-ok-200 bg-ok-50 text-ok',
+  weak: 'border-warn-200 bg-warn-50 text-warn',
+  missing: 'border-bad-200 bg-bad-50 text-bad',
 }
 
-/** F5: the evidence a case still lacks, from the legal lead's deterministic rule pack. */
+/** F5: deterministic YAML evidentiary checklist. */
 export default function Proof({ id, onOpen, onReview }: TabProps) {
-  const v = useDB((d) => JSON.stringify(d.stages[id]?.proof.items.map((i) => i.state)))
-  const p = useAsync(() => api.proofLedger(id), [id, v])
-  if (p.loading) return <Skeleton className="h-64" />
+  const p = useAsync(() => api.proofLedger(id), [id])
+  if (p.loading && !p.data) return <Skeleton className="h-64" />
+  if (p.error) return <ErrorBanner error={p.error} onRetry={p.reload} />
+
   const items = p.data?.items ?? []
   const missing = items.filter((i) => i.state === 'missing').length
   const weak = items.filter((i) => i.state === 'weak').length
@@ -26,61 +25,101 @@ export default function Proof({ id, onOpen, onReview }: TabProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-seam pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
         <div>
-          <p className="text-[20px] font-medium text-marble">
-            <span className="text-overruled">{missing} missing</span>
-            {weak ? <span className="text-distinguished"> · {weak} weak</span> : null}
-            <span className="text-smoke"> · {present} present</span>
+          <p className="text-[18px] font-semibold text-ink">
+            <span className="text-bad">{missing} missing</span>
+            {weak ? <span className="text-warn"> · {weak} weak</span> : null}
+            <span className="text-ok"> · {present} present</span>
           </p>
-          <p className="text-[12px] text-smoke">{p.data?.case_type.replace('_', ' ')} rule pack · deterministic evidentiary checklist authored by senior counsel</p>
+          <p className="text-[12px] text-ink-3">
+            {p.data?.case_type.replace('_', ' ')} YAML rule pack · deterministic evidentiary prerequisites
+          </p>
         </div>
       </div>
 
-      <div className="glass overflow-hidden p-0">
-        <div className="divide-y divide-seam">
-          {items.map((it, i) => (
-            <Item
-              key={it.requirement}
-              it={it}
-              i={i}
-              onOpen={onOpen}
-              onReview={() => onReview({ target: 'proof', target_id: it.requirement, title: it.requirement })}
-            />
-          ))}
-        </div>
-      </div>
+      <Card className="overflow-x-auto p-0">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Evidentiary Requirement &amp; Statutory Rationale</th>
+              <th>Severity</th>
+              <th>Authorities</th>
+              <th className="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((it) => (
+              <ProofRow
+                key={it.requirement}
+                it={it}
+                onOpen={onOpen}
+                onReview={() =>
+                  onReview({ target: 'proof', target_id: it.requirement, title: it.requirement })
+                }
+              />
+            ))}
+          </tbody>
+        </table>
+      </Card>
     </div>
   )
 }
 
-function Item({ it, i, onOpen, onReview }: { it: ProofItem; i: number; onOpen: TabProps['onOpen']; onReview: () => void }) {
-  const Icon = icon[it.state]
+function ProofRow({
+  it,
+  onOpen,
+  onReview,
+}: {
+  it: ProofItem
+  onOpen: TabProps['onOpen']
+  onReview: () => void
+}) {
+  const Icon = stateIcon[it.state]
   return (
-    <motion.div {...stagger(i)} className={cn('p-4 transition-colors hover:bg-graphite/35', it.state === 'missing' && it.severity === 'critical' && 'bg-overruled/[0.03]')}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
-          <span className={cn('mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md', color[it.state])}>
-            <Icon size={13} strokeWidth={2.5} />
+    <tr className={cn(it.state === 'missing' && it.severity === 'critical' && 'bg-bad-50/40')}>
+      <td className="w-28">
+        <div className="inline-flex items-center gap-2">
+          <span className={cn('grid h-6 w-6 place-items-center rounded-[4px] border', iconBox[it.state])}>
+            <Icon size={12} strokeWidth={2.5} />
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[14px] font-medium text-marble">{it.requirement}</p>
-              <Chip tone={it.severity === 'critical' ? 'overruled' : it.severity === 'high' ? 'distinguished' : 'smoke'}>{it.severity}</Chip>
-              <Chip tone={it.state === 'present' ? 'followed' : it.state === 'weak' ? 'distinguished' : 'overruled'}>{it.state}</Chip>
-            </div>
-            <p className="mt-1 text-[13px] leading-snug text-pewter">{it.why}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {it.sources.map((s) => <SourceChip key={s.source_id} s={s} onOpen={onOpen} />)}
-            </div>
-          </div>
+          <Badge tone={it.state === 'present' ? 'ok' : it.state === 'weak' ? 'warn' : 'bad'}>
+            {it.state}
+          </Badge>
         </div>
-        {it.state !== 'present' && (
-          <button onClick={onReview} className="shrink-0 self-start rounded-md border border-seam bg-graphite px-3 py-1.5 text-[11px] font-medium text-brass hover:border-brass/40">
-            mark as obtained →
+      </td>
+      <td>
+        <p className="font-medium text-ink">{it.requirement}</p>
+        <p className="mt-0.5 text-[12.5px] leading-snug text-ink-2">{it.why}</p>
+      </td>
+      <td className="w-24">
+        <Badge tone={it.severity === 'critical' ? 'bad' : it.severity === 'high' ? 'warn' : 'neutral'}>
+          {it.severity}
+        </Badge>
+      </td>
+      <td>
+        <div className="flex flex-wrap gap-1.5">
+          {it.sources.length ? (
+            it.sources.map((s) => <SourceChip key={s.source_id} s={s} onOpen={onOpen} />)
+          ) : (
+            <span className="text-[11px] text-ink-4">—</span>
+          )}
+        </div>
+      </td>
+      <td className="whitespace-nowrap text-right">
+        {it.state !== 'present' ? (
+          <button
+            type="button"
+            onClick={onReview}
+            className="rounded-[4px] border border-line-strong bg-surface px-2.5 py-1 text-[11px] font-medium text-navy hover:bg-navy-50"
+          >
+            Mark obtained
           </button>
+        ) : (
+          <span className="text-[11px] text-ok font-medium">Satisfied</span>
         )}
-      </div>
-    </motion.div>
+      </td>
+    </tr>
   )
 }

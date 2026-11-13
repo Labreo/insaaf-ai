@@ -26,7 +26,7 @@ export default function Rays({ strength = 1, motes = 14 }: { strength?: number; 
       {Array.from({ length: motes }).map((_, i) => (
         <motion.span
           key={`m${i}`}
-          className="absolute h-[2px] w-[2px] rounded-full bg-ray/70"
+          className="absolute h-[2px] w-[2px] rounded-full bg-bone/70"
           style={{ left: `${8 + ((i * 37) % 70)}%`, top: `${5 + ((i * 53) % 80)}%` }}
           animate={{ opacity: [0, 0.8 * strength, 0], y: [0, 26 + (i % 5) * 6] }}
           transition={{ delay: (i % 7) * 0.6, duration: 6 + (i % 4), repeat: Infinity, ease: 'easeInOut' }}

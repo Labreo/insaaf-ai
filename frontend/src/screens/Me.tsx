@@ -1,148 +1,205 @@
+import { useState } from 'react'
 import { Eye, RotateCcw, Sparkles } from 'lucide-react'
-import { api, useConnection } from '@/lib/api'
-import { resetDB, useDB } from '@/lib/store'
+import { api } from '@/lib/api'
+import { useDB } from '@/lib/store'
 import type { Role } from '@/lib/types'
-import { Chip, Glass, Label, useAsync } from '@/components/primitives'
-import { Button } from '@/components/ui/button'
+import { Badge, Card, ErrorBanner, PageHeader, Section, useAsync } from '@/components/primitives'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 
 const roles: { k: Role; label: string; can: string }[] = [
-  { k: 'senior', label: 'Senior', can: 'approve · override · export' },
-  { k: 'junior', label: 'Junior', can: 'intake · run · edit' },
-  { k: 'clerk', label: 'Clerk', can: 'intake · documents' },
-  { k: 'student', label: 'Student', can: 'moot mode · read only' },
+  { k: 'senior', label: 'Senior Counsel', can: 'approve drafts · override findings · export' },
+  { k: 'junior', label: 'Junior Advocate', can: 'intake · run pipeline · edit facts' },
+  { k: 'clerk', label: 'Chamber Clerk', can: 'intake · upload documents' },
+  { k: 'student', label: 'Law Student', can: 'moot mode · read-only' },
 ]
 
-/** F11 chamber workspace: roles, visible access, org-level encryption. */
 export default function Me({ onReplayIntro }: { onReplayIntro: () => void }) {
-  const me = useDB((d) => d.me)
-  const conn = useConnection()
+  const me = useDB((s) => s.me)
+  const conn = useDB((s) => s.conn)
+  const health = useDB((s) => s.health)
   const logs = useAsync(() => api.accessLogs(), [me.role])
+  const [resetting, setResetting] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
   const ago = (iso: string) => {
     const h = Math.round((Date.now() - +new Date(iso)) / 3600e3)
-    return h < 1 ? 'now' : h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`
+    return h < 1 ? 'just now' : h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`
+  }
+
+  const handleReset = async () => {
+    setResetting(true)
+    setErr(null)
+    try {
+      await api.resetDemo()
+      sfx.accept()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setResetting(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-seam pb-5">
-        <div>
-          <Label>{me.org.name} · {me.org.plan} plan</Label>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-marble">{me.name}</h1>
-          <p className="mt-1 text-[13px] text-pewter">
-            Role-based access controls, chamber membership, and zero-trust document custody audit logs.
-          </p>
-        </div>
-        <Chip tone={conn === 'live' ? 'followed' : 'brass'}>
-          {conn === 'live' ? 'connected' : conn === 'local' ? 'local engine (offline)' : 'probing'}
-        </Chip>
-      </div>
+      <PageHeader
+        kicker={`${me.org.name} · ${me.org.plan} plan`}
+        title={me.name}
+        description="Role-based access controls, chamber membership roster, statutory corpus & registry status, and zero-trust document custody audit logs."
+        right={
+          <Badge tone={conn === 'live' ? 'ok' : 'bad'}>
+            {conn === 'live' ? 'DPDP Vault · Synced' : 'Offline Custody'}
+          </Badge>
+        }
+      />
+
+      {err && <ErrorBanner error={err} />}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="space-y-5 lg:col-span-6">
-          <section className="space-y-3">
-            <Label>Active chamber profile</Label>
+        <div className="space-y-6 lg:col-span-6">
+          <Section title="Active Chamber Role (RBAC)" subtitle="tests live gates across the workbench">
             <div className="grid grid-cols-2 gap-2.5">
               {roles.map((r) => (
                 <button
                   key={r.k}
+                  type="button"
                   onClick={() => {
                     sfx.tick()
                     api.setRole(r.k)
                   }}
                   className={cn(
-                    'glass relative p-3.5 text-left transition-colors',
-                    me.role === r.k ? 'border-brass/50 bg-brass/8' : 'hover:border-marble/20',
+                    'rounded-[6px] border p-3.5 text-left transition-colors',
+                    me.role === r.k
+                      ? 'border-navy bg-navy-50'
+                      : 'border-line bg-surface hover:bg-hover',
                   )}
                 >
-                  <p className="text-[14px] font-medium text-marble">{r.label}</p>
-                  <p className="mt-0.5 text-[11px] text-smoke">{r.can}</p>
+                  <p className={cn('text-[13px] font-semibold', me.role === r.k ? 'text-navy' : 'text-ink')}>
+                    {r.label}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-ink-3">{r.can}</p>
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-smoke">
-              Only a senior counsel can approve a pleading draft or override Insaaf scores. Switching profile verifies RBAC gates live across the workspace.
+            <p className="text-[11px] text-ink-3">
+              Only a Senior Counsel can seal final pleadings or override citation/score blocks. Switching roles updates X-Role headers immediately.
             </p>
-          </section>
+          </Section>
 
-          <section className="space-y-3">
-            <Label>System & Runtime</Label>
-            <Glass className="space-y-3">
-              <div className="flex items-center justify-between text-[13px]">
-                <span className="text-pewter">Backend connection</span>
-                <Chip tone={conn === 'live' ? 'followed' : 'brass'}>
-                  {conn === 'live' ? 'connected' : conn === 'local' ? 'local engine (offline)' : 'probing'}
-                </Chip>
+          <Section title="Data Custody, Privilege & Registry Status">
+            <Card className="space-y-3">
+              <div className="grid grid-cols-2 gap-2.5 text-[12px]">
+                <div className="rounded-[5px] border border-line bg-sunken px-3 py-2">
+                  <p className="eyebrow">Indian Kanoon Registry</p>
+                  <p className="mt-1 font-mono font-medium text-ink">{health?.kanoon ?? '—'}</p>
+                </div>
+                <div className="rounded-[5px] border border-line bg-sunken px-3 py-2">
+                  <p className="eyebrow">Authority Lock Verifier</p>
+                  <p className="mt-1 font-mono font-medium text-ink">{health?.llm ?? '—'}</p>
+                </div>
+                <div className="rounded-[5px] border border-line bg-sunken px-3 py-2">
+                  <p className="eyebrow">Bhashini Multilingual Engine</p>
+                  <p className="mt-1 font-mono font-medium text-ink">{health?.bhashini ?? '—'}</p>
+                </div>
+                <div className="rounded-[5px] border border-line bg-sunken px-3 py-2">
+                  <p className="eyebrow">Corpus Verification Rate</p>
+                  <p className="mt-1 font-mono font-medium text-ink">
+                    {health ? `${Math.round(health.cache_hit_rate * 100)}%` : '—'}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-[13px]">
-                <span className="text-pewter">API base</span>
-                <span className="font-mono text-[11px] text-smoke">{import.meta.env.VITE_API_BASE ?? '/v1'}</span>
-              </div>
-              <div className="flex flex-wrap gap-2 border-t border-seam pt-3">
-                <Button variant="ghost" className="h-9 rounded-md px-3 text-[12px] text-pewter hover:text-marble" onClick={onReplayIntro}>
-                  <Sparkles size={14} /> Replay intro
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-9 rounded-md px-3 text-[12px] text-pewter hover:text-marble"
-                  onClick={() => {
-                    resetDB()
-                    sfx.reject()
-                  }}
+
+              <div className="flex flex-wrap gap-2 border-t border-line pt-3">
+                <button
+                  type="button"
+                  onClick={onReplayIntro}
+                  className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink"
                 >
-                  <RotateCcw size={14} /> Restore baseline matters
-                </Button>
+                  <Sparkles size={13} className="text-brass" /> Replay Justice Intro
+                </button>
+                <button
+                  type="button"
+                  disabled={resetting}
+                  onClick={handleReset}
+                  className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:border-bad-200 hover:bg-bad-50 hover:text-bad disabled:opacity-50"
+                >
+                  <RotateCcw size={13} /> {resetting ? 'Resetting…' : 'Reset Baseline Chamber Matters'}
+                </button>
               </div>
-            </Glass>
-          </section>
+            </Card>
+          </Section>
         </div>
 
-        <div className="space-y-5 lg:col-span-6">
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Chamber members · access is visible, never hidden</Label>
-              <Chip tone="steel">
-                <Eye size={11} /> audit on
-              </Chip>
-            </div>
-            <Glass className="divide-y divide-seam/70 p-0">
-              {me.org.members.map((m) => (
-                <div key={m.name} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-[14px] font-medium text-marble">{m.name}</p>
-                    <p className="text-[11px] capitalize text-smoke">{m.role}</p>
-                  </div>
-                  <span className="font-mono text-[11px] text-smoke">seen {ago(m.last_seen)}</span>
-                </div>
-              ))}
-            </Glass>
-            <p className="text-[11px] text-smoke">
-              Client documents are encrypted per organisation (envelope keys). Every member sees who accessed which matter and when.
-            </p>
-          </section>
+        <div className="space-y-6 lg:col-span-6">
+          <Section
+            title="Chamber Members"
+            right={
+              <Badge tone="info">
+                <Eye size={11} /> Custody Audit On
+              </Badge>
+            }
+          >
+            <Card className="overflow-hidden p-0">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Advocate / Staff</th>
+                    <th>Role</th>
+                    <th className="text-right">Last Active</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {me.org.members.map((m) => (
+                    <tr key={m.name}>
+                      <td className="font-medium text-ink">{m.name}</td>
+                      <td className="capitalize text-ink-2">{m.role}</td>
+                      <td className="text-right font-mono text-[11px] text-ink-3">{ago(m.last_seen)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </Section>
 
-          {logs.data && logs.data.length > 0 && (
-            <section className="space-y-3">
-              <Label>Recent chamber access log</Label>
-              <Glass className="divide-y divide-seam/70 p-0">
-                {logs.data.slice(0, 6).map((entry, idx) => (
-                  <div key={`${entry.at}-${idx}`} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[12px]">
-                    <div className="min-w-0 truncate">
-                      <span className="font-medium text-marble">{entry.actor}</span>
-                      <span className="text-smoke"> · {entry.role} · {entry.matter_id}</span>
-                    </div>
-                    <span className="shrink-0 font-mono text-[11px] text-smoke">{ago(entry.at)}</span>
-                  </div>
-                ))}
-              </Glass>
-            </section>
-          )}
+          <Section title="Recent Document Custody Access Log">
+            <Card className="overflow-hidden p-0">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Actor</th>
+                    <th>Matter &amp; Endpoint</th>
+                    <th className="text-right">When</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(logs.data ?? []).slice(0, 8).map((entry) => (
+                    <tr key={entry.id}>
+                      <td>
+                        <span className="font-medium text-ink">{entry.actor}</span>{' '}
+                        <Badge tone="neutral">{entry.role}</Badge>
+                      </td>
+                      <td className="font-mono text-[11px] text-ink-2">
+                        {entry.matter_id} · {entry.endpoint}
+                      </td>
+                      <td className="text-right font-mono text-[11px] text-ink-3">{ago(entry.at)}</td>
+                    </tr>
+                  ))}
+                  {(!logs.data || logs.data.length === 0) && (
+                    <tr>
+                      <td colSpan={3} className="py-6 text-center text-[12px] text-ink-3">
+                        No custody access events recorded yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </Card>
+          </Section>
         </div>
       </div>
 
-      <p className="border-t border-seam pt-4 text-[11px] leading-relaxed text-smoke">
-        Insaaf is a drafting and research assistant for advocates. Every draft requires an advocate&rsquo;s approval, which is cryptographically logged. It does not constitute legal advice. · Chamber A, Mapusa · Goa Bench
+      <p className="border-t border-line pt-4 text-[11px] text-ink-3">
+        Insaaf AI is a research and drafting workbench for advocates. Every pleading requires advocate verification and sign-off, logged on a hash chain. It does not constitute legal advice.
       </p>
     </div>
   )

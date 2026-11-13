@@ -1,123 +1,171 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { Bug, Cpu, RotateCw } from 'lucide-react'
 import { api } from '@/lib/api'
-import { mut, useDB } from '@/lib/store'
-import { Chip, Glass, Label, Skeleton, Well, ease, useAsync } from '@/components/primitives'
-import { Button } from '@/components/ui/button'
-import { NumberTicker } from '@/components/magicui/number-ticker'
+import type { RetrainResult } from '@/lib/types'
+import {
+  Badge,
+  Card,
+  ErrorBanner,
+  Label,
+  PageHeader,
+  Skeleton,
+  Well,
+  useAsync,
+} from '@/components/primitives'
 import LedgerTab from './matter/LedgerTab'
 import { sfx } from '@/lib/sound'
 
-/** F11 ledger (chamber-wide) + F13 retraining loop. */
+/** F11 chamber-wide hash-chained ledger + F13 disagreement retraining loop. */
 export default function LedgerScreen() {
-  const version = useDB((d) => d.ledger.length + ':' + d.model.version + ':' + String(d.tampered))
-  const tampered = useDB((d) => d.tampered)
-  const model = useAsync(() => api.model(), [version])
-  const overrides = useDB((d) => d.ledger.filter((e) => e.action === 'override').length)
-  const [result, setResult] = useState<Awaited<ReturnType<typeof api.retrain>> | null>(null)
+  const model = useAsync(() => api.model(), [])
+  const ledgerRes = useAsync(() => api.ledger('all'), [])
+  const [result, setResult] = useState<RetrainResult | null>(null)
   const [busy, setBusy] = useState(false)
+  const [tampering, setTampering] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const isTampered = ledgerRes.data ? !ledgerRes.data.verify.valid : false
+  const overrides = ledgerRes.data?.entries.filter((e) => e.action === 'override').length ?? 0
 
   const retrain = async () => {
     setBusy(true)
+    setErr(null)
     sfx.tick()
-    const r = await api.retrain()
-    setResult(r)
-    setBusy(false)
-    sfx.seal()
+    try {
+      const r = await api.retrain()
+      setResult(r)
+      sfx.seal()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const toggleTamper = async () => {
+    setTampering(true)
+    setErr(null)
+    try {
+      const res = await api.tamperLedger()
+      if (res.tampered) sfx.reject()
+      else sfx.accept()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setTampering(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-seam pb-5">
-        <div>
-          <Label>Chamber Governance & Feedback Loop</Label>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-marble">Audit Ledger & Model Calibration</h1>
-          <p className="mt-1 text-[13px] text-pewter">
-            Cryptographically linked advocate review log and supervised outcome calibration pipeline.
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            mut.tamper()
-            tampered ? sfx.accept() : sfx.reject()
-          }}
-          className="inline-flex items-center gap-1.5 rounded-md border border-seam bg-graphite px-3 py-1.5 text-[12px] text-pewter transition-colors hover:border-overruled/40 hover:text-overruled"
-        >
-          <Bug size={13} /> {tampered ? 'Restore intact chain' : 'Simulate tamper'}
-        </button>
-      </div>
+      <PageHeader
+        kicker="Chamber Governance & Calibration Loop"
+        title="Audit Ledger & Model Retraining"
+        description="Every senior override is SHA-256 hash-chained onto the reviewer ledger and converted into supervised calibration data."
+        right={
+          <button
+            type="button"
+            disabled={tampering}
+            onClick={toggleTamper}
+            className="inline-flex items-center gap-1.5 rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:border-bad-200 hover:bg-bad-50 hover:text-bad"
+          >
+            <Bug size={13} /> {isTampered ? 'Restore Intact Chain' : 'Simulate Tamper'}
+          </button>
+        }
+      />
+
+      {err && <ErrorBanner error={err} />}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-4">
           <div className="flex items-center justify-between">
-            <Label>Disagreement → Retraining Loop</Label>
-            <Chip tone="steel">
+            <Label>F13 · Disagreement → Retraining Loop</Label>
+            <Badge tone="info">
               <Cpu size={11} /> {model.data?.version ?? '…'}
-            </Chip>
+            </Badge>
           </div>
-          {model.loading && <Skeleton className="h-44" />}
-          {model.data && (
-            <Glass spotlight className="space-y-4">
-              <div className="grid grid-cols-3 gap-3 border-b border-seam pb-4">
+
+          {model.loading && !model.data ? (
+            <Skeleton className="h-52" />
+          ) : model.data ? (
+            <Card className="space-y-4">
+              <div className="grid grid-cols-3 gap-2 border-b border-line pb-4">
                 <div>
-                  <p className="font-mono text-2xl font-semibold tabular-nums text-marble">
-                    <NumberTicker value={model.data.labels} />
-                  </p>
+                  <p className="tabular font-mono text-[22px] font-semibold text-ink">{model.data.labels}</p>
                   <Label className="mt-1">Labels</Label>
                 </div>
                 <div>
-                  <p className="font-mono text-2xl font-semibold tabular-nums text-brass">{overrides}</p>
+                  <p className="tabular font-mono text-[22px] font-semibold text-brass">{overrides}</p>
                   <Label className="mt-1">Overrides</Label>
                 </div>
                 <div>
-                  <p className="font-mono text-2xl font-semibold tabular-nums text-marble">
-                    {model.data.metrics.accuracy != null ? `${Math.round(model.data.metrics.accuracy * 100)}%` : '—'}
+                  <p className="tabular font-mono text-[22px] font-semibold text-ink">
+                    {model.data.metrics.accuracy != null
+                      ? `${Math.round(model.data.metrics.accuracy * 100)}%`
+                      : '—'}
                   </p>
-                  <Label className="mt-1">Held-out acc.</Label>
+                  <Label className="mt-1">Held-Out Acc.</Label>
                 </div>
               </div>
-              <p className="text-[12px] leading-relaxed text-pewter">
-                Every senior override becomes a labelled calibration record. Retraining is strictly opt-in per organisation; public judgments remain the default baseline.
+
+              <p className="text-[12.5px] leading-relaxed text-ink-2">
+                Every senior advocate disagreement becomes a labelled training example. Retraining is opt-in per chamber; public Indian Kanoon judgments remain the baseline prior.
               </p>
+
               <div className="flex items-center justify-between gap-3">
-                <Button
+                <button
+                  type="button"
                   disabled={busy}
                   onClick={retrain}
-                  className="h-9 rounded-md bg-brass px-4 text-[12px] font-medium uppercase tracking-[0.08em] text-void hover:bg-[#d6b676]"
+                  className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-navy-600 disabled:opacity-50"
                 >
-                  <RotateCw size={14} className={busy ? 'animate-spin' : ''} /> {busy ? 'Training…' : 'Retrain now'}
-                </Button>
-                <span className="font-mono text-[11px] text-smoke">nightly schedule</span>
+                  <RotateCw size={13} className={busy ? 'animate-spin' : ''} />
+                  {busy ? 'Training…' : 'Retrain Model Now'}
+                </button>
+                <span className="font-mono text-[11px] text-ink-3">
+                  Brier {model.data.metrics.brier ?? '—'}
+                </span>
               </div>
-              <AnimatePresence>
-                {result && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ ease }}>
-                    <Well className="grid grid-cols-2 gap-3 text-[12px]">
-                      <div>
-                        <Label>Before · {result.old_version}</Label>
-                        <p className="mt-1 font-mono text-marble">
-                          acc {result.metrics_before.accuracy != null ? `${(result.metrics_before.accuracy * 100).toFixed(1)}%` : '—'} · brier {result.metrics_before.brier ?? '—'}
-                        </p>
+
+              {result && (
+                <Well className="grid grid-cols-2 gap-3 text-[12px]">
+                  <div>
+                    <Label>Before · {result.old_version}</Label>
+                    <p className="mt-1 font-mono text-ink">
+                      acc {result.metrics_before.accuracy != null ? `${(result.metrics_before.accuracy * 100).toFixed(1)}%` : '—'} · brier {result.metrics_before.brier ?? '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label>After · {result.new_version}</Label>
+                    <p className="mt-1 font-mono font-semibold text-ok">
+                      acc {result.metrics_after.accuracy != null ? `${(result.metrics_after.accuracy * 100).toFixed(1)}%` : '—'} · brier {result.metrics_after.brier ?? '—'}
+                    </p>
+                  </div>
+                  <p className="col-span-2 text-ink-3">
+                    {result.labels_added} override{result.labels_added === 1 ? '' : 's'} folded into calibration set.
+                  </p>
+                </Well>
+              )}
+
+              {model.data.history.length > 0 && (
+                <div className="border-t border-line pt-3">
+                  <Label className="mb-2">Recent Calibration Runs</Label>
+                  <div className="space-y-1.5">
+                    {model.data.history.slice(-4).reverse().map((h) => (
+                      <div key={h.version + h.at} className="flex items-center justify-between font-mono text-[11px] text-ink-2">
+                        <span className="font-medium text-ink">{h.version}</span>
+                        <span>+{h.labels_added} labels</span>
+                        <span>{h.accuracy != null ? `${Math.round(h.accuracy * 100)}%` : '—'}</span>
                       </div>
-                      <div>
-                        <Label>After · {result.new_version}</Label>
-                        <p className="mt-1 font-mono text-followed">
-                          acc {(result.metrics_after.accuracy! * 100).toFixed(1)}% · brier {result.metrics_after.brier}
-                        </p>
-                      </div>
-                      <p className="col-span-2 text-smoke">
-                        {result.labels_added} override{result.labels_added === 1 ? '' : 's'} added as labels. Metrics are live evaluation outputs.
-                      </p>
-                    </Well>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Glass>
-          )}
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          ) : null}
         </div>
 
-        <div className="space-y-4 lg:col-span-8">
+        <div className="space-y-3 lg:col-span-8">
           <Label>Chamber-Wide Reviewer Ledger</Label>
           <LedgerTab id="all" />
         </div>

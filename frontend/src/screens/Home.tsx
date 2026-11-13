@@ -1,11 +1,22 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Bell, ChevronRight, FolderPlus, Hourglass, Scale, ShieldAlert, Trash2, TriangleAlert, UserCheck } from 'lucide-react'
+import { ArrowRight, Bell, FileText, FolderPlus, Hourglass, Search, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useDB } from '@/lib/store'
-import type { Matter, QueueItem } from '@/lib/types'
-import { Bar, Chip, Empty, Glass, Section, Skeleton, Stat, Title, useAsync } from '@/components/primitives'
-import { Button } from '@/components/ui/button'
-import { NumberTicker } from '@/components/magicui/number-ticker'
+import type { Matter } from '@/lib/types'
+import {
+  Badge,
+  Bar,
+  Card,
+  Empty,
+  ErrorBanner,
+  PageHeader,
+  Section,
+  Skeleton,
+  Stat,
+  type Tone,
+  useAsync,
+} from '@/components/primitives'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 
@@ -14,214 +25,402 @@ const caseLabel: Record<Matter['case_type'], string> = {
   civil_recovery: 'Civil recovery',
   criminal: 'Criminal',
 }
-const statusTone: Record<Matter['status'], 'smoke' | 'brass' | 'followed' | 'steel' | 'distinguished'> = {
-  draft: 'smoke',
-  running: 'steel',
-  ready: 'brass',
-  in_review: 'distinguished',
-  approved: 'followed',
+
+const statusTone: Record<Matter['status'], Tone> = {
+  draft: 'neutral',
+  running: 'info',
+  ready: 'navy',
+  in_review: 'warn',
+  approved: 'ok',
 }
+
+const flagTone = (f: string): Tone =>
+  f.includes('missing') || f.includes('overruled') ? 'bad' : f.includes('plea') || f.includes('pipeline') ? 'warn' : 'neutral'
 
 export default function Home() {
   const nav = useNavigate()
-  const version = useDB((d) => d.matters.map((m) => m.id + m.status + m.updated_at).join('|'))
-  const me = useDB((d) => d.me)
-  const q = useAsync(() => api.queue(), [version])
-  const m = useAsync(() => api.matters(), [version])
-  const a = useAsync(() => api.alerts(), [version])
+  const me = useDB((s) => s.me)
+  const mattersStore = useDB((s) => s.matters)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [docketSearch, setDocketSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | Matter['case_type']>('all')
 
-  const matters = m.data ?? []
-  const top = q.data?.find((x) => x.days_left != null)
+  const q = useAsync(() => api.queue(), [])
+  const m = useAsync(() => api.matters(), [])
+  const a = useAsync(() => api.alerts(), [])
+
+  const matters = m.data ?? mattersStore
+  const filteredMatters = matters.filter((mt) => {
+    if (typeFilter !== 'all' && mt.case_type !== typeFilter) return false
+    const needle = docketSearch.trim().toLowerCase()
+    if (!needle) return true
+    return (
+      mt.title.toLowerCase().includes(needle) ||
+      (mt.forum_hint ?? '').toLowerCase().includes(needle) ||
+      mt.id.toLowerCase().includes(needle)
+    )
+  })
+  const queue = q.data ?? []
+  const alerts = (a.data ?? []).slice(0, 5)
+
+  const under45 = matters.filter((x) => x.days_left != null && x.days_left <= 45).length
   const inReview = matters.filter((x) => x.status === 'in_review').length
-  const under30 = matters.filter((x) => (x.days_left ?? 99) <= 30).length
-  const urgentAlerts = (a.data ?? []).slice(0, 4)
+  const nextLimitation = queue.find((x) => x.days_left != null)
+
+  const removeMatter = async (id: string) => {
+    setDeleting(id)
+    try {
+      await api.deleteMatter(id)
+      sfx.tick()
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-seam pb-5">
-        <Title kicker={`${me.org.name} · Chamber Docket`}>
-          {top ? (
-            <>
-              Top limitation expires in <span className="tabular-nums text-brass">{top.days_left} days</span>
-            </>
-          ) : (
-            'Chamber Matter Docket'
-          )}
-        </Title>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={() => nav('/ledger')} className="h-9 rounded-md border border-seam px-3 text-[12px] text-pewter hover:text-marble">
-            Audit Ledger
-          </Button>
-          <Button onClick={() => { sfx.tap(); nav('/new') }} className="h-9 rounded-md bg-brass px-4 text-[12px] font-medium uppercase tracking-[0.06em] text-void hover:bg-[#d6b676]">
-            <FolderPlus size={14} /> New Matter Intake
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        kicker={`${me.org.name} · Chamber Docket`}
+        title={
+          nextLimitation
+            ? `Chamber Docket · Next limitation in ${nextLimitation.days_left} days`
+            : 'Chamber Matter Docket & Nyaya Queue'
+        }
+        description="Prioritised by statutory limitation urgency, evidentiary readiness, and senior review state."
+        right={
+          <>
+            <button
+              type="button"
+              onClick={() => nav('/ledger')}
+              className="rounded-[5px] border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:bg-hover hover:text-ink"
+            >
+              Audit Ledger
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sfx.tap()
+                nav('/new')
+              }}
+              className="inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-navy-600"
+            >
+              <FolderPlus size={14} /> New Matter Intake
+            </button>
+          </>
+        }
+      />
 
-      {/* 4-Column KPI Summary */}
+      {(q.error || m.error) && (
+        <ErrorBanner
+          error={q.error || m.error || 'Failed to load docket'}
+          onRetry={() => {
+            q.reload()
+            m.reload()
+            a.reload()
+          }}
+        />
+      )}
+
+      {/* 4-Column KPI Strip */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat value={matters.length} label="Active Matters" />
-        <Stat value={under30} label="Limitation ≤ 30 Days" tone={under30 ? 'brass' : undefined} />
-        <Stat value={inReview} label="Awaiting Senior Sign-Off" tone={inReview ? 'overruled' : undefined} />
+        <Stat value={matters.length} label="Active Matters" sub={`${matters.filter((x) => x.status === 'approved').length} sealed by senior`} />
         <Stat
-          value={top ? <span className="tabular-nums"><NumberTicker value={top.days_left ?? 0} className="text-marble" />d</span> : '—'}
+          value={under45}
+          label="Limitation ≤ 45 Days"
+          tone={under45 > 0 ? 'warn' : undefined}
+          sub="Deterministic Limitation Act clock"
+        />
+        <Stat
+          value={inReview}
+          label="Awaiting Senior Sign-Off"
+          tone={inReview > 0 ? 'bad' : undefined}
+          sub="Requires senior advocate seal"
+        />
+        <Stat
+          value={nextLimitation?.days_left != null ? `${nextLimitation.days_left}d` : '—'}
           label="Top Queue Deadline"
-          tone={top && (top.days_left ?? 999) <= 45 ? 'brass' : 'followed'}
+          tone={nextLimitation?.days_left != null && nextLimitation.days_left <= 45 ? 'navy' : 'ok'}
+          sub={nextLimitation ? nextLimitation.title.replace(' (FICTIONAL)', '').slice(0, 34) : 'No active deadline'}
         />
       </div>
 
-      {/* Main 12-Column Desktop Split */}
+      {/* Main 12-Column Workbench Layout */}
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-8">
-          <Section title="Nyaya queue" right={<span className="text-[11px] font-mono text-smoke">ranked by deadline × merit × proof gaps</span>}>
-            {q.loading && <><Skeleton className="h-24" /><Skeleton className="h-24" /></>}
-            {q.data?.length === 0 && (
+          {/* Nyaya Priority Queue Table */}
+          <Section
+            title="Nyaya Priority Queue"
+            subtitle="ranked by deadline × merit × proof gaps"
+          >
+            {q.loading && !q.data ? (
+              <Skeleton className="h-44" />
+            ) : queue.length === 0 ? (
               <Empty
                 text="Docket queue is empty."
-                action={<Button className="rounded-md bg-brass text-void" onClick={() => nav('/new')}>Start a matter</Button>}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => nav('/new')}
+                    className="rounded-[5px] bg-navy px-3.5 py-1.5 text-[12px] font-medium text-white"
+                  >
+                    Create first matter
+                  </button>
+                }
               />
-            )}
-            <div className="space-y-2.5">
-              {q.data?.map((it) => (
-                <QueueRow key={it.matter_id} it={it} onOpen={() => { sfx.tap(); nav(`/matters/${it.matter_id}`) }} />
-              ))}
-            </div>
-          </Section>
-
-          <Section title="Chamber matters register" right={<span className="text-[11px] text-smoke">{matters.length} on record</span>}>
-            {m.loading && <Skeleton className="h-32" />}
-            {matters.length === 0 && <Empty text="No matters registered yet." />}
-            {matters.length > 0 && (
-              <div className="glass overflow-hidden p-0">
-                <table className="w-full text-left text-[13px]">
-                  <thead className="border-b border-seam bg-graphite/70 text-[11px] uppercase tracking-[0.06em] text-smoke">
+            ) : (
+              <Card className="overflow-x-auto p-0">
+                <table className="tbl">
+                  <thead>
                     <tr>
-                      <th className="px-4 py-2.5 font-medium">Matter Title & Forum</th>
-                      <th className="hidden px-3 py-2.5 font-medium sm:table-cell">Practice Area</th>
-                      <th className="hidden px-3 py-2.5 font-medium md:table-cell">Docs</th>
-                      <th className="px-3 py-2.5 font-medium">Status</th>
-                      <th className="px-4 py-2.5 text-right font-medium">Action</th>
+                      <th>Matter</th>
+                      <th>Priority Score</th>
+                      <th>Flags</th>
+                      <th>Limitation</th>
+                      <th className="text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-seam/70">
-                    {matters.map((mt) => (
-                      <tr key={mt.id} className="transition-colors hover:bg-graphite/40">
-                        <td className="px-4 py-3">
-                          <button onClick={() => { sfx.tap(); nav(`/matters/${mt.id}`) }} className="text-left">
-                            <p className="font-medium text-marble hover:text-brass">{mt.title.replace(' (FICTIONAL)', '')}</p>
-                            <p className="text-[11px] text-smoke">{mt.forum_hint || 'District Court'} · updated {new Date(mt.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                  <tbody>
+                    {queue.map((it) => (
+                      <tr
+                        key={it.matter_id}
+                        onClick={() => {
+                          sfx.tap()
+                          nav(`/matters/${it.matter_id}`)
+                        }}
+                        className="row-link cursor-pointer"
+                      >
+                        <td className="font-medium text-ink">
+                          <p>{it.title.replace(' (FICTIONAL)', '')}</p>
+                          <p className="mt-0.5 font-mono text-[11px] text-ink-3">{it.matter_id}</p>
+                        </td>
+                        <td className="w-36">
+                          <div className="flex items-center gap-2">
+                            <span className="tabular font-mono text-[12px] font-medium text-ink">
+                              {Math.round(it.priority * 100)}
+                            </span>
+                            <Bar value={it.priority} tone={it.priority >= 0.7 ? 'bad' : it.priority >= 0.45 ? 'warn' : 'navy'} />
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex flex-wrap gap-1">
+                            {it.flags.length ? (
+                              it.flags.map((f) => (
+                                <Badge key={f} tone={flagTone(f)}>
+                                  {f.replace(/_/g, ' ')}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-[11px] text-ink-4">clear</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap font-mono text-[12px]">
+                          {it.days_left != null ? (
+                            <span className={cn('inline-flex items-center gap-1', it.days_left <= 45 ? 'font-semibold text-bad' : 'text-ink-2')}>
+                              <Hourglass size={11} /> {it.days_left}d
+                            </span>
+                          ) : (
+                            <span className="text-ink-4">—</span>
+                          )}
+                        </td>
+                        <td className="text-right">
+                          <span className="inline-flex items-center gap-1 text-[12px] font-medium text-navy">
+                            Open <ArrowRight size={12} />
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
+            )}
+          </Section>
+
+          {/* Chamber Matters Register Table */}
+          <Section
+            title="Chamber Matters Register"
+            subtitle={`${filteredMatters.length} of ${matters.length} matters on record`}
+            right={
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(['all', 'property', 'civil_recovery', 'criminal'] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setTypeFilter(k)}
+                    className={cn(
+                      'rounded-[4px] border px-2 py-1 text-[11px] font-medium transition-colors',
+                      typeFilter === k
+                        ? 'border-navy bg-navy text-white'
+                        : 'border-line bg-surface text-ink-2 hover:bg-hover',
+                    )}
+                  >
+                    {k === 'all' ? 'All Areas' : caseLabel[k]}
+                  </button>
+                ))}
+              </div>
+            }
+          >
+            <div className="relative">
+              <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+              <input
+                type="text"
+                value={docketSearch}
+                onChange={(e) => setDocketSearch(e.target.value)}
+                placeholder="Search party, forum, or case ID…"
+                className="field pl-8"
+              />
+            </div>
+
+            {m.loading && !matters.length ? (
+              <Skeleton className="h-44" />
+            ) : filteredMatters.length === 0 ? (
+              <Empty text="No matching matters in Chamber Register." />
+            ) : (
+              <Card className="overflow-x-auto p-0">
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th>Matter &amp; Forum</th>
+                      <th>Practice</th>
+                      <th>Docs</th>
+                      <th>Status</th>
+                      <th>Deadline</th>
+                      <th className="text-right">Workbench</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredMatters.map((mt) => (
+                      <tr key={mt.id} className="row-link">
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              sfx.tap()
+                              nav(`/matters/${mt.id}`)
+                            }}
+                            className="text-left"
+                          >
+                            <p className="font-medium text-ink hover:text-navy">
+                              {mt.title.replace(' (FICTIONAL)', '')}
+                            </p>
+                            <p className="mt-0.5 text-[11px] text-ink-3">
+                              {mt.forum_hint || 'District Court'} · {mt.id}
+                            </p>
                           </button>
                         </td>
-                        <td className="hidden px-3 py-3 text-pewter sm:table-cell">{caseLabel[mt.case_type]}</td>
-                        <td className="hidden px-3 py-3 font-mono text-[12px] text-smoke md:table-cell">{mt.documents?.length ?? 0}</td>
-                        <td className="px-3 py-3">
-                          <Chip tone={statusTone[mt.status]}>{mt.status.replace('_', ' ')}</Chip>
+                        <td className="whitespace-nowrap text-[12px] text-ink-2">
+                          {caseLabel[mt.case_type]}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="tabular font-mono text-[12px] text-ink-2">
+                          {mt.documents?.length ?? 0}
+                        </td>
+                        <td>
+                          <Badge tone={statusTone[mt.status]}>{mt.status.replace('_', ' ')}</Badge>
+                        </td>
+                        <td className="whitespace-nowrap font-mono text-[11px] text-ink-2">
+                          {mt.next_deadline ?? '—'}
+                        </td>
+                        <td className="whitespace-nowrap text-right">
                           <div className="inline-flex items-center gap-1.5">
-                            <Button variant="ghost" onClick={() => { sfx.tap(); nav(`/matters/${mt.id}?tab=draft`) }} className="h-7 rounded border border-seam px-2.5 text-[11px] text-pewter hover:text-marble">
-                              Draft
-                            </Button>
-                            <Button variant="ghost" onClick={() => { sfx.tap(); nav(`/matters/${mt.id}`) }} className="h-7 rounded border border-seam px-2.5 text-[11px] text-brass hover:bg-brass/10">
-                              Open <ChevronRight size={12} />
-                            </Button>
-                            {mt.status === 'draft' && (
-                              <button aria-label="Delete draft" onClick={() => api.deleteMatter(mt.id)} className="rounded p-1.5 text-smoke hover:text-overruled">
-                                <Trash2 size={13} />
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => nav(`/matters/${mt.id}?tab=draft`)}
+                              className="inline-flex items-center gap-1 rounded-[4px] border border-line bg-sunken px-2 py-1 text-[11px] font-medium text-ink-2 hover:bg-hover hover:text-ink"
+                            >
+                              <FileText size={11} /> Draft
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => nav(`/matters/${mt.id}`)}
+                              className="rounded-[4px] bg-navy px-2.5 py-1 text-[11px] font-medium text-white hover:bg-navy-600"
+                            >
+                              Open
+                            </button>
+                            <button
+                              type="button"
+                              disabled={deleting === mt.id}
+                              aria-label={`Delete ${mt.title}`}
+                              onClick={() => removeMatter(mt.id)}
+                              className="rounded-[4px] border border-transparent p-1 text-ink-3 hover:border-bad-200 hover:bg-bad-50 hover:text-bad"
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </Card>
             )}
           </Section>
         </div>
 
-        {/* Right Operations Rail */}
-        <aside className="space-y-6 lg:col-span-4">
-          <Section title="Intake & pipeline">
-            <Glass className="space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-brass/30 bg-brass/10 text-brass">
-                  <Scale size={17} />
-                </span>
-                <div>
-                  <p className="text-[14px] font-medium text-marble">Authority-Locked Drafting</p>
-                  <p className="mt-1 text-[12px] leading-relaxed text-smoke">
-                    Ingest client PDFs, DOCX instruments, or Konkani/Marathi voice notes. Every pleading paragraph links to a verified record or Indian Kanoon paragraph.
-                  </p>
-                </div>
-              </div>
-              <Button onClick={() => { sfx.tap(); nav('/new') }} className="h-9 w-full rounded-md bg-brass text-[12px] font-medium uppercase tracking-[0.06em] text-void hover:bg-[#d6b676]">
-                Open Matter Intake <ArrowRight size={13} />
-              </Button>
-            </Glass>
-          </Section>
-
-          <Section title="Upcoming statutory deadlines" right={<button onClick={() => nav('/alerts')} className="text-[11px] text-brass hover:underline">View all</button>}>
-            <Glass className="divide-y divide-seam/70 p-0">
-              {urgentAlerts.length === 0 ? (
-                <p className="p-4 text-[12px] text-smoke">No active deadlines indexed.</p>
-              ) : (
-                urgentAlerts.map((al) => (
-                  <button
-                    key={al.id}
-                    onClick={() => { sfx.tap(); nav(`/matters/${al.matter_id}?tab=clock`) }}
-                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-graphite/50"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-[13px] font-medium text-marble">{al.title.replace(' (FICTIONAL)', '')}</p>
-                      <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-smoke">
-                        <Bell size={11} /> {al.kind.replace('_', ' ')} · {al.due}
-                      </p>
-                    </div>
-                    <span className={cn('shrink-0 font-mono text-[13px] font-medium tabular-nums', al.days_left <= 30 ? 'text-overruled' : al.days_left <= 90 ? 'text-brass' : 'text-steel')}>
-                      {al.days_left}d
-                    </span>
-                  </button>
-                ))
+        {/* Right 4-Col Rail: Statutory Deadlines & Intake */}
+        <div className="space-y-6 lg:col-span-4">
+          <Section
+            title="Statutory Watchlist"
+            right={
+              <button
+                type="button"
+                onClick={() => nav('/alerts')}
+                className="text-[11px] font-medium text-navy hover:underline"
+              >
+                View all
+              </button>
+            }
+          >
+            <Card className="divide-y divide-line p-0">
+              {alerts.map((al) => (
+                <button
+                  key={al.id}
+                  type="button"
+                  onClick={() => {
+                    sfx.tick()
+                    nav(`/matters/${al.matter_id}?tab=clock`)
+                  }}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-sunken"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[12.5px] font-medium text-ink">
+                      {al.title.replace(' (FICTIONAL)', '')}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-ink-3">
+                      <Bell size={10} />
+                      {al.kind.replace(/_/g, ' ')} · {al.due}
+                    </p>
+                  </div>
+                  <Badge tone={al.level === 'urgent' ? 'bad' : al.level === 'warn' ? 'warn' : 'neutral'}>
+                    {al.days_left >= 0 ? `${al.days_left}d` : 'past'}
+                  </Badge>
+                </button>
+              ))}
+              {alerts.length === 0 && (
+                <p className="px-4 py-6 text-center text-[12px] text-ink-3">No active deadline alerts.</p>
               )}
-            </Glass>
+            </Card>
           </Section>
 
-          <p className="rounded-md border border-seam bg-graphite/40 px-3.5 py-2.5 text-[11px] leading-relaxed text-smoke">
-            Confidential chamber workspace · Insaaf assists advocates with verification and drafting; it does not give legal advice.
-          </p>
-        </aside>
+          <Section title="Intake & Ingestion">
+            <Card className="space-y-3 bg-sunken">
+              <p className="eyebrow">Authority-Locked Drafting</p>
+              <p className="text-[13px] leading-relaxed text-ink-2">
+                Ingest client PDFs, DOCX deeds, or Konkani/Marathi voice statements. Every legal proposition binds to an indexed authority paragraph or is withheld.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  sfx.tap()
+                  nav('/new')
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[5px] bg-navy px-3.5 py-2 text-[12px] font-medium text-white hover:bg-navy-600"
+              >
+                Start New Matter Intake <ArrowRight size={13} />
+              </button>
+            </Card>
+          </Section>
+        </div>
       </div>
     </div>
-  )
-}
-
-function QueueRow({ it, onOpen }: { it: QueueItem; onOpen: () => void }) {
-  const hot = (it.days_left ?? 999) <= 45
-  return (
-    <Glass onClick={onOpen} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-1 items-center gap-4">
-        <div className={cn('flex h-14 w-20 shrink-0 flex-col items-center justify-center rounded-md border', hot ? 'border-brass/35 bg-brass/8' : 'border-seam bg-graphite')}>
-          <span className={cn('font-mono text-[22px] leading-none font-medium tabular-nums', hot ? 'text-brass' : 'text-marble')}>{it.days_left ?? '—'}</span>
-          <span className="mt-1 text-[10px] uppercase tracking-[0.08em] text-smoke">days</span>
-        </div>
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="truncate text-[15px] font-medium text-marble">{it.title.replace(' (FICTIONAL)', '')}</p>
-            <span className="shrink-0 font-mono text-[11px] text-smoke">priority {Math.round(it.priority * 100)}</span>
-          </div>
-          <Bar value={it.priority} tone={hot ? 'brass' : 'steel'} />
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {it.flags.includes('title_missing') && <Chip tone="overruled"><TriangleAlert size={11} /> title doc missing</Chip>}
-            {it.flags.includes('overruled_citation') && <Chip tone="overruled"><ShieldAlert size={11} /> overruled citation</Chip>}
-            {it.flags.includes('plea_check') && <Chip tone="steel"><Hourglass size={11} /> plea eligibility</Chip>}
-            {it.flags.includes('awaiting_senior') && <Chip tone="distinguished"><UserCheck size={11} /> awaiting senior</Chip>}
-            {it.days_left === null && <Chip>run pipeline to set deadline</Chip>}
-          </div>
-        </div>
-      </div>
-      <ChevronRight size={16} className="hidden shrink-0 text-smoke sm:block" />
-    </Glass>
   )
 }
