@@ -220,6 +220,58 @@ class PrecedentClient:
             "url": f"https://indiankanoon.org/doc/{doc_id}/",
         }
 
+    @staticmethod
+    def outcome_stats(records: list[dict[str, Any]]) -> dict[str, int]:
+        stats = {"allowed": 0, "dismissed": 0, "partly_allowed": 0, "unknown": 0}
+        for r in records:
+            stats[r.get("outcome") if r.get("outcome") in stats else "unknown"] += 1
+        return stats
+
+    async def explore(
+        self,
+        query: str,
+        area: str | None = None,
+        state: str = "",
+        district: str = "",
+        court: str = "",
+        outcome: str = "",
+        limit: int = 20,
+        sweep: bool = True,
+    ) -> dict[str, Any]:
+        """Matter-free precedent search for the Precedent Search screen, with optional filters."""
+        t0 = time.perf_counter()
+        k = max(limit * 3, 30)
+        hits = precedent_index.search(query, k=k, area=area, state=state, district=district)
+        swept = 0
+        if sweep and (not hits or hits[0]["similarity_raw"] < 0.12):
+            try:
+                recs = await asyncio.wait_for(self.web_sweep(query, area or "", state), timeout=8.0)
+                swept = len(recs)
+                if recs:
+                    hits = precedent_index.search(query, k=k, area=area, state=state, district=district)
+            except asyncio.TimeoutError:
+                pass
+        if court:
+            hits = [h for h in hits if court.lower() in (h.get("court") or "").lower()]
+        if outcome:
+            hits = [h for h in hits if h.get("outcome") == outcome]
+        hits = hits[:limit]
+        return {
+            "results": [
+                {
+                    "doc_id": h["doc_id"], "title": h.get("title", ""), "court": h.get("court", ""), "seat": h.get("seat", ""),
+                    "date": h.get("date", ""), "outcome": h.get("outcome", "unknown"), "statutes": h.get("statutes", []),
+                    "headnote": (h.get("headnote") or "")[:700], "locality": h.get("locality_reason", ""), "score": h["score"],
+                    "url": h.get("url", ""), "practice_areas": h.get("practice_areas", []), "origin": h.get("source", "index"),
+                }
+                for h in hits
+            ],
+            "index_size": precedent_index.size(),
+            "web_swept": swept,
+            "outcome_stats": self.outcome_stats(hits),
+            "elapsed_ms": int((time.perf_counter() - t0) * 1000),
+        }
+
     async def ping(self) -> str:
         n = precedent_index.size()
         return "ok" if n >= 50 else ("degraded" if n else "down")

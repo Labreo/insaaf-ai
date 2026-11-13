@@ -309,7 +309,7 @@ def test_f3_pipeline_merges_matter_specific_hits_ahead_of_anchor(monkeypatch):
         monkeypatch.setattr(precedent_client, "search", fake_search)
 
         async def drain():
-            async for _ in run_pipeline_stream("mat_001"):
+            async for _ in run_pipeline_stream("mat_001", force_live=True):
                 pass
 
         asyncio.run(drain())

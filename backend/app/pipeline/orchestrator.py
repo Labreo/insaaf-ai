@@ -124,8 +124,67 @@ def _compute_priority(days_left: int | None, case_type: str, proof_items: list[d
     return round(max(0.05, min(0.99, score)), 2)
 
 
-async def run_pipeline_stream(matter_id: str) -> AsyncIterator[dict[str, Any]]:
+def _replay_message(stage: str, data: Any) -> str:
+    try:
+        if stage == "intake":
+            return f"{data.get('documents', 0)} documents · {data.get('voice_notes', 0)} voice note(s) parsed"
+        if stage == "facts":
+            return f"{len(data)} facts extracted ({sum(1 for f in data if f.get('original'))} bilingual)"
+        if stage == "proof_ledger":
+            items = data.get("items", [])
+            return f"{sum(1 for i in items if i['state'] == 'missing')} missing, {sum(1 for i in items if i['state'] == 'weak')} weak"
+        if stage == "statute_clock":
+            if not data.get("applicable", True):
+                return "No fixed limitation clock for this area"
+            dl = data.get("days_left")
+            return "Cause-of-action date needed" if dl is None else (f"{dl} days to limitation" if dl >= 0 else f"Time-barred by {-dl} days")
+        if stage == "search":
+            return f"{len(data.get('results', []))} precedents from {data.get('searched', 0):,} indexed judgments"
+        if stage == "rag":
+            return f"{len(data.get('corpus_sources', []))} verified paragraphs locked"
+        if stage == "citation_health":
+            red = sum(1 for c in data if c.get("badge") == "red")
+            return f"{len(data)} checked · {red} overruled blocked" if red else f"{len(data)} checked · all good law"
+        if stage == "bias_firewall":
+            return f"{len(data.get('rows', []))} identities verified (max Δ ≤ {data.get('epsilon', 0.02)})" if data.get("passed") else "Abstaining: bias threshold exceeded"
+        if stage == "score":
+            return f"{str(data.get('band', '')).capitalize()} band · p={data.get('probability', '—')} · {data.get('model_version', '')}"
+        if stage == "advice":
+            return f"Recommended: {str(data.get('recommendation', '')).replace('_', ' ')}"
+        if stage == "draft":
+            return "Draft locked & ready for advocate review"
+    except Exception:
+        pass
+    return "done"
+
+
+async def _replay_pipeline(matter_id: str) -> AsyncIterator[dict[str, Any]]:
+    """DEMO_MODE: deterministic replay of an already-analysed matter with realistic stage pacing.
+    No network, no LLM quota, identical results every time; new or edited matters run live."""
+    timings = {"intake": 0.35, "facts": 0.6, "proof_ledger": 0.3, "statute_clock": 0.25, "search": 0.9, "rag": 0.25,
+               "citation_health": 0.4, "bias_firewall": 0.5, "score": 0.3, "advice": 0.3, "draft": 0.7}
+    with db_session() as conn:
+        conn.execute("UPDATE matters SET status = 'running' WHERE id = ?", (matter_id,))
+    for stage in STAGE_ORDER:
+        yield {"stage": stage, "status": "running", "progress": 0.4, "message": "Replaying cached analysis…", "elapsed_ms": 0}
+        await asyncio.sleep(timings.get(stage, 0.3))
+        data = get_stage_result(matter_id, stage)
+        yield {"stage": stage, "status": "done", "progress": 1.0, "message": _replay_message(stage, data),
+               "elapsed_ms": int(timings.get(stage, 0.3) * 1000)}
+    with db_session() as conn:
+        conn.execute("UPDATE matters SET status = 'ready' WHERE id = ? AND status = 'running'", (matter_id,))
+
+
+def _fully_analysed(matter_id: str) -> bool:
+    return all(get_stage_result(matter_id, st) is not None for st in STAGE_ORDER)
+
+
+async def run_pipeline_stream(matter_id: str, force_live: bool = False) -> AsyncIterator[dict[str, Any]]:
     """Run all 11 stages for a matter, persisting each output and yielding SSE PipelineEvents."""
+    if settings.demo_mode and not force_live and _fully_analysed(matter_id):
+        async for ev in _replay_pipeline(matter_id):
+            yield ev
+        return
     matter, docs = _get_matter_and_docs(matter_id)
     docs_text = "\n\n".join(d.get("extracted_text", "") for d in docs)
 
@@ -235,6 +294,7 @@ async def run_pipeline_stream(matter_id: str) -> AsyncIterator[dict[str, Any]]:
 
     elapsed = int((time.perf_counter() - t0) * 1000)
     precedents = {
+        "outcome_stats": precedent_client.outcome_stats(raw_search.get("docs", [])),
         "index_size": raw_search.get("index_size", 0),
         "web_swept": raw_search.get("web_swept", 0),
         "budget_ms": raw_search.get("budget_ms", 8000),
@@ -783,6 +843,7 @@ async def run_precedent_search(matter_id: str, query: str) -> dict[str, Any]:
     prec_results = await _build_prec_results(matter["case_type"], q_text, list(raw_search.get("docs", [])))
     elapsed = int((time.perf_counter() - t0) * 1000)
     precedents = {
+        "outcome_stats": precedent_client.outcome_stats(raw_search.get("docs", [])),
         "index_size": raw_search.get("index_size", 0),
         "web_swept": raw_search.get("web_swept", 0),
         "query": q_text,
@@ -859,6 +920,7 @@ async def seed_fast_stage_results(matter_id: str | None = None, force: bool = Fa
         raw = await precedent_client.search(f"{query} {specific}".strip(), max_results=12, area=matter["case_type"], sweep=False, **_locality(matter))
         prec_results = await _build_prec_results(matter["case_type"], query, list(raw.get("docs", [])))
         precedents = {
+            "outcome_stats": precedent_client.outcome_stats(raw.get("docs", [])),
             "index_size": raw.get("index_size", 0),
             "web_swept": 0,
             "query": query,

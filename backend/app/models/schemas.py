@@ -279,6 +279,8 @@ class Precedents(BaseModel):
     index_size: int = 0
     web_swept: int = 0
     query: Optional[str] = None
+    # Outcome split among the similar judgments retrieved ("how have courts ruled on facts like these").
+    outcome_stats: Optional[dict[str, int]] = None
 
 
 class CitationHealth(BaseModel):
@@ -321,6 +323,7 @@ class Score(BaseModel):
     eval: EvalSummary
     bias_firewall_passed: bool
     probability: Optional[float] = None
+    prediction_basis: Optional[dict[str, Any]] = None
     model_band: Optional[str] = None
     override: Optional[dict[str, Any]] = None
 

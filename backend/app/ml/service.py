@@ -215,6 +215,7 @@ def compute_bias_firewall_and_score(
     pooled_rate = round((n_j * p_local + k_sh * p_parent) / (n_j + k_sh), 3)
 
     raw_text = " ".join(f.get("statement", "") for f in facts)
+    empirical, emp_n, emp_allowed = _empirical_rate(precedents)
     rows: list[dict[str, Any]] = []
     baseline_prob: float | None = None
 
@@ -240,12 +241,11 @@ def compute_bias_firewall_and_score(
         elif feat_dict != baseline_feats:
             invariant = False  # any feature drift across identities is a firewall breach
         X = np.array([[feat_dict[f] for f in features_order]], dtype=float)
-        raw_prob = float(model.predict_proba(X)[0, 1]) + (pooled_rate - 0.48) * 0.65
-        prob = round(max(0.08, min(0.94, raw_prob)), 2)
+        prob = _blend(float(model.predict_proba(X)[0, 1]), empirical, pooled_rate)
         if baseline_prob is None:
             baseline_prob = prob
         delta = round(abs(prob - baseline_prob), 2)
-        un = _unprotected_score(feat_dict, features_order, ident, pooled_rate)
+        un = _unprotected_score(feat_dict, features_order, ident, pooled_rate, empirical)
         rows.append({
             "identity": ident, "label": IDENTITY_LABELS.get(ident, ident), "score": prob, "delta": delta, "masked": not leaked,
             "unprotected_score": un,
@@ -301,6 +301,11 @@ def compute_bias_firewall_and_score(
             lbl = "Within limitation" if val >= 1.0 else "Limitation expired"
         factor_items.append({"name": lbl, "effect": round((val - 0.5) * w * 0.28, 2)})
 
+    if emp_n:
+        factor_items.append({
+            "name": f"Similar judgments: {emp_allowed:g} of {emp_n} granted relief",
+            "effect": round((empirical - 0.5) * 0.7, 2),
+        })
     factor_items.append({
         "name": f"Court baseline ({display_court})",
         "effect": round((pooled_rate - 0.48) * 1.4, 2),
@@ -321,6 +326,10 @@ def compute_bias_firewall_and_score(
         "model_version": meta["version"],
         "factors": factor_items,
         "probability": round(p_score, 2),
+        "prediction_basis": {
+            "evidence_model_weight": 0.55, "similar_judgments_weight": 0.35, "court_prior_weight": 0.10,
+            "similar_judgments_used": emp_n, "similar_judgments_allowed": emp_allowed, "similar_judgments_rate": round(empirical, 2),
+        },
         "court_aware": {
             "court": display_court,
             "prior_bucket": court_name,
@@ -341,6 +350,29 @@ def compute_bias_firewall_and_score(
         "bias_firewall_passed": passed,
     }
     return firewall, score_obj
+
+
+def _empirical_rate(precedents: dict[str, Any]) -> tuple[float, int, float]:
+    """Beta(2,2)-smoothed share of retrieved similar judgments that granted relief (partly = half)."""
+    st = precedents.get("outcome_stats") or {}
+    if not st:
+        st = {"allowed": 0, "dismissed": 0, "partly_allowed": 0}
+        for r in precedents.get("results", []):
+            o = r.get("outcome")
+            if o in st:
+                st[o] += 1
+    a, d, pa = st.get("allowed", 0), st.get("dismissed", 0), st.get("partly_allowed", 0)
+    n = a + d + pa
+    allowed = a + 0.5 * pa
+    return (allowed + 2.0) / (n + 4.0), n, allowed
+
+
+def _blend(model_prob: float, empirical: float, court_rate: float) -> float:
+    """Outcome probability: tempered evidence model + outcomes of similar real judgments + court prior."""
+    p = min(max(model_prob, 1e-4), 1 - 1e-4)
+    tempered = 1 / (1 + np.exp(-0.55 * np.log(p / (1 - p))))
+    prob = 0.55 * tempered + 0.35 * empirical + 0.10 * court_rate
+    return round(float(max(0.05, min(0.95, prob))), 2)
 
 
 _UNPROTECTED: dict[str, Any] = {}
@@ -373,14 +405,14 @@ def _unprotected_model():
     return model
 
 
-def _unprotected_score(feat_dict: dict[str, float], features_order: list[str], identity: str, pooled_rate: float) -> float:
+def _unprotected_score(feat_dict: dict[str, float], features_order: list[str], identity: str, pooled_rate: float, empirical: float = 0.5) -> float:
     model = _unprotected_model()
     if model is None:
         return 0.5
     base = [float(feat_dict.get(f, 0.5)) for f in _UNPROTECTED["feats"]]
     onehot = [1.0 if identity == k else 0.0 for k in IDENTITIES[1:]]
-    prob = float(model.predict_proba(np.array([base + onehot]))[0, 1]) + (pooled_rate - 0.48) * 0.65
-    return round(max(0.05, min(0.95, prob)), 2)
+    # Same blend as the protected score, so the only difference between the two is identity.
+    return _blend(float(model.predict_proba(np.array([base + onehot]))[0, 1]), empirical, pooled_rate)
 
 
 def run_single_identity_flip(

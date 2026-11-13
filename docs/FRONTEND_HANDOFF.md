@@ -175,3 +175,10 @@ cd frontend && VITE_API_BASE=http://localhost:8000/v1 npm run dev
 ```
 
 Demo passwords are in `backend/.demo_credentials` (generated on first start). `backend/.env` holds the Groq, Gemini and Serper keys (gitignored).
+
+## Update (backend, after 86c6ab1)
+
+- `POST /v1/precedents/search` and `GET /v1/precedents/{doc_id}` are **live**, with the shapes from "Coming next".
+- `GET /matters/{id}/precedents` now includes `outcome_stats`.
+- `POST /v1/ledger/tamper` now returns the drill detail: `{tampered, broken_at, entry_id, field, before, after, stored_hash, recomputed_hash, merkle_root_before, merkle_root_after, chain_valid, explanation}`.
+- `GET /matters/{id}/events?live=true` forces a fresh live pipeline run. Without it, in `DEMO_MODE`, an already-analysed matter replays its cached stages with realistic pacing. Add a "Re-analyse live" button that uses `?live=true`.

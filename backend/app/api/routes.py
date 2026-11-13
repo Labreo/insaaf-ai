@@ -700,11 +700,12 @@ async def trigger_pipeline(matter_id: str, actor: Actor = Depends(get_actor)) ->
 
 
 @router.get("/matters/{matter_id}/events")
-async def stream_pipeline_events(matter_id: str, actor: Actor = Depends(get_actor)) -> StreamingResponse:
+async def stream_pipeline_events(matter_id: str, live: bool = Query(default=False), actor: Actor = Depends(get_actor)) -> StreamingResponse:
+    """SSE pipeline. In DEMO_MODE an already-analysed matter is replayed; ?live=true forces a fresh run."""
     _authorized_matter(matter_id, actor, "analysis.run")
 
     async def event_gen():
-        async for ev in run_pipeline_stream(matter_id):
+        async for ev in run_pipeline_stream(matter_id, force_live=live):
             yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_gen(), media_type="text/event-stream")
@@ -1161,21 +1162,49 @@ async def verify_ledger(actor: Actor = Depends(get_actor)) -> dict[str, Any]:
 
 @router.post("/ledger/tamper")
 async def tamper_ledger(actor: Actor = Depends(get_actor)) -> dict[str, Any]:
+    """Integrity drill: simulates an insider editing one ledger row directly in the database
+    (bypassing the API), then shows how hash-chain verification exposes it. Call again to restore."""
     require(actor, "ledger.tamper")
+    from app.db import compute_entry_hash
+    from app.ledger.chain import compute_merkle_root
+
     suffix = " [edited after the fact]"
     with db_session() as conn:
-        row = conn.execute("SELECT id, note FROM ledger_entries ORDER BY seq ASC LIMIT 1").fetchone()
-        if not row:
-            return {"tampered": False, "broken_at": None}
-        note = row["note"] or ""
-        if note.endswith(suffix):
-            new_note = note[: -len(suffix)]
-            tampered = False
-        else:
-            new_note = note + suffix
-            tampered = True
-        conn.execute("UPDATE ledger_entries SET note = ? WHERE id = ?", (new_note, row["id"]))
-        return {"tampered": tampered, "broken_at": row["id"] if tampered else None}
+        rows = [dict(r) for r in conn.execute("SELECT * FROM ledger_entries ORDER BY seq ASC").fetchall()]
+    if not rows:
+        return {"tampered": False, "broken_at": None}
+    target = next((r for r in rows if r["org_id"] == actor["org_id"]), rows[0])
+    root_before = compute_merkle_root([r["hash"] for r in rows])
+    note = target["note"] or ""
+    tampered = not note.endswith(suffix)
+    new_note = note + suffix if tampered else note[: -len(suffix)]
+    with db_session() as conn:
+        conn.execute("UPDATE ledger_entries SET note = ? WHERE id = ?", (new_note, target["id"]))
+    recomputed = compute_entry_hash(
+        target["prev_hash"], target["id"], target["actor"], target["role"], target["matter_id"], target["action"],
+        target["target"], target["target_id"], target["reason_code"], new_note, target["at"],
+    )
+    verify = verify_ledger_chain()
+    # Root a verifier would compute from the edited table (stored hashes no longer match content).
+    root_after = compute_merkle_root([recomputed if r["id"] == target["id"] else r["hash"] for r in rows])
+    return {
+        "tampered": tampered,
+        "broken_at": verify.get("broken_at"),
+        "entry_id": target["id"],
+        "field": "note",
+        "before": note,
+        "after": new_note,
+        "stored_hash": target["hash"],
+        "recomputed_hash": recomputed,
+        "merkle_root_before": root_before,
+        "merkle_root_after": root_after if tampered else root_before,
+        "chain_valid": verify.get("valid"),
+        "explanation": (
+            "The row was edited directly in the database. Its stored SHA-256 hash no longer matches its content, "
+            "so verification fails at this entry and the Merkle root differs from the anchored one."
+            if tampered else "The original note was restored; every hash matches again and the chain verifies."
+        ),
+    }
 
 
 @router.post("/demo/reset")
@@ -1325,6 +1354,32 @@ async def send_test_alert(
         "channel": "telegram",
         "days_left": days_left,
     }
+
+
+@router.post("/precedents/search")
+async def explore_precedents(body: dict[str, Any], actor: Actor = Depends(get_actor)) -> dict[str, Any]:
+    """Matter-free semantic precedent search over the Insaaf Precedent Index (with live web sweep)."""
+    query = str(body.get("query") or "").strip()[:500]
+    if len(query) < 3:
+        raise _err(422, "query_too_short", "Describe the facts or legal issue (at least 3 characters).")
+    area = body.get("area") or None
+    _check_area(area)
+    limit = max(1, min(int(body.get("limit") or 20), 50))
+    return await precedent_client.explore(
+        query, area=area, state=str(body.get("state") or ""), district=str(body.get("district") or ""),
+        court=str(body.get("court") or ""), outcome=str(body.get("outcome") or ""), limit=limit,
+    )
+
+
+@router.get("/precedents/{doc_id}")
+async def get_precedent(doc_id: str, actor: Actor = Depends(get_actor)) -> dict[str, Any]:
+    from app.services.precedents import corpus as _corpus
+
+    rec = _corpus.get(doc_id)
+    if not rec:
+        raise _err(404, "not_found", "Judgment not in the index.")
+    return {k: rec.get(k) for k in ("doc_id", "title", "court", "seat", "state", "bench", "date", "outcome", "statutes",
+                                      "headnote", "holding", "paras", "url", "practice_areas", "paragraph_count")}
 
 
 @router.post("/law-changes/scan", response_model=list[LawChangeItem])
