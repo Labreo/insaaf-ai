@@ -1,0 +1,35 @@
+[
+  {
+    "id": "mat_001",
+    "title": "Fernandes v. Naik — possession of plot, Mapusa (FICTIONAL)",
+    "case_type": "property",
+    "status": "ready",
+    "priority": 0.86,
+    "next_deadline": "2026-12-24",
+    "days_left": 41,
+    "created_by": "junior_1",
+    "updated_at": "2026-11-13T09:30:00Z"
+  },
+  {
+    "id": "mat_002",
+    "title": "Shetty Traders — money recovery ₹4.2L (FICTIONAL)",
+    "case_type": "civil_recovery",
+    "status": "in_review",
+    "priority": 0.64,
+    "next_deadline": "2027-02-02",
+    "days_left": 81,
+    "created_by": "junior_2",
+    "updated_at": "2026-11-12T15:10:00Z"
+  },
+  {
+    "id": "mat_003",
+    "title": "State v. R. Gaonkar — plea eligibility check (FICTIONAL)",
+    "case_type": "criminal",
+    "status": "draft",
+    "priority": 0.41,
+    "next_deadline": null,
+    "days_left": null,
+    "created_by": "senior_1",
+    "updated_at": "2026-11-10T11:00:00Z"
+  }
+]

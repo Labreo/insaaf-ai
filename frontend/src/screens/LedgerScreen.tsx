@@ -12,6 +12,7 @@ import { sfx } from '@/lib/sound'
 /** F11 ledger (chamber-wide) + F13 retraining loop. */
 export default function LedgerScreen() {
   const version = useDB((d) => d.ledger.length + ':' + d.model.version + ':' + String(d.tampered))
+  const tampered = useDB((d) => d.tampered)
   const model = useAsync(() => api.model(), [version])
   const overrides = useDB((d) => d.ledger.filter((e) => e.action === 'override').length)
   const [result, setResult] = useState<Awaited<ReturnType<typeof api.retrain>> | null>(null)
@@ -56,7 +57,7 @@ export default function LedgerScreen() {
         )}
       </Section>
 
-      <Section title="Reviewer ledger" right={<button onClick={() => { if (confirm('Demo: edit a past ledger row to show the chain breaking?')) { mut.tamper(); sfx.reject() } }} className="inline-flex items-center gap-1 text-[11px] text-smoke hover:text-overruled"><Bug size={11} /> tamper demo</button>}>
+      <Section title="Reviewer ledger" right={<button onClick={() => { mut.tamper(); tampered ? sfx.accept() : sfx.reject() }} className="inline-flex items-center gap-1 text-[11px] text-smoke hover:text-overruled"><Bug size={11} /> {tampered ? 'Restore intact chain' : 'Simulate tamper'}</button>}>
         <LedgerTab id="all" />
       </Section>
     </div>

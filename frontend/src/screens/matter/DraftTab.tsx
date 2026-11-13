@@ -26,10 +26,23 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
 
   const exportDocx = async () => {
     setExporting(true); sfx.tick()
-    const blob = await draftToDocx(matter, draft)
+    let blob: Blob
+    try {
+      const base = import.meta.env.VITE_API_BASE ?? '/v1'
+      const res = await fetch(`${base}/matters/${id}/draft/export?format=docx`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      blob = await res.blob()
+    } catch {
+      blob = await draftToDocx(matter, draft)
+    }
     download(blob, `${matter.title.replace(/[^a-z0-9]+/gi, '_').replace(/_+$/, '')}_${draft.type}.docx`)
     setExporting(false); sfx.accept()
   }
+
+  const firstSource = draft.paragraphs.flatMap((p) => p.sources)[0]
+  const verifiedSample = firstSource
+    ? `${firstSource.title} governs the relief claimed on record.`
+    : 'Suraj Lamp & Industries v. State of Haryana held that an unregistered agreement or power of attorney does not convey title.'
 
   return (
     <div className="space-y-5">
@@ -54,7 +67,7 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
         ))}
       </article>
 
-      <AuthorityLock id={id} onOpen={onOpen} />
+      <AuthorityLock id={id} onOpen={onOpen} verifiedSample={verifiedSample} />
 
       {!approved ? (
         <Button onClick={() => onReview({ target: 'draft', target_id: draft.type, title: `Approve ${draft.type.replace(/_/g, ' ')}`, action: 'approve' })} className="h-12 w-full rounded-full bg-brass text-void uppercase tracking-[0.1em] hover:bg-[#d6b676]">
@@ -68,7 +81,7 @@ export default function DraftTab({ id, onOpen, onReview }: TabProps) {
 }
 
 /** Hero demo moment: paste a citation; the lock rejects anything not in the stored corpus. */
-function AuthorityLock({ id, onOpen }: { id: string; onOpen: (s: SourceRef) => void }) {
+function AuthorityLock({ id, onOpen, verifiedSample }: { id: string; onOpen: (s: SourceRef) => void; verifiedSample: string }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ verified: boolean; source?: SourceRef; message: string } | null>(null)
@@ -89,6 +102,22 @@ function AuthorityLock({ id, onOpen }: { id: string; onOpen: (s: SourceRef) => v
           <motion.span animate={result ? (result.verified ? { color: '#6fae8d' } : { color: '#d95c54', x: [0, -6, 6, -4, 4, 0] }) : { color: '#74747b' }} transition={{ duration: 0.45 }}>
             {result?.verified ? <LockOpen size={16} /> : <Lock size={16} />}
           </motion.span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => { sfx.tick(); setText('Sharma v. Union of India (2019) 4 SCC 112 held that an unregistered GPA confers absolute ownership.') }}
+            className="rounded-full bg-overruled/12 px-2.5 py-1 text-[11px] text-overruled hover:bg-overruled/20"
+          >
+            Try fabricated citation (rejects)
+          </button>
+          <button
+            type="button"
+            onClick={() => { sfx.tick(); setText(verifiedSample) }}
+            className="rounded-full bg-followed/12 px-2.5 py-1 text-[11px] text-followed hover:bg-followed/20"
+          >
+            Try verified corpus authority (locks in)
+          </button>
         </div>
         <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder='e.g. "Sharma v. Union of India (2019) 4 SCC 112 held that…"' className="glass-well resize-none border-0 text-[14px] text-marble placeholder:text-smoke" />
         <div className="flex items-center justify-between gap-3">

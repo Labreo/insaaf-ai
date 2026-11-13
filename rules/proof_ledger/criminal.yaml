@@ -1,0 +1,37 @@
+case_type: criminal
+description: Proof Ledger & plea-bargaining threshold requirements for criminal matters (BNSS 2023)
+rules:
+  - id: criminal.fir_and_chargesheet
+    requirement: FIR and chargesheet / police report
+    severity: critical
+    why: Establishes exact statutory sections invoked and cognizance stage.
+    detect:
+      present_any: ["fir", "chargesheet", "charge sheet", "police report", "bns", "ipc"]
+    sources: []
+
+  - id: criminal.punishment_under_7_years
+    requirement: Offence maximum punishment ≤ 7 years
+    severity: critical
+    why: Plea bargaining under BNSS Ch. XXIII (s.289) applies only where maximum imprisonment does not exceed 7 years.
+    detect:
+      present_any: ["3 years", "under 7 years", "bns 303", "ipc 379", "maximum imprisonment"]
+      negative_any: ["life imprisonment", "death penalty", "10 years", "302", "bns 103"]
+    sources: []
+
+  - id: criminal.not_excluded_offence
+    requirement: Not socio-economic or against woman / child < 14
+    severity: critical
+    why: BNSS s.289 excludes offences affecting socio-economic condition of the country or committed against a woman or child under 14.
+    detect:
+      present_any: ["first-time", "first time", "not a socio-economic", "not socio-economic", "not committed against a woman"]
+      negative_any: ["pocso", "dowry", "charged with socio-economic"]
+    sources: []
+
+  - id: criminal.no_prior_conviction
+    requirement: No prior conviction for same offence
+    severity: high
+    why: Repeat offenders are barred from plea bargaining under BNSS s.289.
+    detect:
+      present_any: ["no prior conviction", "clean record", "first offender", "first-time offender"]
+    sources: []
+

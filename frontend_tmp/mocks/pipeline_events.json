@@ -1,0 +1,79 @@
+[
+  {
+    "stage": "intake",
+    "status": "done",
+    "progress": 1,
+    "message": "2 documents + 1 voice note parsed",
+    "elapsed_ms": 1800
+  },
+  {
+    "stage": "facts",
+    "status": "done",
+    "progress": 1,
+    "message": "9 facts extracted (3 from Konkani)",
+    "elapsed_ms": 3400
+  },
+  {
+    "stage": "proof_ledger",
+    "status": "done",
+    "progress": 1,
+    "message": "2 missing, 1 weak",
+    "elapsed_ms": 300
+  },
+  {
+    "stage": "statute_clock",
+    "status": "done",
+    "progress": 1,
+    "message": "41 days to limitation",
+    "elapsed_ms": 120
+  },
+  {
+    "stage": "search",
+    "status": "running",
+    "progress": 0.7,
+    "message": "Searched 14 of 20 judgments",
+    "elapsed_ms": 5600
+  },
+  {
+    "stage": "rag",
+    "status": "queued",
+    "progress": 0,
+    "message": "",
+    "elapsed_ms": 0
+  },
+  {
+    "stage": "citation_health",
+    "status": "queued",
+    "progress": 0,
+    "message": "",
+    "elapsed_ms": 0
+  },
+  {
+    "stage": "bias_firewall",
+    "status": "queued",
+    "progress": 0,
+    "message": "",
+    "elapsed_ms": 0
+  },
+  {
+    "stage": "score",
+    "status": "queued",
+    "progress": 0,
+    "message": "",
+    "elapsed_ms": 0
+  },
+  {
+    "stage": "advice",
+    "status": "queued",
+    "progress": 0,
+    "message": "",
+    "elapsed_ms": 0
+  },
+  {
+    "stage": "draft",
+    "status": "queued",
+    "progress": 0,
+    "message": "",
+    "elapsed_ms": 0
+  }
+]

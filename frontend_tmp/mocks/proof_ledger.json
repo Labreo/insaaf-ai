@@ -1,0 +1,72 @@
+{
+  "case_type": "property",
+  "items": [
+    {
+      "requirement": "Registered sale deed",
+      "state": "missing",
+      "severity": "critical",
+      "why": "An agreement or power of attorney does not transfer title; a registered conveyance does.",
+      "sources": [
+        {
+          "source_id": "src_suraj_lamp",
+          "kind": "judgment",
+          "title": "Suraj Lamp & Industries v. State of Haryana",
+          "court": "Supreme Court of India",
+          "date": "2011-10-11",
+          "paragraph": "—",
+          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+        },
+        {
+          "source_id": "src_reg_act_s17",
+          "kind": "statute",
+          "title": "Registration Act, 1908 — s.17",
+          "court": "",
+          "date": "1908-01-01",
+          "paragraph": "17",
+          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+        }
+      ]
+    },
+    {
+      "requirement": "Stamp duty paid on instrument",
+      "state": "weak",
+      "severity": "high",
+      "why": "Unstamped instruments are inadmissible until duty and penalty are paid.",
+      "sources": [
+        {
+          "source_id": "src_stamp_s35",
+          "kind": "statute",
+          "title": "Indian Stamp Act, 1899 — s.35",
+          "court": "",
+          "date": "1899-01-01",
+          "paragraph": "35",
+          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
+          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+        }
+      ]
+    },
+    {
+      "requirement": "Possession evidence (electricity / house-tax bills)",
+      "state": "present",
+      "severity": "high",
+      "why": "Supports the claim of continuous possession.",
+      "sources": []
+    },
+    {
+      "requirement": "Form I & XIV extract",
+      "state": "present",
+      "severity": "medium",
+      "why": "Goa record of rights.",
+      "sources": []
+    },
+    {
+      "requirement": "Payment trail to seller",
+      "state": "missing",
+      "severity": "high",
+      "why": "Proves consideration was paid.",
+      "sources": []
+    }
+  ]
+}

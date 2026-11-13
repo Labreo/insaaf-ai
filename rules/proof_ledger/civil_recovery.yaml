@@ -1,0 +1,54 @@
+case_type: civil_recovery
+description: Proof Ledger requirements for commercial / civil money recovery suits
+rules:
+  - id: civil.written_contract_or_po
+    requirement: Written contract or purchase order
+    severity: high
+    why: Establishes binding obligation, agreed rate, and payment terms.
+    detect:
+      present_any: ["purchase order", "written contract", "signed agreement", "work order"]
+      weak_any: ["oral order", "whatsapp confirmation"]
+    sources:
+      - source_id: src_kanoon_171398
+        kind: statute
+        title: Indian Contract Act, 1872 — s.10
+        court: ""
+        date: "1872-01-01"
+        paragraph: "1"
+        doc_id: "171398"
+        url: https://indiankanoon.org/doc/171398/
+
+  - id: civil.tax_invoices_and_delivery
+    requirement: Tax invoices and delivery challans
+    severity: critical
+    why: Proves goods were supplied or services rendered as invoiced.
+    detect:
+      present_any: ["tax invoice", "gst invoice", "delivery challan", "eway bill", "acknowledged delivery"]
+      weak_any: ["proforma invoice"]
+    sources: []
+
+  - id: civil.ledger_and_part_payment
+    requirement: Statement of account / part-payment acknowledgment
+    severity: high
+    why: Part-payment or written acknowledgment extends limitation under s.18–19 Limitation Act.
+    detect:
+      present_any: ["part payment", "part-payment", "ledger extract", "balance confirmation", "neft", "bank statement"]
+    sources: []
+
+  - id: civil.pre_institution_mediation
+    requirement: Pre-institution mediation compliance (s.12A)
+    severity: critical
+    why: Commercial suits without urgent interim relief are barred unless s.12A mediation is exhausted.
+    detect:
+      present_any: ["12a mediation", "non-starter report", "mediation certificate"]
+      weak_any: ["commercial", "business supply"]
+    sources:
+      - source_id: src_kanoon_164693074
+        kind: judgment
+        title: Patil Automation Pvt. Ltd. v. Rakheja Engineers Pvt. Ltd.
+        court: Supreme Court of India
+        date: "2022-08-17"
+        paragraph: "1"
+        doc_id: "164693074"
+        url: https://indiankanoon.org/doc/164693074/
+

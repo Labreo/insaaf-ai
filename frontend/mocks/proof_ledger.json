@@ -8,24 +8,24 @@
       "why": "An agreement or power of attorney does not transfer title; a registered conveyance does.",
       "sources": [
         {
-          "source_id": "src_suraj_lamp",
+          "source_id": "src_kanoon_1565619",
           "kind": "judgment",
           "title": "Suraj Lamp & Industries v. State of Haryana",
           "court": "Supreme Court of India",
           "date": "2011-10-11",
-          "paragraph": "—",
-          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+          "paragraph": "15",
+          "snippet": "Immovable property can be legally and lawfully transferred/conveyed only by a registered deed of conveyance. Transactions of the nature of 'GPA sales' or 'SA/GPA/WILL transfers' do not convey title.",
+          "url": "https://indiankanoon.org/doc/1565619/"
         },
         {
-          "source_id": "src_reg_act_s17",
+          "source_id": "src_kanoon_561156",
           "kind": "statute",
           "title": "Registration Act, 1908 — s.17",
           "court": "",
           "date": "1908-01-01",
           "paragraph": "17",
-          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+          "snippet": "Section 17(1): Non-testamentary instruments purporting to create, declare, assign, limit or extinguish any right, title or interest of value Rs. 100 and upwards in immovable property must be registered.",
+          "url": "https://indiankanoon.org/doc/561156/"
         }
       ]
     },
@@ -36,14 +36,14 @@
       "why": "Unstamped instruments are inadmissible until duty and penalty are paid.",
       "sources": [
         {
-          "source_id": "src_stamp_s35",
+          "source_id": "src_kanoon_176042882",
           "kind": "statute",
           "title": "Indian Stamp Act, 1899 — s.35",
           "court": "",
           "date": "1899-01-01",
           "paragraph": "35",
-          "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-          "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+          "snippet": "Section 35: No instrument chargeable with duty shall be admitted in evidence for any purpose unless such instrument is duly stamped.",
+          "url": "https://indiankanoon.org/doc/176042882/"
         }
       ]
     },

@@ -1,13 +1,37 @@
+import { useState } from 'react'
+import { Calendar } from 'lucide-react'
 import { api } from '@/lib/api'
+import type { StatuteClock } from '@/lib/types'
 import { Chip, Glass, Label, Ring, Skeleton, SourceChip, useAsync } from '@/components/primitives'
+import { Button } from '@/components/ui/button'
 import { NumberTicker } from '@/components/magicui/number-ticker'
+import { sfx } from '@/lib/sound'
 import type { TabProps } from '../Matter'
 
-/** Statute Clock: limitation, forum, ADR routes, excluded periods. Deterministic. */
+const PRESET_DATES = [
+  { date: '2013-01-07', label: '2013-01-07 (COVID overlap)' },
+  { date: '2021-06-01', label: '2021-06-01 (Pandemic window)' },
+  { date: '2025-05-12', label: '2025-05-12 (s.18 Ack)' },
+]
+
+/** Statute Clock: limitation, forum, ADR routes, excluded periods + live cause-date calculator. Deterministic. */
 export default function Clock({ id, onOpen }: TabProps) {
   const c = useAsync(() => api.statuteClock(id), [id])
-  if (c.loading || !c.data) return <Skeleton className="h-72" />
-  const d = c.data
+  const [liveData, setLiveData] = useState<StatuteClock | null>(null)
+  const [causeDate, setCauseDate] = useState('2013-01-07')
+  const [busy, setBusy] = useState(false)
+
+  const recalc = async (dt?: string) => {
+    const val = dt ?? causeDate
+    if (!val) return
+    setCauseDate(val)
+    setBusy(true); sfx.tick()
+    const next = await api.recalculateClock(id, val)
+    setLiveData(next); setBusy(false); sfx.accept()
+  }
+
+  const d = liveData ?? c.data
+  if (c.loading || !d) return <Skeleton className="h-72" />
   const frac = Math.max(0, Math.min(1, d.days_left / 90))
   const expires = new Date(d.limitation_expires).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
   const tone = d.days_left <= 7 ? '#d95c54' : d.days_left <= 45 ? '#c9a868' : '#8fa3bd'
@@ -23,6 +47,25 @@ export default function Clock({ id, onOpen }: TabProps) {
           <p className="serif mt-1 text-[22px] leading-tight text-marble">{expires}</p>
           <p className="mt-1 text-[12px] text-smoke">{d.article}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">{d.sources.map((s) => <SourceChip key={s.source_id} s={s} onOpen={onOpen} />)}</div>
+        </div>
+      </Glass>
+
+      <Glass className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="flex items-center gap-1.5"><Calendar size={12} /> Trigger / Acknowledgment date calculator</Label>
+          <div className="flex items-center gap-2">
+            <input type="date" value={causeDate} onChange={(e) => setCauseDate(e.target.value)} aria-label="Cause or acknowledgment date" className="glass-well px-2.5 py-1 text-[12px] text-marble" />
+            <Button disabled={busy} onClick={() => recalc()} className="h-8 rounded-full bg-brass px-3 text-[11px] uppercase tracking-[0.08em] text-void hover:bg-[#d6b676]">
+              {busy ? '…' : 'Compute'}
+            </Button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {PRESET_DATES.map((p) => (
+            <button key={p.date} disabled={busy} onClick={() => recalc(p.date)} className="rounded-full border border-marble/10 px-2.5 py-1 text-[11px] text-pewter transition-colors hover:border-brass/35 hover:text-marble">
+              {p.label}
+            </button>
+          ))}
         </div>
       </Glass>
 

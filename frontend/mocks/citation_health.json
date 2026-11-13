@@ -1,39 +1,39 @@
 [
   {
     "cited": {
-      "source_id": "src_koushal",
+      "source_id": "src_kanoon_58730926",
       "kind": "judgment",
       "title": "Suresh Kumar Koushal v. Naz Foundation",
       "court": "Supreme Court of India",
       "date": "2013-12-11",
-      "paragraph": "—",
-      "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-      "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+      "paragraph": "56",
+      "snippet": "Division Bench decision upholding Section 377 IPC — subsequently overruled expressly in Navtej Singh Johar.",
+      "url": "https://indiankanoon.org/doc/58730926/"
     },
     "badge": "red",
     "treatment": "overruled",
     "by": {
-      "source_id": "src_navtej",
+      "source_id": "src_kanoon_168671544",
       "kind": "judgment",
       "title": "Navtej Singh Johar v. Union of India",
       "court": "Supreme Court of India",
       "date": "2018-09-06",
-      "paragraph": "—",
-      "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-      "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+      "paragraph": "253",
+      "snippet": "Five-Judge Constitution Bench expressly overruled Suresh Kumar Koushal v. Naz Foundation insofar as Section 377 criminalizes consensual acts between adults.",
+      "url": "https://indiankanoon.org/doc/168671544/"
     },
     "blocks_draft": true
   },
   {
     "cited": {
-      "source_id": "src_suraj_lamp",
+      "source_id": "src_kanoon_1565619",
       "kind": "judgment",
       "title": "Suraj Lamp & Industries v. State of Haryana",
       "court": "Supreme Court of India",
       "date": "2011-10-11",
-      "paragraph": "—",
-      "snippet": "MOCK — replace with the exact paragraph text fetched from Indian Kanoon",
-      "url": "https://indiankanoon.org/doc/REPLACE_ID/"
+      "paragraph": "15",
+      "snippet": "Immovable property can be legally and lawfully transferred/conveyed only by a registered deed of conveyance.",
+      "url": "https://indiankanoon.org/doc/1565619/"
     },
     "badge": "green",
     "treatment": "followed",

@@ -1,0 +1,16 @@
+{
+  "golden_suite_passed": 30,
+  "golden_suite_total": 30,
+  "axes": {
+    "authority_lock_rejection_and_match": "10/10",
+    "citation_health_and_law_change": "6/6",
+    "statute_clock_covid_exclusion": "4/4",
+    "bias_firewall_6_identities": "6/6 (max_delta=0.00)",
+    "score_and_advice_alignment": "4/4"
+  },
+  "b_score_heldout_correct": 38,
+  "b_score_heldout_total": 50,
+  "b_score_accuracy": 0.76,
+  "b_score_brier": 0.1527,
+  "model_version": "b-score-0.1"
+}

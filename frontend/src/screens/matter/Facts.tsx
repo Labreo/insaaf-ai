@@ -1,9 +1,10 @@
 import { motion } from 'motion/react'
-import { Mic, FileText, Pencil } from 'lucide-react'
+import { Mic, FileText, Pencil, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useDB } from '@/lib/store'
 import type { Fact } from '@/lib/types'
 import { Chip, ConfidenceDot, Empty, Glass, Label, Skeleton, Well, stagger, useAsync } from '@/components/primitives'
+import { Button } from '@/components/ui/button'
 import type { TabProps } from '../Matter'
 
 const tone: Record<Fact['status'], 'smoke' | 'followed' | 'distinguished' | 'overruled'> = { alleged: 'smoke', documented: 'followed', disputed: 'distinguished', unknown: 'overruled' }
@@ -17,8 +18,13 @@ export default function Facts({ id, onReview }: TabProps) {
   const counts = f.data.reduce((a, x) => ({ ...a, [x.status]: (a[x.status] ?? 0) + 1 }), {} as Record<string, number>)
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-1.5 px-1">
-        {(['documented', 'alleged', 'disputed', 'unknown'] as const).map((s) => counts[s] ? <Chip key={s} tone={tone[s]}>{counts[s]} {s}</Chip> : null)}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="flex flex-wrap gap-1.5">
+          {(['documented', 'alleged', 'disputed', 'unknown'] as const).map((s) => counts[s] ? <Chip key={s} tone={tone[s]}>{counts[s]} {s}</Chip> : null)}
+        </div>
+        <Button variant="ghost" onClick={() => onReview({ target: 'fact', target_id: 'new', title: 'Add verified fact', action: 'edit' })} className="h-8 rounded-full border border-marble/10 px-3 text-[11px] uppercase tracking-[0.08em] text-brass hover:bg-brass/10">
+          <Plus size={12} /> Add verified fact
+        </Button>
       </div>
       {f.data.map((fact, i) => (
         <motion.div key={fact.id} {...stagger(i)}>

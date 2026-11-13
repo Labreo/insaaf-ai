@@ -75,7 +75,7 @@ export default function Home() {
         )}
       </Section>
 
-      <p className="px-1 text-[11px] leading-relaxed text-smoke">Demo matters are fictional. Insaaf is a drafting and research assistant for advocates; it does not give legal advice.</p>
+      <p className="px-1 text-[11px] leading-relaxed text-smoke">Confidential chamber workspace · Insaaf assists advocates with verification and drafting; it does not give legal advice.</p>
     </div>
   )
 }

@@ -7,7 +7,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import type {
-  Advice, Alert, BiasFirewall, CaseType, CitationHealth, Draft, Fact, Identity, LawChange, Ledger, LedgerEntry,
+  AccessLogEntry, Advice, Alert, BiasFirewall, CaseType, CitationHealth, Draft, Fact, Identity, LawChange, Ledger, LedgerEntry,
   Matter, MatterDocument, Me, ModelInfo, PipelineEvent, Precedents, ProofItem, QueueItem, ReviewInput, Role, Score, SourceRef, StatuteClock,
 } from './types'
 import { getDB, mut, q, scanLaw } from './store'
@@ -49,7 +49,7 @@ async function live<T>(path: string, init?: RequestInit): Promise<T> {
 
 /** Try the backend; on any failure use the local engine and flag the connection as local. */
 async function withFallback<T>(remote: () => Promise<T>, local: () => T | Promise<T>): Promise<T> {
-  if (conn === 'local') return local()
+  if (FORCE_LOCAL) return local()
   try { const v = await remote(); setConn('live'); return v } catch { setConn('local'); return local() }
 }
 
@@ -75,7 +75,19 @@ export const api = {
   facts: (id: string) => withFallback<Fact[]>(async () => { const v = await live<Fact[]>(`/matters/${id}/facts`); mut.syncStageField(id, 'facts', v); return v }, () => q.stage(id)?.facts ?? []),
   proofLedger: (id: string) => withFallback<{ case_type: string; items: ProofItem[] } | undefined>(async () => { const v = await live<{ case_type: string; items: ProofItem[] }>(`/matters/${id}/proof-ledger`); mut.syncStageField(id, 'proof', v); return v }, () => q.stage(id)?.proof),
   statuteClock: (id: string) => withFallback<StatuteClock | undefined>(async () => { const v = await live<StatuteClock>(`/matters/${id}/statute-clock`); mut.syncStageField(id, 'clock', v); return v }, () => q.stage(id)?.clock),
+  recalculateClock: (id: string, causeDate: string) =>
+    withFallback<StatuteClock>(async () => {
+      const v = await live<StatuteClock>(`/matters/${id}/statute-clock/recalculate`, { method: 'POST', body: JSON.stringify({ cause_date: causeDate }) })
+      mut.syncStageField(id, 'clock', v)
+      return v
+    }, () => mut.recalculateClock(id, causeDate)),
   precedents: (id: string) => withFallback<Precedents | undefined>(async () => { const v = await live<Precedents>(`/matters/${id}/precedents`); mut.syncStageField(id, 'precedents', v); return v }, () => q.stage(id)?.precedents),
+  searchPrecedents: (id: string, query: string) =>
+    withFallback<Precedents>(async () => {
+      const v = await live<Precedents>(`/matters/${id}/precedents/search`, { method: 'POST', body: JSON.stringify({ query }) })
+      mut.syncStageField(id, 'precedents', v)
+      return v
+    }, () => mut.searchPrecedents(id, query)),
   citationHealth: (id: string) => withFallback<CitationHealth[]>(async () => { const v = await live<CitationHealth[]>(`/matters/${id}/citations/health`); mut.syncStageField(id, 'citations', v); return v }, () => q.stage(id)?.citations ?? []),
   score: (id: string) => withFallback<Score | undefined>(async () => { const v = await live<Score>(`/matters/${id}/score`); mut.syncStageField(id, 'score', v); return v }, () => q.stage(id)?.score),
   biasFirewall: (id: string) => withFallback<BiasFirewall | undefined>(async () => { const v = await live<BiasFirewall>(`/matters/${id}/bias-firewall`); mut.syncStageField(id, 'bias', v); return v }, () => q.stage(id)?.bias),
@@ -105,6 +117,7 @@ export const api = {
     return res
   }, () => q.ledger(matterId)),
   model: () => withFallback<ModelInfo>(async () => { const m = await live<ModelInfo>('/ml/model'); mut.syncModel(m); return m }, () => q.model()),
+  accessLogs: () => withFallback<AccessLogEntry[]>(() => live('/access-logs'), () => []),
   retrain: () => withFallback(async () => {
     const res = await live<Awaited<ReturnType<typeof mut.retrain>>>('/ml/retrain', { method: 'POST' })
     await mut.retrain()

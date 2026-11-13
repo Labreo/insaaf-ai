@@ -1,0 +1,74 @@
+case_type: property
+description: Proof Ledger requirements for immovable property & possession suits (Goa / Indian civil courts)
+rules:
+  - id: property.registered_sale_deed
+    requirement: Registered sale deed
+    severity: critical
+    why: An agreement or power of attorney does not transfer title; a registered conveyance does.
+    detect:
+      present_any: ["registered sale deed", "conveyance deed registered", "sub-registrar"]
+      negative_any: ["not a registered sale deed", "unregistered", "agreement + power of attorney", "agreement of sale", "only an agreement"]
+      weak_any: ["certified copy awaited", "copy of sale deed"]
+    sources:
+      - source_id: src_kanoon_1565619
+        kind: judgment
+        title: Suraj Lamp & Industries v. State of Haryana
+        court: Supreme Court of India
+        date: "2011-10-11"
+        paragraph: "16"
+        doc_id: "1565619"
+        url: https://indiankanoon.org/doc/1565619/
+      - source_id: src_kanoon_561156
+        kind: statute
+        title: Registration Act, 1908 — s.17
+        court: ""
+        date: "1908-01-01"
+        paragraph: "1"
+        doc_id: "561156"
+        url: https://indiankanoon.org/doc/561156/
+
+  - id: property.stamp_duty_paid
+    requirement: Stamp duty paid on instrument
+    severity: high
+    why: Unstamped instruments are inadmissible until duty and penalty are paid.
+    detect:
+      present_any: ["full stamp duty paid", "duly stamped", "e-stamp certificate"]
+      weak_any: ["insufficient stamp", "deficit stamp", "stamp duty deficit", "unregistered agreement", "agreement"]
+      negative_any: ["unstamped", "no stamp duty"]
+    sources:
+      - source_id: src_kanoon_176042882
+        kind: statute
+        title: Indian Stamp Act, 1899 — s.35
+        court: ""
+        date: "1899-01-01"
+        paragraph: "1"
+        doc_id: "176042882"
+        url: https://indiankanoon.org/doc/176042882/
+
+  - id: property.possession_evidence
+    requirement: Possession evidence (electricity / house-tax bills)
+    severity: high
+    why: Supports the claim of continuous possession.
+    detect:
+      present_any: ["electricity bill", "house-tax", "house tax", "water bill", "occupied the plot", "continuous possession"]
+      weak_any: ["oral claim of possession", "witness says"]
+    sources: []
+
+  - id: property.form_i_and_xiv
+    requirement: Form I & XIV extract
+    severity: medium
+    why: Goa record of rights.
+    detect:
+      present_any: ["form i & xiv", "form i and xiv", "record of rights", "survey no."]
+      weak_any: ["mutation pending", "disputed entry"]
+    sources: []
+
+  - id: property.payment_trail
+    requirement: Payment trail to seller
+    severity: high
+    why: Proves consideration was paid.
+    detect:
+      present_any: ["bank transfer", "cheque", "rtgs", "neft", "demand draft", "payment receipt"]
+      negative_any: ["date of last payment", "cash without receipt", "no receipt"]
+    sources: []
+

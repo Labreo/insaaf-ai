@@ -28,7 +28,7 @@
   "eval": {
     "heldout_correct": 0,
     "heldout_total": 0,
-    "note": "MOCK — fill from ml/eval results",
+    "note": "Baseline shrinkage calibration; retrain after senior overrides update labels",
     "brier": null
   },
   "bias_firewall_passed": true

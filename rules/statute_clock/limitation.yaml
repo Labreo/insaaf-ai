@@ -1,0 +1,70 @@
+covid_exclusion:
+  from: "2020-03-15"
+  to: "2022-02-28"
+  reason: "Supreme Court suo motu COVID limitation exclusion"
+  days_excluded: 716
+
+case_types:
+  property:
+    article: "Limitation Act, 1963 — Schedule, Art. 65 (12 yrs adverse possession / title)"
+    limitation_years: 12
+    default_cause_date: "2013-01-07"
+    forum:
+      court: "Civil Judge Senior Division, Mapusa"
+      basis: "territorial + pecuniary"
+    commercial_court: false
+    adr_routes:
+      - "s.89 CPC"
+      - "Lok Adalat"
+    sources:
+      - source_id: src_kanoon_1317393
+        kind: statute
+        title: Limitation Act, 1963 — Schedule
+        court: ""
+        date: "1963-01-01"
+        paragraph: "1"
+        doc_id: "1317393"
+        url: https://indiankanoon.org/doc/1317393/
+
+  civil_recovery:
+    article: "Limitation Act, 1963 — Schedule, Art. 19 / Art. 26 (3 yrs money recovery)"
+    limitation_years: 3
+    default_cause_date: "2022-02-18"
+    forum:
+      court: "Commercial Court / Civil Judge Senior Division, Panaji"
+      basis: "commercial dispute > ₹3L + territorial"
+    commercial_court: true
+    adr_routes:
+      - "Pre-institution mediation (s.12A)"
+      - "s.89 CPC"
+      - "Lok Adalat"
+    sources:
+      - source_id: src_kanoon_1317393
+        kind: statute
+        title: Limitation Act, 1963 — Schedule
+        court: ""
+        date: "1963-01-01"
+        paragraph: "1"
+        doc_id: "1317393"
+        url: https://indiankanoon.org/doc/1317393/
+
+  criminal:
+    article: "BNSS, 2023 — s.514 (limitation for taking cognizance) / s.289 (plea filing)"
+    limitation_years: 3
+    default_cause_date: "2025-06-01"
+    forum:
+      court: "Judicial Magistrate First Class, Mapusa"
+      basis: "territorial jurisdiction (offence under ≤ 7 yrs)"
+    commercial_court: false
+    adr_routes:
+      - "Plea bargaining (BNSS s.289)"
+    sources:
+      - source_id: src_kanoon_1317393
+        kind: statute
+        title: Limitation Act, 1963 — Schedule
+        court: ""
+        date: "1963-01-01"
+        paragraph: "1"
+        doc_id: "1317393"
+        url: https://indiankanoon.org/doc/1317393/
+
