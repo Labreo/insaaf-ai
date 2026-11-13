@@ -1,23 +1,26 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AnimatePresence, motion } from 'motion/react'
-import { FileText, FileUp, Mic, PenLine, Sparkles, Square, Trash2, Upload } from 'lucide-react'
+import { FileText, FileUp, Mic, PenLine, Play, Sparkles, Square, Trash2, Upload } from 'lucide-react'
 import { api } from '@/lib/api'
-import type { CaseType, Matter, MatterDocument } from '@/lib/types'
-import { Chip, Glass, Label, Title, Well, ease } from '@/components/primitives'
+import type { CaseType, Matter } from '@/lib/types'
+import { Chip, Glass, Label, Section, Title, Well } from '@/components/primitives'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { ShimmerButton } from '@/components/magicui/shimmer-button'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 
 const types: { k: CaseType; label: string; hint: string }[] = [
   { k: 'property', label: 'Property', hint: 'title · possession · injunction' },
-  { k: 'civil_recovery', label: 'Civil recovery', hint: 'money suits · contracts' },
-  { k: 'criminal', label: 'Criminal', hint: 'bail · plea eligibility' },
+  { k: 'civil_recovery', label: 'Civil recovery', hint: 'money suits · contracts · s.12A' },
+  { k: 'criminal', label: 'Criminal', hint: 'bail · BNS/BNSS · plea eligibility' },
 ]
-const langs: { k: NonNullable<Matter['client_language']>; label: string }[] = [{ k: 'en', label: 'English' }, { k: 'kok', label: 'कोंकणी' }, { k: 'mr', label: 'मराठी' }, { k: 'hi', label: 'हिन्दी' }]
+const langs: { k: NonNullable<Matter['client_language']>; label: string }[] = [
+  { k: 'en', label: 'English' },
+  { k: 'kok', label: 'कोंकणी' },
+  { k: 'mr', label: 'मराठी' },
+  { k: 'hi', label: 'हिन्दी' },
+]
 
 const SAMPLES: Record<CaseType, { filename: string; label: string; content: string }[]> = {
   property: [
@@ -54,168 +57,239 @@ const SAMPLES: Record<CaseType, { filename: string; label: string; content: stri
   ],
 }
 
-/** F4 intake: real file picking, pasted briefs, sample presets, & voice recording, then the live pipeline runs. */
+interface StagedDoc {
+  id: string
+  file: File
+  kind: 'voice' | 'doc'
+}
+
+/** Desktop Matter Intake & Evidence Ingestion Workbench. */
 export default function NewMatter() {
   const nav = useNavigate()
-  const [step, setStep] = useState<0 | 1 | 2>(0)
   const [type, setType] = useState<CaseType>('property')
   const [lang, setLang] = useState<NonNullable<Matter['client_language']>>('kok')
   const [title, setTitle] = useState('')
   const [forum, setForum] = useState('')
-  const [matter, setMatter] = useState<Matter | null>(null)
-  const [docs, setDocs] = useState<MatterDocument[]>([])
+  const [staged, setStaged] = useState<StagedDoc[]>([])
   const [composeOpen, setComposeOpen] = useState(false)
   const [docName, setDocName] = useState('chamber_brief_notes.txt')
   const [docText, setDocText] = useState('')
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const next = async () => {
-    sfx.tap()
-    if (step === 0) return setStep(1)
-    if (step === 1) {
-      setBusy(true)
-      const m = await api.createMatter({ title, case_type: type, client_language: lang, forum_hint: forum || undefined })
-      setMatter(m); setBusy(false); setStep(2)
-      return
-    }
-    if (matter) nav(`/matters/${matter.id}?tab=pipeline&run=1`)
+  const addFiles = (files: FileList | null) => {
+    if (!files) return
+    const items: StagedDoc[] = Array.from(files).map((f, idx) => ({
+      id: `${Date.now()}-${idx}-${f.name}`,
+      file: f,
+      kind: f.type.startsWith('audio/') || f.name.endsWith('.wav') || f.name.endsWith('.webm') ? 'voice' : 'doc',
+    }))
+    setStaged((prev) => [...prev, ...items])
+    sfx.tick()
   }
 
-  const onFiles = async (files: FileList | null) => {
-    if (!files || !matter) return
-    setBusy(true)
-    for (const f of Array.from(files)) { const d = await api.addDocument(matter.id, f); setDocs((x) => [...x, d]); sfx.tick() }
-    setBusy(false)
-  }
-
-  const attachText = async (name: string, text: string) => {
-    if (!matter || !text.trim()) return
-    setBusy(true)
-    const file = new File([text.trim()], name.trim() || 'case_notes.txt', { type: 'text/plain' })
-    const d = await api.addDocument(matter.id, file)
-    setDocs((x) => [...x, d])
+  const stageText = (name: string, text: string) => {
+    if (!text.trim()) return
+    const filename = name.trim() || 'case_notes.txt'
+    const file = new File([text.trim()], filename, { type: 'text/plain' })
+    setStaged((prev) => [...prev, { id: `${Date.now()}-${filename}`, file, kind: filename.includes('voice') ? 'voice' : 'doc' }])
     sfx.accept()
     setDocText('')
     setComposeOpen(false)
-    setBusy(false)
+  }
+
+  const launchPipeline = async () => {
+    if (!title.trim() || busy) return
+    setBusy(true)
+    sfx.tap()
+    try {
+      const m = await api.createMatter({
+        title: title.trim(),
+        case_type: type,
+        client_language: lang,
+        forum_hint: forum.trim() || undefined,
+      })
+      for (const item of staged) {
+        await api.addDocument(m.id, item.file)
+      }
+      nav(`/matters/${m.id}?tab=pipeline&run=1`)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      <Title kicker={`New matter · step ${step + 1} of 3`}>{step === 0 ? 'What kind of dispute?' : step === 1 ? 'Name the matter.' : 'What did the client bring?'}</Title>
-
-      <div className="flex gap-1.5">
-        {[0, 1, 2].map((i) => <motion.span key={i} className={cn('h-1 flex-1 rounded-full', i <= step ? 'bg-brass' : 'bg-marble/10')} layout transition={{ duration: 0.4, ease }} />)}
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-seam pb-5">
+        <Title kicker="Matter Intake & Evidence Ingestion">Create Matter & Launch Verification Pipeline</Title>
+        <Button
+          disabled={busy || !title.trim()}
+          onClick={launchPipeline}
+          className="h-10 rounded-md bg-brass px-5 text-[12px] font-medium uppercase tracking-[0.06em] text-void hover:bg-[#d6b676]"
+        >
+          <Play size={14} /> {busy ? 'Initializing workspace…' : 'Run live 11-stage pipeline'}
+        </Button>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div key={step} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.35, ease }} className="space-y-5">
-          {step === 0 && (
-            <>
-              <div className="grid gap-2">
-                {types.map((t) => (
-                  <button key={t.k} onClick={() => { sfx.tick(); setType(t.k) }} className={cn('glass relative flex items-center justify-between p-4 text-left transition-colors', type === t.k ? 'border-brass/40' : '')}>
-                    {type === t.k && <motion.span layoutId="type-pill" className="absolute inset-0 rounded-card bg-brass/8" transition={{ type: 'spring', stiffness: 400, damping: 32 }} />}
-                    <span className="relative"><p className="text-[16px] text-marble">{t.label}</p><p className="text-[11px] text-smoke">{t.hint}</p></span>
-                    <span className={cn('relative h-4 w-4 rounded-full border', type === t.k ? 'border-brass bg-brass' : 'border-marble/20')} />
-                  </button>
-                ))}
-              </div>
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Left Column: Matter Particulars */}
+        <div className="space-y-5 lg:col-span-5">
+          <Section title="1 · Dispute classification & jurisdiction">
+            <Glass className="space-y-4">
               <div>
-                <Label className="mb-2">Client speaks</Label>
-                <div className="flex flex-wrap gap-2">
-                  {langs.map((l) => <button key={l.k} onClick={() => { sfx.tick(); setLang(l.k) }} className={cn('devanagari rounded-full border px-3.5 py-2 text-[13px] transition-colors', lang === l.k ? 'border-brass/40 bg-brass/10 text-marble' : 'border-marble/10 text-pewter')}>{l.label}</button>)}
+                <Label className="mb-2">Practice area / Rule pack</Label>
+                <div className="grid gap-2">
+                  {types.map((t) => (
+                    <button
+                      key={t.k}
+                      type="button"
+                      onClick={() => { sfx.tick(); setType(t.k) }}
+                      className={cn(
+                        'flex items-center justify-between rounded-md border p-3 text-left transition-colors',
+                        type === t.k ? 'border-brass/45 bg-brass/10' : 'border-seam bg-graphite/60 hover:border-marble/20',
+                      )}
+                    >
+                      <span>
+                        <p className="text-[14px] font-medium text-marble">{t.label}</p>
+                        <p className="text-[11px] text-smoke">{t.hint}</p>
+                      </span>
+                      <span className={cn('h-3.5 w-3.5 rounded-full border', type === t.k ? 'border-brass bg-brass' : 'border-marble/25')} />
+                    </button>
+                  ))}
                 </div>
-                <p className="mt-2 text-[11px] text-smoke">Voice notes are transcribed and translated with the original shown next to the English, so the advocate verifies rather than trusts.</p>
               </div>
-            </>
-          )}
 
-          {step === 1 && (
-            <>
               <div>
-                <Label className="mb-2">Title</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Fernandes v. Naik — possession, Mapusa" className="glass-well h-12 border-0 text-[15px] text-marble placeholder:text-smoke" autoFocus />
+                <Label className="mb-2">Matter title</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Fernandes v. Naik — possession, Mapusa"
+                  className="glass-well h-10 border border-seam text-[14px] text-marble placeholder:text-smoke"
+                  autoFocus
+                />
               </div>
-              <div>
-                <Label className="mb-2">Forum hint (optional)</Label>
-                <Input value={forum} onChange={(e) => setForum(e.target.value)} placeholder="Civil Judge Senior Division, Mapusa" className="glass-well h-12 border-0 text-[15px] text-marble placeholder:text-smoke" />
-              </div>
-              <Well><p className="text-[12px] text-pewter"><Chip tone="brass" className="mr-2">{types.find((t) => t.k === type)?.label}</Chip>The Proof Ledger and Statute Clock use the {type.replace('_', ' ')} rule pack written by the legal lead.</p></Well>
-            </>
-          )}
 
-          {step === 2 && matter && (
-            <>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => fileRef.current?.click()} className="glass flex flex-col items-start gap-2 p-4 text-left hover:border-brass/40">
-                  <FileUp size={18} className="text-brass" strokeWidth={1.6} />
-                  <p className="text-[14px] text-marble">PDF / DOCX</p>
-                  <p className="text-[11px] text-smoke">agreements · notices · replies</p>
+              <div>
+                <Label className="mb-2">Forum / Court hint (optional)</Label>
+                <Input
+                  value={forum}
+                  onChange={(e) => setForum(e.target.value)}
+                  placeholder="Civil Judge Senior Division, Mapusa"
+                  className="glass-well h-10 border border-seam text-[14px] text-marble placeholder:text-smoke"
+                />
+              </div>
+
+              <div>
+                <Label className="mb-2">Client primary language</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {langs.map((l) => (
+                    <button
+                      key={l.k}
+                      type="button"
+                      onClick={() => { sfx.tick(); setLang(l.k) }}
+                      className={cn(
+                        'devanagari rounded-md border px-3 py-1.5 text-[12px] transition-colors',
+                        lang === l.k ? 'border-brass/45 bg-brass/12 text-marble' : 'border-seam bg-graphite text-pewter hover:text-marble',
+                      )}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] text-smoke">Voice transcripts preserve verbatim regional quotes side-by-side with English translation confidence.</p>
+              </div>
+            </Glass>
+          </Section>
+
+          <Well>
+            <p className="text-[12px] text-pewter">
+              <Chip tone="brass" className="mr-2">{types.find((t) => t.k === type)?.label}</Chip>
+              Deterministic Proof Ledger & Statute Clock rules apply automatically for <strong className="text-marble">{type.replace('_', ' ')}</strong>.
+            </p>
+          </Well>
+        </div>
+
+        {/* Right Column: Evidence Upload, Paste Composer, Sample Briefs */}
+        <div className="space-y-5 lg:col-span-7">
+          <Section title="2 · Attach instruments, pleadings, or voice notes">
+            <Glass className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button type="button" onClick={() => fileRef.current?.click()} className="flex items-start gap-3 rounded-md border border-seam bg-graphite p-3.5 text-left transition-colors hover:border-brass/40">
+                  <FileUp size={18} className="mt-0.5 shrink-0 text-brass" strokeWidth={1.6} />
+                  <div>
+                    <p className="text-[13px] font-medium text-marble">Upload PDF / DOCX / Text</p>
+                    <p className="text-[11px] text-smoke">Agreements, notices, pleadings, Form I & XIV</p>
+                  </div>
                 </button>
-                <Recorder onDone={async (file) => { const d = await api.addDocument(matter.id, file); setDocs((x) => [...x, d]) }} />
+                <Recorder onDone={(file) => setStaged((prev) => [...prev, { id: `${Date.now()}-rec`, file, kind: 'voice' }])} />
               </div>
-              <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.txt,audio/*" className="hidden" onChange={(e) => onFiles(e.target.files)} />
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Button variant="ghost" onClick={() => { sfx.tick(); setComposeOpen((o) => !o) }} className="h-9 rounded-full border border-marble/10 px-3.5 text-[12px] text-pewter hover:border-brass/40 hover:text-marble">
+              <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.txt,audio/*" className="hidden" onChange={(e) => addFiles(e.target.files)} />
+
+              <div className="flex flex-wrap items-center gap-2 border-t border-seam pt-3">
+                <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-smoke">Quick actions:</span>
+                <Button variant="ghost" onClick={() => { sfx.tick(); setComposeOpen((o) => !o) }} className="h-8 rounded-md border border-seam px-3 text-[12px] text-pewter hover:border-brass/40 hover:text-marble">
                   <PenLine size={13} /> Paste facts / FIR / clause
                 </Button>
                 {SAMPLES[type].map((s) => (
-                  <Button key={s.filename} variant="ghost" disabled={busy} onClick={() => attachText(s.filename, s.content)} className="h-9 rounded-full border border-brass/25 bg-brass/8 px-3 text-[11px] text-brass hover:bg-brass/15">
-                    <Sparkles size={12} /> + {s.label}
+                  <Button key={s.filename} variant="ghost" disabled={busy} onClick={() => stageText(s.filename, s.content)} className="h-8 rounded-md border border-brass/30 bg-brass/10 px-3 text-[11px] text-brass hover:bg-brass/20">
+                    <Sparkles size={12} /> {s.label}
                   </Button>
                 ))}
               </div>
 
               {composeOpen && (
-                <Glass className="space-y-3">
+                <div className="space-y-3 rounded-md border border-seam bg-graphite/60 p-3.5">
                   <Label>Paste case notes, contract text, or FIR excerpt</Label>
-                  <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="filename.txt" className="glass-well h-10 border-0 text-[13px] text-marble placeholder:text-smoke" />
-                  <Textarea value={docText} onChange={(e) => setDocText(e.target.value)} rows={4} placeholder="Paste facts, payment dates (YYYY-MM-DD), sections (e.g. IPC 420 / BNS 318), or party statements…" className="glass-well resize-none border-0 text-[13px] text-marble placeholder:text-smoke" />
+                  <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="filename.txt" className="glass-well h-9 border border-seam text-[13px] text-marble placeholder:text-smoke" />
+                  <Textarea value={docText} onChange={(e) => setDocText(e.target.value)} rows={4} placeholder="Paste facts, payment dates (YYYY-MM-DD), sections (e.g. IPC 420 / BNS 318), or party statements…" className="glass-well resize-none border border-seam text-[13px] text-marble placeholder:text-smoke" />
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" className="h-9 rounded-full" onClick={() => setComposeOpen(false)}>Cancel</Button>
-                    <Button disabled={busy || !docText.trim()} onClick={() => attachText(docName, docText)} className="h-9 rounded-full bg-brass px-4 text-void uppercase tracking-[0.08em] hover:bg-[#d6b676]">Attach document</Button>
+                    <Button variant="ghost" className="h-8 rounded-md border border-seam" onClick={() => setComposeOpen(false)}>Cancel</Button>
+                    <Button disabled={!docText.trim()} onClick={() => stageText(docName, docText)} className="h-8 rounded-md bg-brass px-3.5 text-void uppercase tracking-[0.06em] hover:bg-[#d6b676]">Attach document</Button>
                   </div>
-                </Glass>
+                </div>
               )}
 
               <div
-                onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); onFiles(e.dataTransfer.files) }}
-                className="glass-well flex items-center justify-center gap-2 border-dashed py-4 text-[12px] text-smoke"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files) }}
+                className="flex items-center justify-center gap-2 rounded-md border border-dashed border-seam bg-void/40 py-6 text-[12px] text-smoke"
               >
-                <Upload size={14} /> drop PDF, DOCX, TXT, or audio files here
+                <Upload size={14} /> Drag & drop client files (PDF, DOCX, TXT, WAV/WEBM) here
               </div>
 
-              {docs.length > 0 && (
-                <Glass>
-                  <Label className="mb-2">Attached · {docs.length}</Label>
-                  <ul className="divide-y divide-marble/6">
-                    {docs.map((d) => (
-                      <li key={d.id} className="flex items-center gap-3 py-2.5">
+              <div>
+                <Label className="mb-2">Staged documents ({staged.length})</Label>
+                {staged.length === 0 ? (
+                  <p className="rounded-md border border-seam/70 bg-void/30 px-3.5 py-3 text-[12px] text-smoke">
+                    No files staged yet. Attach a file, record a voice note, or click a sample instrument button above.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-seam rounded-md border border-seam bg-graphite/40">
+                    {staged.map((d) => (
+                      <li key={d.id} className="flex items-center gap-3 px-3.5 py-2.5">
                         {d.kind === 'voice' ? <Mic size={15} className="text-steel" /> : <FileText size={15} className="text-steel" />}
-                        <span className="min-w-0 flex-1 truncate text-[13px] text-marble">{d.name}</span>
-                        <span className="text-[11px] text-smoke">{Math.max(1, Math.round(d.size / 1024))} KB</span>
-                        <button aria-label="Remove" onClick={async () => { await api.removeDocument(matter.id, d.id); setDocs((x) => x.filter((y) => y.id !== d.id)) }} className="p-1 text-smoke hover:text-overruled"><Trash2 size={13} /></button>
+                        <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-marble">{d.file.name}</span>
+                        <span className="text-[11px] text-smoke">{Math.max(1, Math.round(d.file.size / 1024))} KB</span>
+                        <button aria-label="Remove" onClick={() => setStaged((x) => x.filter((y) => y.id !== d.id))} className="p-1 text-smoke hover:text-overruled">
+                          <Trash2 size={13} />
+                        </button>
                       </li>
                     ))}
                   </ul>
-                </Glass>
-              )}
-              <p className="text-[11px] text-smoke">Files are processed strictly within Chamber A’s workspace with source-span tracking.</p>
-            </>
-          )}
-        </motion.div>
-      </AnimatePresence>
+                )}
+              </div>
 
-      <div className="flex gap-2 pt-2">
-        {step > 0 && <Button variant="ghost" className="h-12 rounded-full px-5" onClick={() => setStep((s) => (s - 1) as 0 | 1 | 2)}>Back</Button>}
-        {step < 2 ? (
-          <Button disabled={busy || (step === 1 && !title.trim())} onClick={next} className="h-12 flex-1 rounded-full bg-brass text-void uppercase tracking-[0.1em] hover:bg-[#d6b676]">{busy ? 'Creating…' : 'Continue'}</Button>
-        ) : (
-          <ShimmerButton onClick={next} background="#c9a868" shimmerColor="#fff6dc" className="h-12 flex-1 text-[13px] font-medium uppercase tracking-[0.1em] text-void">Run live 11-stage pipeline</ShimmerButton>
-        )}
+              <div className="flex items-center justify-between border-t border-seam pt-3">
+                <p className="text-[11px] text-smoke">Processed strictly within Chamber A with paragraph-level source tracking.</p>
+                <Button disabled={busy || !title.trim()} onClick={launchPipeline} className="h-9 rounded-md bg-brass px-4 text-[12px] font-medium uppercase tracking-[0.06em] text-void hover:bg-[#d6b676]">
+                  <Play size={13} /> {busy ? 'Running…' : 'Create & Run Pipeline'}
+                </Button>
+              </div>
+            </Glass>
+          </Section>
+        </div>
       </div>
     </div>
   )
@@ -238,19 +312,25 @@ function Recorder({ onDone }: { onDone: (f: File) => void }) {
         const blob = new Blob(chunks.current, { type: r.mimeType || 'audio/webm' })
         onDone(new File([blob], `client_note_${Date.now()}.webm`, { type: blob.type }))
         if (timer.current) window.clearInterval(timer.current)
-        setSecs(0); setRec(null)
+        setSecs(0)
+        setRec(null)
       }
-      r.start(); setRec(r); sfx.accept()
+      r.start()
+      setRec(r)
+      sfx.accept()
       timer.current = window.setInterval(() => setSecs((s) => s + 1), 1000)
-    } catch { alert('Microphone not available. Pick an audio file instead.') }
+    } catch {
+      alert('Microphone not available. Pick an audio file instead.')
+    }
   }
 
   return (
-    <button onClick={() => (rec ? rec.stop() : start())} className={cn('glass flex flex-col items-start gap-2 p-4 text-left transition-colors', rec ? 'border-overruled/50' : 'hover:border-brass/40')}>
-      {rec ? <Square size={18} className="text-overruled" /> : <Mic size={18} className="text-brass" strokeWidth={1.6} />}
-      <p className="text-[14px] text-marble">{rec ? `Recording ${secs}s` : 'Voice note'}</p>
-      <p className="text-[11px] text-smoke">{rec ? 'tap to stop' : 'Konkani · Marathi · Hindi'}</p>
-      {rec && <motion.span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-overruled" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }} />}
+    <button type="button" onClick={() => (rec ? rec.stop() : start())} className={cn('relative flex items-start gap-3 rounded-md border p-3.5 text-left transition-colors', rec ? 'border-overruled/50 bg-overruled/10' : 'border-seam bg-graphite hover:border-brass/40')}>
+      {rec ? <Square size={18} className="mt-0.5 shrink-0 text-overruled" /> : <Mic size={18} className="mt-0.5 shrink-0 text-brass" strokeWidth={1.6} />}
+      <div>
+        <p className="text-[13px] font-medium text-marble">{rec ? `Recording (${secs}s) — Click to stop` : 'Record Voice Statement'}</p>
+        <p className="text-[11px] text-smoke">Konkani · Marathi · Hindi transcription</p>
+      </div>
     </button>
   )
 }

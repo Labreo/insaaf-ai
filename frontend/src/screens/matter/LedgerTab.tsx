@@ -11,33 +11,78 @@ export default function LedgerTab({ id }: { id: string }) {
   const l = useAsync(() => api.ledger(id), [id, v])
   if (l.loading || !l.data) return <Skeleton className="h-72" />
   const { entries, verify } = l.data
+
   return (
     <div className="space-y-4">
-      <Glass className={cn('flex items-center justify-between', !verify.valid && 'border-overruled/40')}>
+      <Glass className={cn('flex flex-wrap items-center justify-between gap-3', !verify.valid && 'border-overruled/50')}>
         <div>
-          <Label>Reviewer ledger</Label>
-          <motion.p key={String(verify.valid)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={cn('mt-1 flex items-center gap-1.5 text-[15px]', verify.valid ? 'text-followed' : 'text-overruled')}>
-            {verify.valid ? <ShieldCheck size={16} /> : <ShieldOff size={16} />} {verify.valid ? 'Chain intact' : `Chain broken at ${verify.broken_at}`} · {verify.entries} entr{verify.entries === 1 ? 'y' : 'ies'}
+          <Label>Reviewer ledger · tamper-evident hash chain</Label>
+          <motion.p
+            key={String(verify.valid)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={cn('mt-1 flex items-center gap-2 text-[15px] font-medium', verify.valid ? 'text-followed' : 'text-overruled')}
+          >
+            {verify.valid ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
+            {verify.valid ? 'Chain intact' : `Chain broken at ${verify.broken_at}`} · {verify.entries} entr
+            {verify.entries === 1 ? 'y' : 'ies'}
           </motion.p>
         </div>
-        {verify.anchored_root && <Chip tone="steel"><Link2 size={11} /> {verify.anchored_root.hash.slice(0, 8)} · {verify.anchored_root.chain}</Chip>}
+        {verify.anchored_root && (
+          <Chip tone="steel">
+            <Link2 size={11} /> {verify.anchored_root.hash.slice(0, 10)} · {verify.anchored_root.chain}
+          </Chip>
+        )}
       </Glass>
-      <p className="px-1 text-[12px] text-smoke">Who reviewed, what changed, when, and why they disagreed. Only the daily root hash is anchored on-chain; client data never is.</p>
-      {entries.length === 0 && <Empty text="No reviews yet. Override or approve something and it lands here." />}
-      <ol className="relative ml-3 border-l border-marble/10">
-        {[...entries].reverse().map((e, i) => (
-          <motion.li key={e.id} {...stagger(i)} className="relative pl-6 pb-5 last:pb-0">
-            <span className={cn('absolute -left-[5px] top-2 h-[9px] w-[9px] rounded-full', verify.broken_at === e.id ? 'bg-overruled' : 'bg-brass')} />
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[14px] text-marble"><span className="capitalize">{e.role}</span> · {e.action} · {e.target}</p>
-              <span className="text-[11px] text-smoke">{new Date(e.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-            <Chip tone={e.action === 'approve' ? 'followed' : 'distinguished'} className="mt-1">{e.reason_code.replace(/_/g, ' ')}</Chip>
-            {e.note && <p className="serif mt-1.5 text-[15px] text-pewter">&ldquo;{e.note}&rdquo;</p>}
-            <p className="mt-1.5 font-mono text-[10px] text-smoke">{e.prev_hash.slice(0, 10)} → {e.hash.slice(0, 10)}</p>
-          </motion.li>
-        ))}
-      </ol>
+
+      <p className="px-1 text-[12px] text-smoke">
+        Who reviewed, what changed, when, and why they disagreed. Only the daily root hash is anchored on-chain; client matter records never leave chamber custody.
+      </p>
+
+      {entries.length === 0 ? (
+        <Empty text="No reviews yet. Approve or override a finding and it is cryptographically chained here." />
+      ) : (
+        <Glass className="overflow-x-auto p-0">
+          <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
+            <thead>
+              <tr className="border-b border-seam bg-graphite/60 text-[11px] uppercase tracking-wider text-smoke">
+                <th className="px-4 py-2.5 font-medium">Timestamp</th>
+                <th className="px-4 py-2.5 font-medium">Reviewer</th>
+                <th className="px-4 py-2.5 font-medium">Action & Target</th>
+                <th className="px-4 py-2.5 font-medium">Reason & Note</th>
+                <th className="px-4 py-2.5 font-medium">Hash Chain Link</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-seam/70">
+              {[...entries].reverse().map((e, i) => (
+                <motion.tr key={e.id} {...stagger(i)} className="align-top transition-colors hover:bg-graphite/40">
+                  <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-smoke">
+                    {new Date(e.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="capitalize text-marble">{e.role}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Chip tone={e.action === 'approve' ? 'followed' : 'distinguished'}>{e.action}</Chip>
+                      <span className="font-mono text-[12px] text-pewter">{e.target}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-[12px] text-marble">{e.reason_code.replace(/_/g, ' ')}</span>
+                    {e.note && <p className="mt-1 text-[12px] text-pewter">&ldquo;{e.note}&rdquo;</p>}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px]">
+                    <span className={verify.broken_at === e.id ? 'text-overruled' : 'text-smoke'}>
+                      {e.prev_hash.slice(0, 8)} → {e.hash.slice(0, 8)}
+                    </span>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </Glass>
+      )}
     </div>
   )
 }

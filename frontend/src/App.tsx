@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Route, Routes, useNavigate } from 'react-router-dom'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence } from 'motion/react'
 import Intro from './intro/Intro'
 import Shell from './components/Shell'
 import Home from './screens/Home'
@@ -13,9 +13,7 @@ import Me from './screens/Me'
 const KEY = 'insaaf.intro.seen'
 
 export default function App() {
-  const [intro, setIntro] = useState(() => {
-    try { return sessionStorage.getItem(KEY) !== '1' } catch { return true }
-  })
+  const [intro, setIntro] = useState(false)
   const nav = useNavigate()
 
   const finish = () => {
@@ -27,7 +25,7 @@ export default function App() {
   return (
     <>
       <AnimatePresence>{intro && <Intro key="intro" onDone={finish} />}</AnimatePresence>
-      <motion.div initial={{ opacity: 0, scale: 1.04 }} animate={intro ? { opacity: 0, scale: 1.04 } : { opacity: 1, scale: 1 }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
+      <div>
         <Routes>
           <Route element={<Shell />}>
             <Route index element={<Home />} />
@@ -38,7 +36,7 @@ export default function App() {
             <Route path="me" element={<Me onReplayIntro={() => setIntro(true)} />} />
           </Route>
         </Routes>
-      </motion.div>
+      </div>
     </>
   )
 }

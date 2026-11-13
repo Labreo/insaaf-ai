@@ -1,75 +1,115 @@
-import { useNavigate } from 'react-router-dom'
+import { Bell, ChevronRight } from 'lucide-react'
 import { motion } from 'motion/react'
-import { Bell, BellRing, Hourglass, Scale, UserCheck } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '@/lib/api'
 import { mut, useDB } from '@/lib/store'
-import type { Alert } from '@/lib/types'
-import { Chip, Empty, Glass, Label, Section, Skeleton, Title, stagger, useAsync } from '@/components/primitives'
+import { Chip, Empty, Glass, Label, Skeleton, stagger, useAsync } from '@/components/primitives'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { sfx } from '@/lib/sound'
 
-const kindLabel: Record<Alert['kind'], string> = { limitation: 'Limitation expires', mediation_window: 'Pre-institution mediation window', review_pending: 'Draft awaiting senior approval' }
-const kindIcon: Record<Alert['kind'], typeof Bell> = { limitation: Hourglass, mediation_window: Scale, review_pending: UserCheck }
+const tone = {
+  urgent: { chip: 'distinguished' as const, label: 'Urgent · ≤ 7 days', ring: 'border-l-crimson' },
+  warn: { chip: 'brass' as const, label: 'Soon · ≤ 30 days', ring: 'border-l-brass' },
+  info: { chip: 'smoke' as const, label: 'On the radar', ring: 'border-l-pewter' },
+}
 
-/** Statute Clock across the chamber: T-30 / T-7 / T-1 alerts, with real browser push when allowed. */
 export default function Alerts() {
   const nav = useNavigate()
-  const version = useDB((d) => d.matters.map((m) => m.id + m.status + m.days_left).join('|'))
   const push = useDB((d) => d.pushEnabled)
-  const a = useAsync(() => api.alerts(), [version])
+  const v = useDB((d) => d.matters.map((m) => `${m.id}:${m.days_left}`).join('|'))
+  const res = useAsync(() => api.alerts(), [v])
 
-  const togglePush = async (on: boolean) => {
-    sfx.tick()
-    if (!on) return mut.setPush(false)
-    if (!('Notification' in window)) return alert('This browser has no notifications API.')
-    const perm = await Notification.requestPermission()
-    if (perm !== 'granted') return mut.setPush(false)
-    mut.setPush(true)
-    const first = a.data?.[0]
-    setTimeout(() => { try { new Notification('Insaaf · Statute Clock', { body: first ? `${first.title}: ${first.days_left} days left` : 'Deadline alerts are on.', icon: '/icon.svg' }) } catch { /* ignore */ } }, 1200)
+  if (res.loading || !res.data) return <Skeleton className="h-96" />
+  const items = res.data
+  const groups = {
+    urgent: items.filter((a) => a.level === 'urgent'),
+    warn: items.filter((a) => a.level === 'warn'),
+    info: items.filter((a) => a.level === 'info'),
   }
 
-  const groups = { urgent: a.data?.filter((x) => x.level === 'urgent') ?? [], warn: a.data?.filter((x) => x.level === 'warn') ?? [], info: a.data?.filter((x) => x.level === 'info') ?? [] }
-
   return (
-    <div className="space-y-7">
-      <Title kicker="Statute clock">Nothing expires <span className="serif italic brass-text">unnoticed</span>.</Title>
-
-      <Glass className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className={cn('grid h-9 w-9 place-items-center rounded-full', push ? 'bg-brass/15 text-brass' : 'bg-marble/6 text-smoke')}>{push ? <BellRing size={17} /> : <Bell size={17} />}</span>
-          <div><p className="text-[14px] text-marble">Push alerts</p><p className="text-[11px] text-smoke">T−30 · T−7 · T−1 before every deadline</p></div>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-seam pb-5">
+        <div>
+          <Label>Statute Clock · Limitation & Procedural Watchlist</Label>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-marble">Deadlines & Alerts</h1>
+          <p className="mt-1 text-[13px] text-pewter">
+            Statutory limitation periods, court return dates, and statutory compliance notices across active chamber matters.
+          </p>
         </div>
-        <Switch checked={push} onCheckedChange={togglePush} />
-      </Glass>
 
-      {a.loading && <Skeleton className="h-40" />}
-      {a.data?.length === 0 && <Empty text="No deadlines yet. Run a pipeline to set the Statute Clock." />}
+        <Glass className="flex items-center gap-4 px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <Bell size={16} className="text-brass" />
+            <div>
+              <p className="text-[13px] font-medium text-marble">Push notifications</p>
+              <p className="text-[11px] text-smoke">30d, 7d, 1d before expiry</p>
+            </div>
+          </div>
+          <Switch
+            checked={push}
+            onCheckedChange={(checked) => {
+              sfx.tick()
+              mut.setPush(checked)
+              res.reload()
+            }}
+            aria-label="Toggle push alerts"
+          />
+        </Glass>
+      </div>
 
-      {(['urgent', 'warn', 'info'] as const).map((lvl) => groups[lvl].length > 0 && (
-        <Section key={lvl} title={lvl === 'urgent' ? 'Urgent · ≤ 7 days' : lvl === 'warn' ? 'Soon · ≤ 30 days' : 'On the radar'}>
-          {groups[lvl].map((al, i) => {
-            const Icon = kindIcon[al.kind]
-            return (
-              <motion.div key={al.id} {...stagger(i)}>
-                <Glass onClick={() => { sfx.tap(); nav(`/matters/${al.matter_id}?tab=clock`) }} className="flex items-center gap-4">
-                  <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full', lvl === 'urgent' ? 'bg-overruled/15 text-overruled' : lvl === 'warn' ? 'bg-distinguished/15 text-distinguished' : 'bg-steel/12 text-steel')}><Icon size={17} /></span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] text-marble">{al.title}</p>
-                    <p className="text-[11px] text-smoke">{kindLabel[al.kind]}{al.due ? ` · ${new Date(al.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}</p>
-                  </div>
-                  {al.kind !== 'review_pending' ? (
-                    <div className="text-right"><p className={cn('text-[24px] leading-none tabular-nums', lvl === 'urgent' ? 'text-overruled' : lvl === 'warn' ? 'brass-text' : 'text-marble')}>{al.days_left}</p><Label>days</Label></div>
-                  ) : <Chip tone="distinguished">review</Chip>}
-                </Glass>
-              </motion.div>
-            )
-          })}
-        </Section>
-      ))}
+      {items.length === 0 ? (
+        <Empty text="No upcoming deadlines across open matters." />
+      ) : (
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          {(['urgent', 'warn', 'info'] as const).map((lvl) => (
+            <section key={lvl} className="space-y-3">
+              <div className="flex items-center justify-between border-b border-seam pb-2">
+                <Label>{tone[lvl].label}</Label>
+                <Chip tone={tone[lvl].chip}>{groups[lvl].length}</Chip>
+              </div>
+              {groups[lvl].length === 0 ? (
+                <Glass className="py-6 text-center text-[12px] text-smoke">No items in this bucket.</Glass>
+              ) : (
+                <div className="space-y-2.5">
+                  {groups[lvl].map((a, i) => (
+                    <motion.div key={a.id} {...stagger(i)}>
+                      <Glass
+                        onClick={() => {
+                          sfx.tick()
+                          nav(`/matters/${a.matter_id}`)
+                        }}
+                        className={cn(
+                          'flex items-center justify-between gap-3 border-l-2 py-3 transition-colors hover:border-brass/40',
+                          tone[lvl].ring,
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-medium text-marble">{a.title}</p>
+                          <p className="mt-1 truncate font-mono text-[11px] text-pewter">
+                            {a.kind.replace(/_/g, ' ')} · due {a.due}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="font-mono text-[12px] text-marble">
+                            {a.days_left >= 0 ? `${a.days_left}d` : 'past'}
+                          </span>
+                          <ChevronRight size={15} className="text-smoke" />
+                        </div>
+                      </Glass>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
+      )}
 
-      <p className="px-1 text-[11px] text-smoke">Deadlines come from the deterministic Statute Clock rules (Limitation Act articles, the COVID exclusion window, s.12A mediation). No model guesses a date.</p>
+      <p className="px-1 text-[11px] text-smoke">
+        Computed from the cause-of-action date under the Limitation Act, 1963. Section 5 condonation and SUO MOTU COVID-19 extension windows apply per matter facts.
+      </p>
     </div>
   )
 }

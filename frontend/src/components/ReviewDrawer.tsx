@@ -58,23 +58,23 @@ export default function ReviewDrawer({ matterId, req, onClose, onDone }: { matte
   }
 
   return (
-    <Drawer open={!!req} onOpenChange={(o) => !o && onClose()} showSwipeHandle>
-      <DrawerContent className="mx-auto max-w-xl rounded-t-sheet border-marble/8 bg-velvet/95 p-5 backdrop-blur-xl safe-b">
+    <Drawer open={!!req} onOpenChange={(o) => !o && onClose()}>
+      <DrawerContent className="mx-auto max-w-xl rounded-t-lg border border-seam bg-velvet p-6">
         {req && (
           <div className="space-y-4">
-            <div>
-              <Label className="mb-1">{action} · {req.target}</Label>
-              <DrawerTitle className="text-title font-normal text-marble">{req.title}</DrawerTitle>
-              <DrawerDescription className="mt-1 text-[12px] text-smoke">Recorded in the reviewer ledger with your identity, timestamp, and reason code.</DrawerDescription>
+            <div className="border-b border-seam pb-3">
+              <Label className="mb-1">Advocate Review · {action} · {req.target}</Label>
+              <DrawerTitle className="text-[18px] font-medium text-marble">{req.title}</DrawerTitle>
+              <DrawerDescription className="mt-1 text-[12px] text-smoke">Recorded in the immutable reviewer ledger with actor, timestamp, and reason code.</DrawerDescription>
             </div>
 
             {!canDecide && (
-              <div className="flex flex-col gap-2.5 rounded-xl border border-distinguished/25 bg-distinguished/10 p-3 text-[13px] text-distinguished">
+              <div className="flex flex-col gap-2.5 rounded-md border border-distinguished/30 bg-distinguished/10 p-3 text-[13px] text-distinguished">
                 <div className="flex items-start gap-2">
                   <ShieldAlert size={16} className="mt-0.5 shrink-0" />
                   <p>A <span className="font-medium">senior</span> advocate is required to {action}. Signed in as <span className="capitalize">{role}</span>.</p>
                 </div>
-                <Button variant="ghost" onClick={() => { sfx.tick(); api.setRole('senior') }} className="h-8 self-start rounded-full border border-distinguished/30 bg-distinguished/15 px-3 text-[11px] uppercase tracking-[0.08em] text-marble hover:bg-distinguished/25">
+                <Button variant="ghost" onClick={() => { sfx.tick(); api.setRole('senior') }} className="h-8 self-start rounded-md border border-distinguished/35 bg-distinguished/15 px-3 text-[11px] uppercase tracking-[0.06em] text-marble hover:bg-distinguished/25">
                   Switch to Senior (Adv. Dhanshri)
                 </Button>
               </div>
@@ -85,7 +85,7 @@ export default function ReviewDrawer({ matterId, req, onClose, onDone }: { matte
                 <Label className="mb-2">Verification status</Label>
                 <div className="flex flex-wrap gap-2">
                   {(['documented', 'alleged', 'disputed'] as const).map((st) => (
-                    <button key={st} onClick={() => { sfx.tick(); setFactStatus(st) }} className={cn('rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.08em] transition-colors', factStatus === st ? 'border-brass/40 bg-brass/15 text-marble' : 'border-marble/10 text-smoke hover:text-pewter')}>
+                    <button key={st} onClick={() => { sfx.tick(); setFactStatus(st) }} className={cn('rounded-md border px-3 py-1.5 text-[11px] uppercase tracking-[0.06em] transition-colors', factStatus === st ? 'border-brass/40 bg-brass/15 text-marble' : 'border-seam text-smoke hover:text-pewter')}>
                       {st}
                     </button>
                   ))}
@@ -98,8 +98,8 @@ export default function ReviewDrawer({ matterId, req, onClose, onDone }: { matte
                 <Label className="mb-2">Reason</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {reasons.map((r) => (
-                    <button key={r.k} onClick={() => { sfx.tick(); setReason(r.k) }} className={cn('relative rounded-xl px-2.5 py-2.5 text-left text-[12px] transition-colors', reason === r.k ? 'text-marble' : 'text-smoke hover:text-pewter')}>
-                      {reason === r.k && <motion.span layoutId="reason-pill" className="absolute inset-0 rounded-xl border border-brass/30 bg-brass/10" transition={{ type: 'spring', stiffness: 400, damping: 32 }} />}
+                    <button key={r.k} onClick={() => { sfx.tick(); setReason(r.k) }} className={cn('relative rounded-md px-2.5 py-2 text-left text-[12px] transition-colors border', reason === r.k ? 'border-brass/40 bg-brass/10 text-marble' : 'border-seam text-smoke hover:text-pewter')}>
+                      {reason === r.k && <motion.span layoutId="reason-pill" className="absolute inset-0 rounded-md border border-brass/30 bg-brass/10" transition={{ type: 'spring', stiffness: 400, damping: 32 }} />}
                       <span className="relative">{r.label}</span>
                     </button>
                   ))}
@@ -109,12 +109,12 @@ export default function ReviewDrawer({ matterId, req, onClose, onDone }: { matte
 
             <div>
               <Label className="mb-2">{req.target === 'fact' ? 'Corrected or new fact statement' : 'Note'}</Label>
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder={action === 'approve' ? 'Optional: what you checked before approving' : req.target === 'fact' ? 'Enter verified fact statement…' : 'Why Insaaf got it wrong'} className="glass-well resize-none border-0 text-[14px] text-marble placeholder:text-smoke" />
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder={action === 'approve' ? 'Optional: what you checked before approving' : req.target === 'fact' ? 'Enter verified fact statement…' : 'Why Insaaf got it wrong'} className="glass-well resize-none border border-seam text-[13px] text-marble placeholder:text-smoke" />
             </div>
 
             <div className="flex gap-2">
-              <Button variant="ghost" className="h-11 flex-1 rounded-full" onClick={onClose}>Cancel</Button>
-              <Button disabled={!canDecide || busy || (req.target === 'fact' && !note.trim())} onClick={submit} className="h-11 flex-1 rounded-full bg-brass text-void uppercase tracking-[0.1em] hover:bg-[#d6b676]">
+              <Button variant="ghost" className="h-10 flex-1 rounded-md border border-seam" onClick={onClose}>Cancel</Button>
+              <Button disabled={!canDecide || busy || (req.target === 'fact' && !note.trim())} onClick={submit} className="h-10 flex-1 rounded-md bg-brass text-void uppercase tracking-[0.08em] hover:bg-[#d6b676]">
                 <Check size={14} /> {busy ? 'Sealing…' : action === 'approve' ? 'Approve & seal' : action === 'edit' ? 'Save & seal' : 'Override & seal'}
               </Button>
             </div>
