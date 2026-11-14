@@ -394,9 +394,14 @@ export default function DraftTab({ id, onOpen, onReview, onJump }: TabProps) {
     }
   }
 
-  const firstSource = draft.paragraphs.flatMap((p) => p.sources)[0]
+  const allSources = draft.paragraphs.flatMap((p) => p.sources)
+  const firstSource =
+    allSources.find((s) => s.snippet && !/integrated with over/i.test(s.snippet)) ?? allSources[0]
+  const firstSentence = firstSource?.snippet?.split(/[.;]\s+/)[0]?.trim()
   const verifiedSample = firstSource
-    ? `${firstSource.title} governs the relief claimed on record.`
+    ? firstSentence && firstSentence.length >= 16 && !/integrated with over/i.test(firstSentence)
+      ? `${firstSource.title} — ${firstSentence}.`
+      : firstSource.title
     : 'Suraj Lamp & Industries v. State of Haryana held that an unregistered agreement or power of attorney does not convey title.'
 
   const bodyBlocks = (text: string) =>

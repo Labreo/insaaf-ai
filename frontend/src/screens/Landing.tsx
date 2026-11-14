@@ -43,7 +43,7 @@ const GUARANTEES = [
     kicker: 'Counterfactual Bias Firewall',
     title: 'Identity can never move the score.',
     summary:
-      'Before scoring a matter, NER masks names, caste-coded surnames, religion, gender, tribe, and language markers. The model then re-runs across six protected counterfactual identities. If |S − S_swap| exceeds ε = 0.02, the score is withheld.',
+      'Before scoring a matter, NER masks names, caste-coded surnames, religion, gender, tribe, and language markers. The model then re-runs across 10 protected counterfactual identities. If |S − S_swap| exceeds ε = 0.02, the score is withheld.',
     evidence: 'Addresses IndoCentric AI Bias Benchmark findings where reasoning models flipped legal outcomes up to 41.67% on marginalised groups.',
     previewTitle: '10-Identity Invariance Matrix (ε = 0.02)',
     previewRows: [

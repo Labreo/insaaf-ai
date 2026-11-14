@@ -525,14 +525,14 @@ export default function PrecedentSearch() {
                     )}
 
                     <div className="space-y-3">
-                      <p className="eyebrow">Extracted Paragraphs ({detail.paras.length})</p>
-                      {detail.paras.map((p) => (
+                      <p className="eyebrow">Extracted Paragraphs ({(detail.paras ?? []).length})</p>
+                      {(detail.paras ?? []).map((p) => (
                         <div key={p.n} className="rounded-[6px] border border-line bg-sunken px-4 py-3">
                           <span className="font-mono text-[11px] font-semibold text-brass">¶ {p.n}</span>
                           <p className="serif mt-1 text-[15.5px] leading-[1.7] text-ink">{p.text}</p>
                         </div>
                       ))}
-                      {detail.paras.length === 0 && (
+                      {(detail.paras ?? []).length === 0 && (
                         <p className="text-[12px] text-ink-3">No individual paragraph segments stored for this record.</p>
                       )}
                     </div>
