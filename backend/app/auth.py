@@ -38,6 +38,7 @@ PERMISSIONS: dict[str, frozenset[str]] = {
     "analysis.run": frozenset({"senior", "junior"}),
     "draft.export": frozenset({"senior", "junior", "clerk"}),
     "review.edit": frozenset({"senior", "junior"}),
+    "review.delete": frozenset({"senior", "junior"}),  # the UI checks review.<action>
     "review.submit": frozenset({"senior", "junior"}),
     "review.override": frozenset({"senior"}),
     "review.approve": frozenset({"senior"}),
@@ -53,7 +54,7 @@ PERMISSIONS: dict[str, frozenset[str]] = {
 
 REVIEW_ACTION_PERMISSION = {
     "edit": "review.edit",
-    "delete": "review.edit",
+    "delete": "review.delete",
     "submit": "review.submit",
     "override": "review.override",
     "approve": "review.approve",

@@ -370,7 +370,7 @@ class SetCourtRequest(BaseModel):
 
 
 class SetDraftTypeRequest(BaseModel):
-    draft_type: str
+    draft_type: str = ""  # empty = keep the current instrument (regenerate)
     instructions: Optional[str] = Field(default=None, max_length=600)
 
 
@@ -465,7 +465,7 @@ class LedgerEntry(BaseModel):
     actor: str
     role: str
     matter_id: str
-    action: Literal["approve", "edit", "override", "submit"]
+    action: Literal["approve", "edit", "override", "submit", "delete"]
     target: str
     target_id: str
     reason_code: str

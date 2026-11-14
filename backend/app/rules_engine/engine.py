@@ -49,8 +49,8 @@ async def _resolve_sources(raw_sources: list[dict[str, Any]]) -> list[dict[str, 
     return resolved
 
 
-_NEG_BEFORE = re.compile(r"\b(no|not|without|never|neither|nor|nil|absence of|lack of|lacks|lacking|missing|cannot|none)\b[^.;\n]{0,40}$")
-_NEG_AFTER = re.compile(r"^[^.;\n]{0,30}\b(does not exist|do not exist|not exist|is missing|are missing|not available|not produced|not on file|absent|unavailable|not found|was not|were not|is not|are not)\b")
+_NEG_BEFORE = re.compile(r"\b(no|not|without|never|neither|nor|nil|absence of|lack of|lacks|lacking|missing|cannot|none|short of|less than|fewer than)\b[^.;\n]{0,40}$")
+_NEG_AFTER = re.compile(r"^[^.;\n]{0,30}\b(does not exist|do not exist|not exist|is missing|are missing|not available|not produced|not on file|absent|unavailable|not found|was not|were not|is not|are not|has not been|have not been|could not be|not traced|not yet|still pending|is pending|have since died|has since died|died|deceased)\b")
 
 
 def _evidence_hit(corpus: str, keyword: str) -> bool:

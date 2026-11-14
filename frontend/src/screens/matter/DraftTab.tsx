@@ -408,7 +408,7 @@ export default function DraftTab({ id, onOpen, onReview, onJump }: TabProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-12">
       {/* Left 7 Cols: Instrument Controls + Structured Bond-Paper Legal Document */}
-      <div className="space-y-4 lg:col-span-7">
+      <div className="min-w-0 space-y-4 lg:col-span-7">
         <Card className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
@@ -710,7 +710,7 @@ export default function DraftTab({ id, onOpen, onReview, onJump }: TabProps) {
                       )}
 
                       <div className="flex flex-wrap items-center justify-between gap-2 font-sans">
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
                           <ConfidenceDot c={rp.confidence} />
                           {raw?.edited_by && (
                             <span className="rounded-[4px] border border-brass-200 bg-brass-50 px-1.5 py-0.5 font-mono text-[10px] text-brass">
@@ -817,7 +817,7 @@ export default function DraftTab({ id, onOpen, onReview, onJump }: TabProps) {
       </div>
 
       {/* Right 5 Cols: Persistent Authority Lock Gate */}
-      <div className="lg:col-span-5">
+      <div className="min-w-0 lg:col-span-5">
         <AuthorityLock id={id} onOpen={onOpen} verifiedSample={verifiedSample} />
       </div>
     </div>

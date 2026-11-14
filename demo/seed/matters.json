@@ -43,11 +43,11 @@
   "created_by": "junior_2",
   "client_name": "Anthony Dsouza",
   "opposite_party": "Coastal Motors Pvt. Ltd.",
-  "summary": "New SUV developed repeated gearbox failure within warranty; dealer refused replacement.",
+  "summary": "Single job card; warranty scope disputed; no expert report.",
   "documents": [
    {
     "filename": "job_cards_and_invoice.txt",
-    "text": "The complainant purchased the vehicle under tax invoice dated 14 October 2025 for Rs. 14,20,000 and paid through bank loan EMI.\nJob cards dated 03 December 2025, 19 January 2026 and 02 April 2026 record the same gearbox defect within the warranty period.\nThe complainant raised a complaint to the seller by email and customer care ticket number CM-77821.\nThe dealer replied that the defect was due to driving habits, which the complainant disputes.\nAn independent expert report dated 10 May 2026 confirms a manufacturing defect in the transmission."
+    "text": "The complainant purchased the vehicle under tax invoice dated 14 October 2025 for Rs. 14,20,000.\nOne job card dated 02 April 2026 records a gearbox noise; the dealer says it is normal wear.\nThe warranty booklet was not produced and the dealer says the transmission was excluded.\nNo independent expert has examined the vehicle yet."
    }
   ],
   "voice": {
@@ -107,11 +107,11 @@
   "created_by": "junior_1",
   "client_name": "Rekha Gauns",
   "opposite_party": "Suresh Gauns",
-  "summary": "Wife and minor child deserted; respondent earns from a mining transport business.",
+  "summary": "Customary marriage denied; no income or expense records yet.",
   "documents": [
    {
     "filename": "maintenance_brief.txt",
-    "text": "The applicant is the legally wedded wife of the respondent; the marriage proof and birth certificate of the child are on record.\nThe respondent stopped paying household expenses and deserted the applicant in April 2026, amounting to neglect or refusal to maintain.\nThe respondent's income from a truck transport business is about Rs. 85,000 per month as per bank statement extracts.\nSchool fees and medical bills for the child are annexed as expenses proof."
+    "text": "Marriage is claimed under customary rites; no marriage certificate or photographs are on record and the respondent denies the marriage.\nThe applicant says the respondent stopped visiting in April 2026 but there is no written demand for maintenance.\nThe respondent's income is not known; he is said to run a transport business but no bank or GST records have been obtained.\nNo school fee receipts or medical bills have been collected yet."
    }
   ],
   "voice": null,
@@ -136,11 +136,11 @@
   "created_by": "senior_1",
   "client_name": "Joel Fernandes (through mother)",
   "opposite_party": "Driver, Owner and Oriental Insurance Co.",
-  "summary": "17-year-old pillion rider suffered 40% permanent disability after a speeding bus hit the scooter.",
+  "summary": "No FIR, no medical bills; liability disputed by insurer.",
   "documents": [
    {
     "filename": "mact_record.txt",
-    "text": "FIR No. 112/2026 was registered at Margao Town police station on 09 July 2026 against the bus driver for rash and negligent driving.\nMedical records and a discharge summary from Goa Medical College show compound fracture of the right femur.\nA disability certificate issued by the medical board assesses 40% permanent disability of the right lower limb.\nThe insurance policy of the offending bus with Oriental Insurance was valid on the date of accident.\nThe claimant was a student; income proof of the parents is filed."
+    "text": "No FIR was registered; only a station diary entry was made at Margao Town police station on 09 July 2026.\nThe claimant was treated at a private clinic; no discharge summary or hospital bills were kept.\nThe disability assessment by the medical board is still pending.\nThe insurer says the bus permit had lapsed on the date of accident and disputes liability.\nThe claimant was a student; the parents have not filed income proof."
    }
   ],
   "voice": null,
@@ -163,11 +163,11 @@
   "created_by": "junior_2",
   "client_name": "Ramesh Velip",
   "opposite_party": "Goa Ferro Alloys Ltd.",
-  "summary": "Machine operator with 6 years' service terminated without notice or retrenchment compensation.",
+  "summary": "Oral casual engagement, under 240 days, no written termination.",
   "documents": [
    {
     "filename": "termination_papers.txt",
-    "text": "The workman was issued an appointment letter dated 01 June 2019 as machine operator.\nAttendance records show continuous service of more than 240 days in each of the last five years.\nA termination order dated 30 August 2025 was issued without one month's notice or retrenchment compensation under Section 25F.\nSalary slips and PF statements up to August 2025 are on record.\nConciliation before the Assistant Labour Commissioner failed and a failure report was issued."
+    "text": "The workman was engaged orally as a casual helper; no appointment letter was issued.\nMuster rolls obtained cover only 170 days of work in 2025, short of 240 days in the preceding twelve months.\nHe was told verbally on 30 August 2025 not to report for work; no written order exists.\nWages were paid in cash; no salary slips or PF records are available.\nNo conciliation has been attempted; no dispute is pending before the Labour Commissioner."
    }
   ],
   "voice": null,
@@ -185,16 +185,16 @@
   "state": "Goa",
   "court_seat": "Goa",
   "forum_hint": "Bombay High Court at Goa",
-  "cause_date": "2026-02-10",
+  "cause_date": "2019-02-10",
   "client_language": "en",
   "created_by": "senior_1",
   "client_name": "Dr. Asha Prabhu",
   "opposite_party": "State of Goa & Directorate of Health Services",
-  "summary": "Medical officer superseded in promotion; junior officers promoted contrary to recruitment rules.",
+  "summary": "Seven-year delay, no representation, rules not obtained.",
   "documents": [
    {
     "filename": "service_record.txt",
-    "text": "The impugned order dated 10 February 2026 promoted three officers junior to the petitioner.\nThe petitioner submitted a representation to the Secretary, Health on 25 February 2026 which remains undecided.\nThe service record and seniority list of 2024 show the petitioner at serial no. 4.\nThe recruitment rules require promotion on seniority-cum-merit.\nSimilarly placed comparator officers with lower ACR grading were promoted."
+    "text": "The impugned promotion list dated 10 February 2019 promoted three officers junior to the petitioner.\nThe petitioner did not make any representation and approached counsel only in 2026, after about seven years.\nThe 2024 seniority list could not be traced; the petitioner relies on memory of his position.\nThe applicable recruitment rules have not been obtained."
    }
   ],
   "voice": null,
@@ -244,11 +244,11 @@
   "created_by": "junior_1",
   "client_name": "Comunidade de Taleigão",
   "opposite_party": "Ganesh Shirodkar",
-  "summary": "Arrears of ground rent and sub-letting of a leased comunidade plot.",
+  "summary": "Oral tenancy, no quit notice, arrears records incomplete.",
   "documents": [
    {
     "filename": "lease_and_arrears.txt",
-    "text": "The respondent holds the plot under a registered lease deed dated 1998 from the comunidade.\nA notice to quit under section 106 of the Transfer of Property Act was served on 05 January 2024.\nArrears of rent of Rs. 1,86,000 remain unpaid since 2021.\nThe respondent has sub-let part of the premises to a hardware shop without written consent.\nRent receipts up to 2020 are on record."
+    "text": "The respondent occupies the plot under an oral arrangement with the comunidade; no lease deed was executed.\nNo notice terminating the tenancy has been issued so far.\nThe comunidade says rent has not been paid since 2021 but its register for those years is incomplete.\nNo rent receipts or ledger extracts have been located."
    }
   ],
   "voice": {
@@ -303,11 +303,11 @@
   "created_by": "junior_2",
   "client_name": "Maria Pereira (executor)",
   "opposite_party": "Legal heirs of A. Pereira",
-  "summary": "Executor seeks probate; one heir alleges suspicious circumstances.",
+  "summary": "Original will lost; attesting witnesses dead; heirs object.",
   "documents": [
    {
     "filename": "probate_papers.txt",
-    "text": "The death certificate records the death of Antonio Pereira on 18 June 2025 at Margao.\nThe last will dated 02 February 2023 bequeaths the Benaulim property to the petitioner.\nTwo attesting witnesses signed the will and one attesting witness is available to depose.\nProperty records including Form I & XIV and bank account statements are annexed.\nOne heir has not given a no-objection and alleges the testator was unwell."
+    "text": "The death certificate records the death of Antonio Pereira on 18 June 2025 at Margao.\nOnly a photocopy of the will dated 02 February 2023 is available; the original could not be traced.\nBoth attesting witnesses have since died; only the scribe is available.\nForm I & XIV extracts for the property are annexed.\nTwo heirs object and produce a doctor's note that the testator was hospitalised in January 2023."
    }
   ],
   "voice": null,
@@ -330,11 +330,11 @@
   "created_by": "senior_1",
   "client_name": "Konkan Spice Co.",
   "opposite_party": "Spyce Konkan Foods",
-  "summary": "Deceptively similar mark and trade dress on masala packets sold in Goa and Karnataka.",
+  "summary": "Unregistered mark, recent use only, no trap purchase.",
   "documents": [
    {
     "filename": "ip_evidence.txt",
-    "text": "The plaintiff holds a registration certificate for the word mark KONKAN SPICE in Class 30.\nInvoices from 2009 onward establish prior use and goodwill in Goa.\nA trap purchase on 02 May 2026 produced infringing packets with a deceptively similar mark.\nAnnual sales figures exceed Rs. 3 crore with advertisement expenses on record.\nA cease and desist notice was sent on 10 May 2026 and ignored."
+    "text": "The plaintiff's application for the mark KONKAN SPICE is pending; no registration has been granted.\nThe oldest invoice on file is from March 2025; earlier use is asserted only orally.\nThe defendant's packets were seen in a shop but no trap purchase or sample was preserved.\nSales and advertisement records have not been compiled."
    }
   ],
   "voice": null,
@@ -357,11 +357,11 @@
   "created_by": "junior_2",
   "client_name": "Dattaram Salgaonkar",
   "opposite_party": "Mahesh Ghanekar",
-  "summary": "Plaintiff in possession under an unregistered agreement of sale with payment trail.",
+  "summary": "Unregistered, unstamped agreement; cash payments without receipts.",
   "documents": [
    {
     "filename": "property_record.txt",
-    "text": "The plaintiff entered possession on 12 May 2014 under an agreement of sale which is not registered.\nStamp duty was paid on the agreement as per the stamp office receipt.\nElectricity bills and house tax receipts in the plaintiff's name show possession since 2014.\nThe Form I & XIV extract still shows the defendant's father as occupant.\nPayment trail to seller of Rs. 9,00,000 through bank transfers is on record."
+    "text": "The plaintiff entered possession on 12 May 2014 under an agreement of sale which is not registered.\nStamp duty was not paid on the agreement.\nElectricity bills in the plaintiff's name show occupation only from 2022.\nThe Form I & XIV extract still shows the defendant's father as occupant.\nThe plaintiff says Rs. 9,00,000 was paid in cash; no receipts or bank records exist."
    }
   ],
   "voice": null,
@@ -411,11 +411,11 @@
   "created_by": "student_1",
   "client_name": "Ramesh (moot)",
   "opposite_party": "Sunil (moot)",
-  "summary": "Moot problem on whether a security cheque attracts s.138 liability.",
+  "summary": "Demand notice sent after 30 days with no postal proof.",
   "documents": [
    {
     "filename": "moot_problem.txt",
-    "text": "Sunil issued a cheque to Ramesh as security for a friendly loan of Rs. 2,00,000.\nThe cheque was presented and returned with the memo funds insufficient on 01 August 2026.\nRamesh issued a demand notice under section 138 within 30 days.\nSunil claims the cheque was a security cheque and no legally enforceable debt existed on the date of presentation."
+    "text": "Sunil issued a cheque to Ramesh as security for a friendly loan of Rs. 2,00,000.\nThe cheque was presented and returned with the memo funds insufficient on 01 August 2026.\nRamesh sent a letter asking for payment on 20 September 2026, 50 days after receiving the return memo.\nThere is no postal receipt or acknowledgment for that letter.\nSunil claims the cheque was a security cheque and no legally enforceable debt existed on the date of presentation."
    }
   ],
   "voice": null,
@@ -524,11 +524,11 @@
   "created_by": "senior_b",
   "client_name": "Anjali Kulkarni",
   "opposite_party": "Rahul Kulkarni",
-  "summary": "Wife seeks interim maintenance; husband is a software engineer in Pune.",
+  "summary": "Income claim undocumented; Rajnesh affidavit pending.",
   "documents": [
    {
     "filename": "maintenance_note.txt",
-    "text": "Marriage proof is on record and the parties have one child.\nThe respondent stopped sending money from March 2026, amounting to neglect or refusal to maintain.\nThe respondent's salary is Rs. 1,80,000 per month as per salary slips.\nAn income and asset affidavit in the Rajnesh format is filed by the applicant."
+    "text": "Marriage proof is on record and the parties have one child.\nThe respondent stopped sending money from March 2026, amounting to neglect or refusal to maintain.\nThe respondent is self-employed; his claimed income of Rs. 1,80,000 per month is not supported by any document.\nThe income and asset affidavit has not been filed yet."
    }
   ],
   "voice": null,

@@ -201,3 +201,14 @@ API changes. All are additive, so nothing existing breaks.
   - Whisper is not trained on Konkani, so Konkani audio may be transcribed in Devanagari Marathi. The translation step uses a land-law glossary (bhatkar = landowner, mundkar = protected occupant).
 - **Precedent results** (both `POST /precedents/search` results and matter `search` docs): new `issue` field, a one-line legal question written per judgment. Show it as the card subtitle and the holding (`headnote`) under it.
 - **Matter precedents** (`GET /matters/{id}/precedents` `results[]`): new `issue` and `holding` fields per card.
+
+## Update 3 (integration with fe/workbench-improvements)
+
+Found by the integrated Playwright walkthrough (`e2e/walkthrough.py`); all backward compatible.
+
+- **`review.delete` permission** (senior, junior) is now in `/v1/me` `permissions`. The review drawer checks `can('review.<action>')`, so fact deletion was disabled for everyone before. The backend maps the `delete` review action to it.
+- **`LedgerEntry.action`** may now be `"delete"`. Before, one sealed fact deletion made `GET /v1/ledger` return 500 for the whole chamber.
+- **`POST /matters/{id}/draft/regenerate`**: `draft_type` is optional (empty or omitted keeps the current instrument).
+- **DraftTab mobile**: the two grid columns and the citation-chip row got `min-w-0` (the preview pushed the page to 481px at a 390px viewport).
+- **Demo data**: 14 fictional seed records were rewritten with realistic gaps. Bands are now 11 strong, 8 uncertain and 5 weak (previously 18, 5 and 1). The prediction model, thresholds and priors are unchanged. Run `python3 -I backend/scripts/rebuild_demo.py` to push the edited seed text into an existing DB.
+- **Proof-ledger negation**: "short of 240 days", "could not be traced", "have not been obtained" and "witnesses have since died" no longer count as evidence present.

@@ -4,11 +4,13 @@ from __future__ import annotations
 import json
 import os
 import threading
+from pathlib import Path
 from typing import Any
 
 from app.config import ML_DIR
 
-CORPUS_PATH = ML_DIR / "data" / "precedent_corpus.json"
+# INSAAF_CORPUS_PATH lets tests (and experiments) write to a scratch copy instead of the committed corpus.
+CORPUS_PATH = Path(os.environ.get("INSAAF_CORPUS_PATH") or ML_DIR / "data" / "precedent_corpus.json")
 _lock = threading.Lock()
 
 # Statutes and landmark authorities the rule packs cite by document id. Text is the operative

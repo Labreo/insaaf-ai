@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Clean demo start: backend on :8000 (DEMO_MODE=true serves cached Kanoon results first), health gate, baseline reset.
-# Usage: backend/scripts/start_demo.sh            (then, in another terminal: cd frontend && npm run build && npm run preview -- --port 5173)
+# Clean demo start: backend on :8000 (DEMO_MODE=true replays cached analysis; precedent index is local), health gate, baseline reset.
+# Usage: backend/scripts/start_demo.sh            (then, in another terminal: cd frontend && npm run build && npm run preview -- --port 4173)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT="${PORT:-8000}"

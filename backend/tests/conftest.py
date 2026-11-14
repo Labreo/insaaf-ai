@@ -27,6 +27,18 @@ DEMO_PASSWORDS = {
 os.environ["INSAAF_DEMO_PASSWORDS"] = __import__("json").dumps(DEMO_PASSWORDS)
 DEMO_PASSWORD = DEMO_PASSWORDS["senior_1"]
 
+# The live web sweep adds fetched judgments to the corpus; point it at a scratch copy so test runs
+# never modify the committed ml/data/precedent_corpus.json.
+if not os.environ.get("INSAAF_CORPUS_PATH"):
+    import shutil
+    import tempfile
+
+    _corpus_src = BACKEND_DIR.parent / "ml" / "data" / "precedent_corpus.json"
+    _corpus_tmp = Path(tempfile.mkdtemp(prefix="insaaf_corpus_")) / "precedent_corpus.json"
+    if _corpus_src.exists():
+        shutil.copyfile(_corpus_src, _corpus_tmp)
+    os.environ["INSAAF_CORPUS_PATH"] = str(_corpus_tmp)
+
 
 def pytest_addoption(parser):
     parser.addoption("--run-slow", action="store_true", default=False, help="run tests that compute live analysis stages")
