@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -10,6 +11,8 @@ import httpx
 
 from app.config import settings
 from app.db import compute_entry_hash, db_session
+
+_SOLANA_HEALTH_CACHE: dict[str, Any] = {"ts": 0.0, "blockhash": None}
 
 
 def compute_merkle_root(hashes: list[str]) -> str:
@@ -27,9 +30,12 @@ def compute_merkle_root(hashes: list[str]) -> str:
 
 
 async def check_solana_devnet_health() -> str | None:
-    """Fetch latest finalized Solana Devnet blockhash/slot as live chain anchor proof."""
+    """Fetch latest finalized Solana Devnet blockhash/slot as live chain anchor proof (60s TTL cache)."""
+    now = time.monotonic()
+    if _SOLANA_HEALTH_CACHE["ts"] > 0.0 and (now - float(_SOLANA_HEALTH_CACHE["ts"])) < 60.0:
+        return _SOLANA_HEALTH_CACHE["blockhash"]
     try:
-        async with httpx.AsyncClient(timeout=3.5) as client:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             r = await client.post(
                 settings.solana_rpc_url,
                 json={"jsonrpc": "2.0", "id": 1, "method": "getLatestBlockhash"},
@@ -38,10 +44,13 @@ async def check_solana_devnet_health() -> str | None:
                 data = r.json()
                 bh = data.get("result", {}).get("value", {}).get("blockhash")
                 if bh:
+                    _SOLANA_HEALTH_CACHE["ts"] = now
+                    _SOLANA_HEALTH_CACHE["blockhash"] = bh
                     return bh
     except Exception:
         pass
-    return None
+    _SOLANA_HEALTH_CACHE["ts"] = now
+    return _SOLANA_HEALTH_CACHE["blockhash"]
 
 
 def append_ledger_entry(

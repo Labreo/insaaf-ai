@@ -419,6 +419,7 @@ class DraftParagraph(BaseModel):
     confidence: Confidence
     sources: list[SourceRef] = Field(default_factory=list)
     locked_out_claim: Optional[str] = None
+    edited_by: Optional[str] = None
 
 
 class Draft(BaseModel):

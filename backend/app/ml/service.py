@@ -79,6 +79,9 @@ def mask_identity_markers(text: str) -> str:
     return masked
 
 
+_MODEL_CACHE: dict[str, Any] = {"sig": None, "bundle": None, "meta": None}
+
+
 def _ensure_model_loaded() -> tuple[dict[str, Any], dict[str, Any]]:
     if not MODEL_PATH.exists() or not META_PATH.exists():
         import sys
@@ -88,6 +91,9 @@ def _ensure_model_loaded() -> tuple[dict[str, Any], dict[str, Any]]:
         from train_b_score import train_and_save
 
         train_and_save()
+    sig = (MODEL_PATH.stat().st_mtime_ns, META_PATH.stat().st_mtime_ns)
+    if _MODEL_CACHE["sig"] == sig and _MODEL_CACHE["bundle"] is not None and _MODEL_CACHE["meta"] is not None:
+        return _MODEL_CACHE["bundle"], _MODEL_CACHE["meta"]
     bundle = joblib.load(MODEL_PATH)
     meta = json.loads(META_PATH.read_text(encoding="utf-8"))
     # F10: artifacts trained before a court was added lack its prior; merge the
@@ -95,6 +101,7 @@ def _ensure_model_loaded() -> tuple[dict[str, Any], dict[str, Any]]:
     hierarchy = meta.setdefault("court_hierarchy", {})
     for name, info in _canonical_court_hierarchy().items():
         hierarchy.setdefault(name, info)
+    _MODEL_CACHE.update({"sig": sig, "bundle": bundle, "meta": meta})
     return bundle, meta
 
 
@@ -274,16 +281,29 @@ def compute_bias_firewall_and_score(
 
     slot_names = list(registry.area(matter["case_type"]).get("ml_slots", []))[:5]
     reqs = [it["requirement"] for it in proof_ledger.get("items", [])]
+    used_reqs: set[str] = set()
 
     def _req_for(substr: str) -> str:
-        return next((r for r in reqs if substr and substr in r.lower()), substr.title() if substr else "Evidence")
+        if substr:
+            unused = next((r for r in reqs if substr in r.lower() and r not in used_reqs), None)
+            if unused:
+                used_reqs.add(unused)
+                return unused
+            matched = next((r for r in reqs if substr in r.lower()), None)
+            if matched:
+                return matched
+        return substr.title() if substr else "Evidence"
 
     slot_feats = ["registered_deed_present", "stamp_duty_paid", "possession_evidence", "revenue_record_form_1_14", "payment_trail"]
+    seen_labels: set[str] = set()
     for f_name, slot in list(zip(slot_feats, slot_names))[:3]:
         val = base_feats[f_name]
         w = coeffs.get(f_name, 0.5)
         req = _req_for(slot)
         lbl = f"{req}: on record" if val >= 1.0 else (f"{req}: weak" if val >= 0.5 else f"{req}: missing")
+        if lbl in seen_labels:
+            continue
+        seen_labels.add(lbl)
         factor_items.append({"name": lbl, "effect": round((val - 0.5) * w * 0.28, 2)})
     for f_name in ("precedent_support_ratio", "within_limitation"):
         val = base_feats[f_name]
