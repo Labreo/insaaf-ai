@@ -1,6 +1,6 @@
 {
 "version": 1,
-"count": 1485,
+"count": 1493,
 "judgments": [
 {
 "doc_id": "100250207",
@@ -14341,6 +14341,27 @@
 "summary_v2": true
 },
 {
+"doc_id": "121294358",
+"title": "Sunita Sinha vs M/S Leela Builders Pvt Ltd & Ors on 17 ...",
+"court": "",
+"state": "",
+"seat": "",
+"bench": "",
+"date": "2026-04-17",
+"headnote": "15 Lacs categorically stated that the balance sale consideration shall be paid at the time of registration of sale deed. Additionally, the ...",
+"holding": "",
+"statutes": [],
+"outcome": "unknown",
+"url": "https://indiankanoon.org/doc/121294358/",
+"verified": true,
+"practice_areas": [
+"property"
+],
+"paragraph_count": 0,
+"kind": "judgment",
+"source": "web_sweep"
+},
+{
 "doc_id": "121705854",
 "title": "Chief District Medical & Public Health ... vs Sanjib Kumar Asha on 16 October, 2026",
 "court": "Orissa High Court",
@@ -16058,6 +16079,99 @@
 "holding_summary": "The operative text does not contain a final ruling on the petitioner.",
 "issue": "Eviction under Section 11 of Bihar Buildings Control Act, 1947",
 "summary_v2": true
+},
+{
+"doc_id": "124573801",
+"title": "Sudesh vs Subhash And Ors on 27 September, 2025",
+"court": "Delhi District Court",
+"state": "",
+"seat": "",
+"bench": "",
+"date": "2025-09-27",
+"headnote": "1. Smt. Sudesh W/o Late Sh. Ravinder Kumar R/o VPO- Singhola, New Delhi-40 ............Plaintiff 1. Sh. Subhash s/o Late Sh. Azad Singh R/o VPO Singhola, New Delhi-40. 2. Sh. Parveen Kumar Chhabara s/o Late Sh. S.L. Chhabra R/o B7-125A, Safdarjung Enclave Extension, New Delhi-29.",
+"holding": "30. Consequently, let the copy of the order be sent to concerned Sub- 31. Decree sheet be prepared accordingly. File be consigned to record room. Announced in open Court Digitally signed by on 27.09.2025 at 12:30 PM. AANCHAL AANCHAL Date: 2025.09.27 16:37:35 +0530 (Aanchal) District Judge-03 North District, Rohini Courts, Delhi 27.09.2025 (ak)",
+"statutes": [
+"Registration Act s.17"
+],
+"outcome": "unknown",
+"url": "https://indiankanoon.org/doc/124573801/",
+"verified": true,
+"practice_areas": [
+"property"
+],
+"paragraph_count": 129,
+"kind": "judgment",
+"paras": [
+{
+"n": 1,
+"text": "1. Smt. Sudesh W/o Late Sh. Ravinder Kumar R/o VPO- Singhola, New Delhi-40 ............Plaintiff"
+},
+{
+"n": 2,
+"text": "1. Sh. Subhash s/o Late Sh. Azad Singh R/o VPO Singhola, New Delhi-40."
+},
+{
+"n": 3,
+"text": "2. Sh. Parveen Kumar Chhabara s/o Late Sh. S.L. Chhabra R/o B7-125A, Safdarjung Enclave Extension, New Delhi-29."
+},
+{
+"n": 31,
+"text": "All the defendants were served but Defendant No. 1 failed to appear before Hon'ble High Court of Delhi and written statement is also not filed by defendant No. 1, so he was held liable to be proceeded ex-parte vide order dated 24.08.2015 passed by Ld. Joint Registrar (Judicial)."
+},
+{
+"n": 32,
+"text": "4. Written statement is filed by defendant No. 2 wherein denying all the allegations made by the plaintiff, it is preliminarily objected that suit of the plaintiff is not maintainable under Section 34 of the Specific Relief Act as plaintiff is not in possession of suit property and plaintiff has no locus standi to file the present suit as the forged documents are basis of plaintiff for claiming relief. It is also submitted that :-"
+},
+{
+"n": 33,
+"text": "(a) The plaintiff is not entitled to the relief claimed in the suit since all the documents purported to be the basis for claiming the relief from this Court are forged, manipulated and could never convey the title to the plaintiff or he predecessor in interest and therefore the plaintiff has no locus standi to file the present suit and to claim the relief as claimed in the present suit."
+},
+{
+"n": 34,
+"text": "(b) The defendant no. 1 was the owner/bhumidar of Khasra No. 38/6 and 38/15 in Village Singhola, Delhi in pre-consolidation proceedings. In march 1997, consolidation proceedings commenced in the village Singhola, thereafter repartition was done under East Punjab Holdings (Consolidation and Prevention of Fragmentation) Act . 1948 under Section 21(1), which proceedings took place between 26.05.1997 to 06.06.1997. However, these CS No. 1646/2016 Sudesh Vs. Subhash & Ors Page: 7 of 31 Digitally signed by AANCHAL AANCHAL Date:"
+},
+{
+"n": 46,
+"text": "(3) Whether the suit for declaration is not maintainable under Section 34 of the Specific Relief Act ? OPD-2."
+},
+{
+"n": 47,
+"text": "7. Plaintiff was given opportunity to lead evidence and on 26.09.2018, affidavit of Sh. Dayanand as PW-1 is filed in Suit No. 1644/2016. On 26.09.2018, Ld. Predecessor of this Court allowed the affidavit of PW-1 filed in Suit No. 1644/2016, to be read in all the seven cases and only the photocopy of the affidavit was kept in other cases including the present one. None appeared for defendant No. 2 for cross-examining PW-1 and thereafter, accordingly, defendant No. 2 was proceeded ex-parte vide order dated 17.11.2018 passed by Ld. Predecessor of this Court whereas cross-examination of PW-1 condu"
+},
+{
+"n": 65,
+"text": "The onus to prove this issue lies upon defendant No. 2 but neither defendant No. 2 appeared to lead the evidence nor any cross- examination of witnesses produced by plaintiff on behalf of defendant No. 2 was conducted. Therefore, all the facts relevant to prove this issue remained not proved and consequently, this issue is decided against the defendant No. 2."
+},
+{
+"n": 66,
+"text": "Whether the suit for declaration is not maintainable under Section 34 of the Specific Relief Act ? OPD-2."
+},
+{
+"n": 67,
+"text": "The onus to prove this issue lies upon defendant No. 2 but neither defendant No. 2 appeared to lead the evidence nor any cross- examination of witnesses produced by plaintiff on behalf of defendant No. 2 was conducted. Therefore, all the facts relevant to prove this issue remained not proved and consequently, this issue is decided against the defendant No. 2."
+},
+{
+"n": 69,
+"text": "The onus to prove this issue lies upon the plaintiff. The relief of grant of declaration is discretionary and Section 34 of Specific Relief Act, 1963 provides for discretion of Courts as to the declaration of status or right. It reads as under :-"
+},
+{
+"n": 80,
+"text": "\"18. It would be appropriate to advert to Sections 34 and 41(h) of the 1963 Act. A perusal of Section 34 would reveal that any person claiming title to legal character or to any right as to any property is entitled to institute a suit against any other person who is denying or interested in denying his right or title to such proceedings. The use of expression 'any right as to any property' is very wide because it shows that it is not necessary for the plaintiff to claim any right in the property and it would be enough if the right he claimed is related to the property in question."
+},
+{
+"n": 126,
+"text": "30. Consequently, let the copy of the order be sent to concerned Sub-"
+},
+{
+"n": 127,
+"text": "31. Decree sheet be prepared accordingly. File be consigned to record room."
+},
+{
+"n": 128,
+"text": "Announced in open Court Digitally signed by on 27.09.2025 at 12:30 PM. AANCHAL AANCHAL Date: 2025.09.27 16:37:35 +0530 (Aanchal) District Judge-03 North District, Rohini Courts, Delhi 27.09.2025 (ak)"
+}
+],
+"source": "web_sweep"
 },
 {
 "doc_id": "124655100",
@@ -48620,6 +48734,27 @@
 "summary_v2": true
 },
 {
+"doc_id": "170443277",
+"title": "Gayatri Devi vs Ajay Kumar Sharma on 18 October, 2025",
+"court": "",
+"state": "",
+"seat": "",
+"bench": "",
+"date": "2025-10-18",
+"headnote": "Plaintiff is claiming ownership of the suit property on the basis of unregistered GPA, Agreement to Sell, Affidavit and Receipt. Any contract ...",
+"holding": "",
+"statutes": [],
+"outcome": "unknown",
+"url": "https://indiankanoon.org/doc/170443277/",
+"verified": true,
+"practice_areas": [
+"property"
+],
+"paragraph_count": 0,
+"kind": "judgment",
+"source": "web_sweep"
+},
+{
 "doc_id": "170586386",
 "title": "Deependra Chauhan vs Phool Kumari Chauhan And 4 Others on 13 November, 2025",
 "court": "Allahabad High Court",
@@ -49192,6 +49327,27 @@
 "holding_summary": "The court orders the respondents to deposit the compensation and allows them to withdraw it after verification, thereby allowing the claim of the respondents.",
 "issue": "Insurance policy validity under SARFAESI Act",
 "summary_v2": true
+},
+{
+"doc_id": "1720149",
+"title": "(Cherukuri) Venkataratnam vs Bola Guravayya And Ors. on ...",
+"court": "",
+"state": "",
+"seat": "",
+"bench": "",
+"date": "",
+"headnote": "a registered title could not prevail over a prior oral sale after payment of price and delivery of possession, with notice to the subsequent buyer. ...",
+"holding": "",
+"statutes": [],
+"outcome": "unknown",
+"url": "https://indiankanoon.org/doc/1720149/",
+"verified": true,
+"practice_areas": [
+"property"
+],
+"paragraph_count": 0,
+"kind": "judgment",
+"source": "web_sweep"
 },
 {
 "doc_id": "172028003",
@@ -50582,6 +50738,101 @@
 "summary_v2": true
 },
 {
+"doc_id": "173841888",
+"title": "Hari Singh vs Munna Rawat on 30 March, 2026",
+"court": "Delhi District Court",
+"state": "",
+"seat": "",
+"bench": "",
+"date": "2026-03-30",
+"headnote": "IN THE COURT OF SH AKBAR SIDDIQUE, DISTRICT JUDGE 04, NORTH DISTRICT ROHINI COURTS : DELHI CS DJ/1541/16 CNR no. DLNT010057442016 1. HARI SINGH S/O SH. NAWAL SINGH R/O GALI NO.4, RADHA VIHAR MUKAND PUR PART-II, DELHI-110042 ...........Plaintiff Versus 1. MUNNA RAWAT S/O SH. SUDAMA RAWAT R/O GALI NO.5, RADHAV VIHAR MUKUND PUR, DELHI 2. BABLU S/O SH. REWATI PRASAD R/O KHASRA NO. 117/3 GALI NO.7, RADHA VIHAR MUKUND PUR DELHI-42. ........Defendants Date of Institution 09.05.2016 Date of Final Arguments 11.03.2026 Heard Date of Pronouncement of 30.03.2026 Judgment 1. By way of this judgment, I shall decide the present suit filed by the Plaintiff seeking following reliefs: - a) Pass a decree of possession in favor of the Plaintiff and against the Defendants, directing the Defendants to hand over possession of the suit property i.e. Built up house property measuring 25 sq. yards, out of plot of",
+"holding": "10.1. On the basis of above discussion the suit of the Plaintiff is dismissed. 10.4. File be consigned to record room as per rules after necessary compliances. Digitally signed by AKBAR AKBAR SIDDIQUE SIDDIQUE Date: 2026.03.30 15:59:02 +0530 Announced in open (Akbar Siddique) Court on 30.03.2026 DJ-04, North, Rohini Courts, Delhi/30.03.2026 CS DJ No. 1541/16 HARI SINGH Vs MUNNA RAWAT & ANR Page NO. 47/47",
+"statutes": [
+"Limitation Act",
+"NI Act s.138",
+"Registration Act s.17"
+],
+"outcome": "unknown",
+"url": "https://indiankanoon.org/doc/173841888/",
+"verified": true,
+"practice_areas": [
+"property"
+],
+"paragraph_count": 142,
+"kind": "judgment",
+"paras": [
+{
+"n": 1,
+"text": "IN THE COURT OF SH AKBAR SIDDIQUE, DISTRICT JUDGE 04, NORTH DISTRICT ROHINI COURTS : DELHI CS DJ/1541/16 CNR no. DLNT010057442016 1. HARI SINGH S/O SH. NAWAL SINGH R/O GALI NO.4, RADHA VIHAR MUKAND PUR PART-II, DELHI-110042 ...........Plaintiff Versus 1. MUNNA RAWAT S/O SH. SUDAMA RAWAT R/O GALI NO.5, RADHAV VIHAR MUKUND PUR, DELHI 2. BABLU S/O SH. REWATI PRASAD R/O KHASRA NO. 117/3 GALI NO.7, RADHA VIHAR MUKUND PUR DELHI-42. ........Defendants Date of Institution 09.05.2016 Date of Final Arguments 11.03.2026 Heard Date of Pronouncement of 30.03.2026 Judgment"
+},
+{
+"n": 2,
+"text": "1. By way of this judgment, I shall decide the present suit filed by the Plaintiff seeking following reliefs: -"
+},
+{
+"n": 3,
+"text": "a) Pass a decree of possession in favor of the Plaintiff and against the Defendants, directing the Defendants to hand over possession of the suit property i.e. Built up house property measuring 25 sq. yards, out of plot of 50 sq. CS DJ No. 1541/16 HARI SINGH Vs MUNNA RAWAT & ANR Page NO. 1/47 yards, out of Khasra no.117/3, situated in Gali no.7, Radha Vihar, in the area of village Mukund Pur, Delhi"
+},
+{
+"n": 11,
+"text": "2.5. It is averred by the Plaintiff in the plaint that in the facts and circumstances as narrated herein above the Plaintiff sold half CS DJ No. 1541/16 HARI SINGH Vs MUNNA RAWAT & ANR Page NO. 4/47 portion of the said plot to one Sh. Bhola Sahu and the funds generated from the said sale proceed were spent by the Plaintiff on the construction of the remaining 25 sq. yards i.e. suit property as such the Plaintiff has made construction over the suit property and the suit property was constructed at the ground floor and a latrine and bathroom was constructed on the roof of up to first floor. It i"
+},
+{
+"n": 17,
+"text": "2.11. It is averred by the Plaintiff in the plaint that on 13/04/2014 when the Plaintiff had gone on pilgrimage to Balaji in the state of Rajasthan, the Defendant no.1 and 2 had forcibly entered in to the suit property and occupied the same. On coming to know about the said fact the Plaintiff has made a proper police complaint which was recorded as DD No.48B with the police station of Bhalswa Diary and again on 22/04/2014 with D.D.No.29A with Bhalswa Dairy and thereafter many complaints has been made in this regard. It is pertinent to mention that on the complaints of the Plaintiff, the Defend"
+},
+{
+"n": 33,
+"text": "4.8It is averred by Defendant no 2 in his written statement that the plaintiff cannot seek the relief of possession on the basis of the un-registered documents which are must be registered as per Section 17 of the Registration Act, 1908. Due the effect of the Section 49 of the Registration Act, 1908, the unregistered documents cannot be admitted in evidence. The title documents of the plaintiff are liable to be impounded under section 33 of the Indian Stamp Act, 1899."
+},
+{
+"n": 59,
+"text": "8.4. It is further contended by the Ld. Counsel that the defendant no 1 in order to discharge his liability towards the making the payment of Sale Consideration of remaining ₹12,00,000/- tendered Cheque of ₹12,00,000/- to the Plaintiff which were dishonored on account of insufficient funds. The Plaintiff filed complaint under Section 138 Negotiable Instruments Act against the Defendant no 1."
+},
+{
+"n": 60,
+"text": "8.5. It is the case of the Plaintiff that on 13.04.2014, while the Plaintiff was on religious pilgrimage to Balaji, Defendant no 1 and 2 finding the suit property vacant and locked, break entered the suit property without any intimation behind his back. To this the Plaintiff filed Police complaint and Complaint under Section 156(3) CrPC. Consequently, Ld. Court directed the registration of FIR against the Defendants."
+},
+{
+"n": 62,
+"text": "9.2. The normal rule which governs civil proceedings is that a fact CS DJ No. 1541/16 HARI SINGH Vs MUNNA RAWAT & ANR Page NO. 22/47 can be said to be established if it is proved by preponderance of probabilities. The belief regarding the existence of a fact thus can be founded on a balance of probabilities. In the process of appreciation of evidence, the 'slight' evidence may 'tilt the balance' in Civil cases on applying the principle of 'preponderance.' Therefore, it is said that the evidence is to be weighed. In Narayan Ganesh Dastane v. Sucheta Narayan Dastane , AIR 1975 SC 1534, the Hon'b"
+},
+{
+"n": 72,
+"text": "-15/05/2014 drawn on Punjab National Bank for a sum of Rs. 12,00,000/- as a security, CS DJ No. 1541/16 HARI SINGH Vs MUNNA RAWAT & ANR Page NO. 25/47 saying that the Defendant no.1 will make the payment as soon as he is able to manage the same and in any case on or before the date mentioned on the cheque. It is pertinent to mention that the defendant no.1 also assured the Plaintiff that the Plaintiff is free to present the said cheque for encashment as per date written on the cheque. He also assured that he will maintain sufficient funds available in his account, so that the cheque under refe"
+},
+{
+"n": 74,
+"text": "9.7. At the outset, it is necessary to mention that a suit for possession may be filed on the basis of the title or the prior possession. In this regard, I have the profit of referring to the Judgment of Hon'ble High Court of Delhi, in 'Chander Dutt Sharma vs Prem Chand , 2018 SCC OnLine Del 9903, wherein the Hon'ble High Court held as follows:"
+},
+{
+"n": 76,
+"text": "(A) A suit for recovery of possession of immovable property can be filed either under Section 5 or under Section 6 of the Specific Relief Act, 1963."
+},
+{
+"n": 77,
+"text": "(i) on the basis of prior possession and not on CS DJ No. 1541/16 HARI SINGH Vs MUNNA RAWAT & ANR Page NO. 27/47 title, when the plaintiff while in possession of the property has been dispossessed, under Article 64 of the Schedule to the Limitation Act, 1963 , within twelve years from the date of dispossession; or, (ii) based on title, under Article 65 of the Schedule to the Limitation Act , within twelve year from the date when the possession of the defendant becomes adverse to the plaintiff."
+},
+{
+"n": 78,
+"text": "(C) A suit under Section 6 , can be filed if any person is dispossessed from immovable property without his consent, otherwise than in due process of law, but within six months of the date of dispossession."
+},
+{
+"n": 140,
+"text": "10.1. On the basis of above discussion the suit of the Plaintiff is dismissed."
+},
+{
+"n": 141,
+"text": "10.4. File be consigned to record room as per rules after necessary compliances. Digitally signed by AKBAR AKBAR SIDDIQUE SIDDIQUE Date:"
+},
+{
+"n": 142,
+"text": "2026.03.30 15:59:02 +0530 Announced in open (Akbar Siddique) Court on 30.03.2026 DJ-04, North, Rohini Courts, Delhi/30.03.2026 CS DJ No. 1541/16 HARI SINGH Vs MUNNA RAWAT & ANR Page NO. 47/47"
+}
+],
+"source": "web_sweep"
+},
+{
 "doc_id": "173843611",
 "title": "Neena Aneja vs Jai Prakash Associates Ltd. on 16 March, 2021",
 "court": "Supreme Court of India",
@@ -51851,6 +52102,99 @@
 "holding_summary": "The transaction is not hit by Section 23 of the Contract Act, entitling the plaintiff to recover the claimed sum with interest.",
 "issue": "Whether the transaction is hit by Section 23 of the Contract Act?",
 "summary_v2": true
+},
+{
+"doc_id": "176347662",
+"title": "Rajeev Miglani vs Urmil Gujral & Ors on 27 March, 2026",
+"court": "Delhi High Court",
+"state": "Delhi",
+"seat": "",
+"bench": "",
+"date": "2026-03-27",
+"headnote": "$~ * IN THE HIGH COURT OF DELHI AT NEW DELHI Reserved on: 16thDecember, 2025 Pronounced on: 27th March, 2026 + RFA 545/2016 RAJEEV MIGLANI .....Appellant Through: Mr. Ashim Vachher, Sr. Adv. with Ms. Saiba. M. Rajpal, Advocate (M:9910946849) versus URMIL GUJRAL & Anr. .....Respondents Through: Mr. Rajat Wadhwa, Mr. Gurpreet Singh, Ms. Anshika Juneja, Advocates for R-1 (M:9877135434) CORAM: HON'BLE MS. JUSTICE MINI PUSHKARNA JUDGEMENT 1. The present appeal has been filed under Section 96 of the Code of Civil Procedure, 1908 (\" CPC \"), against the judgment and decree dated 02nd March, 2016 (\"impugned judgment\"), passed by the Court of Additional District Judge (\"ADJ\") - 09, Tis Hazari Courts, Delhi in Suit No. 258/14 (Old Suit No. 179/06), titled as ―Smt. Urmal Gujral Versus Sh. Som Nath & Ors.‖.",
+"holding": "159. For the aforesaid reasons, no merit is found in the present appeal. The same is accordingly dismissed. Consequently, the Agreement to Sell dated 18th August, 2006 executed by respondent no. 2, Late Shri Som Nath, in favour of the appellant, i.e., Shri Rajeev Miglani, is cancelled. 160. A copy of this judgment shall be sent by the Registry of this Court to the concerned Sub-Registrar, in whose office the Agreement to Sell dated 18th August, 2006 in favour of the appellant, had been so registered. MINI PUSHKARNA, J th 27 March, 2026/AK/KR/SK Signature Not Verified RFA 545/2016 Page 86 of 86 Digitally Signed By:HARIOM SHARMA Signing Date:27.03.2026 19:53:15",
+"statutes": [
+"Limitation Act"
+],
+"outcome": "unknown",
+"url": "https://indiankanoon.org/doc/176347662/",
+"verified": true,
+"practice_areas": [
+"property"
+],
+"paragraph_count": 318,
+"kind": "judgment",
+"paras": [
+{
+"n": 1,
+"text": "$~ * IN THE HIGH COURT OF DELHI AT NEW DELHI Reserved on: 16thDecember, 2025 Pronounced on: 27th March, 2026 + RFA 545/2016 RAJEEV MIGLANI .....Appellant Through: Mr. Ashim Vachher, Sr. Adv. with Ms. Saiba. M. Rajpal, Advocate (M:9910946849) versus"
+},
+{
+"n": 2,
+"text": "URMIL GUJRAL & Anr. .....Respondents Through: Mr. Rajat Wadhwa, Mr. Gurpreet Singh, Ms. Anshika Juneja, Advocates for R-1 (M:9877135434) CORAM: HON'BLE MS. JUSTICE MINI PUSHKARNA JUDGEMENT"
+},
+{
+"n": 3,
+"text": "1. The present appeal has been filed under Section 96 of the Code of Civil Procedure, 1908 (\" CPC \"), against the judgment and decree dated 02nd March, 2016 (\"impugned judgment\"), passed by the Court of Additional District Judge (\"ADJ\") - 09, Tis Hazari Courts, Delhi in Suit No. 258/14 (Old Suit No. 179/06), titled as ―Smt. Urmal Gujral Versus Sh. Som Nath & Ors.‖."
+},
+{
+"n": 4,
+"text": "2. The aforesaid suit was instituted under Section 31 of the Specific Relief Act, 1963 (\" Specific Relief Act \") by the plaintiff/respondent no. 1 herein, i.e., Smt. Urmil Gujral, inter alia, seeking a declaration that the Signature Not Verified RFA 545/2016 Page 1 of 86 Digitally Signed By:HARIOM SHARMA Signing Date:27.03.2026 19:53:15 Agreement to Sell dated 18th August, 2006 executed by the defendant no."
+},
+{
+"n": 9,
+"text": "6. However, it is to be noted that though the LRs of respondent no. 2 were brought on record, there has been no appearance on behalf of the LRs of respondent no. 2 in the present proceedings. Thus, this Court, by way of the order dated 08th September, 2025, recorded that the respondent no. 2 was proceeded ex-parte even before the Trial Court, and accordingly, the Court proceeded in the present matter in absence of the LRs of respondent no. 2. Relevant Facts:"
+},
+{
+"n": 30,
+"text": "8.1. The suit filed before the Trial Court was not maintainable as cancellation of the Agreement to Sell dated 18th August, 2006, could not have been sought by a non-executant/third-party to said document under Section 31 of the Specific Relief Act. It is a well settled proposition of law that for seeking declaration of a document as null and void, the non- executant can approach the Court only under Section 34 of the Specific Relief Act."
+},
+{
+"n": 31,
+"text": "8.2. Had the suit been filed under Section 34 of Specific Relief Act, it would still not be maintainable, as a suit is maintainable under Section 34 of Specific Relief Act only when the person has an interest in the property. However, as the claim of the respondent no. 1 to the suit property is only based upon an unregistered Agreement to Sell dated 07th April, 1988, there is no interest of the respondent no. 1 with respect to the suit property. 8.3. A suit under Section 34 of Specific Relief Act would also not be maintainable without seeking a relief of specific performance. In the present ca"
+},
+{
+"n": 32,
+"text": "8.4. Further, the suit was not maintainable as respondent no. 1 should have sought title to the suit property, as well as possession of the entire suit property, in order to claim the consequential relief of specific performance. Respondent no. 1 does not have any locus standi to challenge the Agreement to Sell dated 18th August, 2006, and the only relief, if any, that respondent Signature Not Verified RFA 545/2016 Page 8 of 86 Digitally Signed By:HARIOM SHARMA Signing Date:27.03.2026 19:53:15 no. 1 could have sought was with respect to specific performance, on the basis of the Agreement to Se"
+},
+{
+"n": 34,
+"text": "8.9. The documents dated 07th April, 1988 were never intended to sell the suit property and were therefore, never acted upon. The Trial Court erred in not considering that Smt. Bassi Devi was a maid servant of respondent no. 1."
+},
+{
+"n": 38,
+"text": "8.14. The respondent no. 1 failed to prove possession of the suit property. Respondent no. 1 has admitted that she was residing in the adjoining property, i.e., 10/128, Tihar - I, Subash Nagar, New Delhi - 110027, and thereafter, shifted to another property bearing No. F-73, Rajouri Garden, New Delhi. Therefore, respondent no. 1 never occupied the suit property herself."
+},
+{
+"n": 39,
+"text": "8.15. The Trial Court failed to consider the testimony of PW-4, i.e., respondent no. 1, wherein, she claimed possession of the suit property only through her son, i.e., Shri Girish Gujral, who was 19 years of age at that time, and was shown as a tenant, while he was living with respondent no. 1. Therefore, the respondent no. 1 has failed to prove any material showing that she acquired the possession of the suit property. 8.16. It is an admitted fact that Shri Girish Gujral was in occupation of a single room and not the entire suit property. Therefore, the question of respondent no. 1 being in "
+},
+{
+"n": 41,
+"text": "8.19. The possessory rights are the essence of the set of document called the GPA. Since the GPA does not indicate that the possession of the suit property was delivered to respondent no. 1, and in addition to this, the respondent no. 1 has admitted to never having occupied the suit property from 07th April, 1988 till the disposal of the suit property, therefore, the Trial Court failed to appreciate that respondent no. 1 was unable to prove possession of the suit property."
+},
+{
+"n": 43,
+"text": "8.21. The Trial Court erred in observing that the appellant failed to prove his possession over the suit property as it is an admitted case of the parties that the suit property was under the occupation of the tenants and the appellant has produced two Ration Cards dated 05th February, 2007 and 06th March, 2007, in favour of the two tenants in the suit property. 8.22. The appellant conducted due diligence before purchasing the suit property, and is thus a bona fide purchaser of the suit property, protected under Section 53-A of the Transfer of Property Act, 1882 (\" TP Act \") and Section 19(1) "
+},
+{
+"n": 46,
+"text": "8.25. The Agreement to Sell dated 18th August, 2006 was a registered document and the receipt of the consideration of Rs. 4.9 Lacs in cash was never disputed by respondent no. 2. The documents dated 18th August, 2006 were executed only after due mutation of the suit property in favour of respondent no. 2. This shows that since all the ingredients of Sale Deed exist in the document dated 18th August, 2006, therefore, even though the document is titled as an Agreement to Sell, it is in substance a Sale Deed itself."
+},
+{
+"n": 316,
+"text": "159. For the aforesaid reasons, no merit is found in the present appeal. The same is accordingly dismissed. Consequently, the Agreement to Sell dated 18th August, 2006 executed by respondent no. 2, Late Shri Som Nath, in favour of the appellant, i.e., Shri Rajeev Miglani, is cancelled."
+},
+{
+"n": 317,
+"text": "160. A copy of this judgment shall be sent by the Registry of this Court to the concerned Sub-Registrar, in whose office the Agreement to Sell dated 18th August, 2006 in favour of the appellant, had been so registered."
+},
+{
+"n": 318,
+"text": "MINI PUSHKARNA, J th 27 March, 2026/AK/KR/SK Signature Not Verified RFA 545/2016 Page 86 of 86 Digitally Signed By:HARIOM SHARMA Signing Date:27.03.2026 19:53:15"
+}
+],
+"source": "web_sweep"
 },
 {
 "doc_id": "1767485",
@@ -75445,6 +75789,27 @@
 ],
 "issue": "Whether daily wager respondents are entitled to regularization in employment under Article 14 of the Constitution.",
 "summary_v2": true
+},
+{
+"doc_id": "33410386",
+"title": "Rhutu Sunil Mantri vs Mantri Realty Limited on 5 November ...",
+"court": "",
+"state": "",
+"seat": "",
+"bench": "",
+"date": "2026-11-05",
+"headnote": "Section 17(1-A) denudes the protection granted by Section 53-A of the TOP Act if the instrument is unregistered. possession having been given ...",
+"holding": "",
+"statutes": [],
+"outcome": "unknown",
+"url": "https://indiankanoon.org/doc/33410386/",
+"verified": true,
+"practice_areas": [
+"property"
+],
+"paragraph_count": 0,
+"kind": "judgment",
+"source": "web_sweep"
 },
 {
 "doc_id": "33419377",
@@ -106342,6 +106707,27 @@
 "holding_summary": "The court found no conclusive proof of forgery; the Will was deemed genuine based on corroborating evidence.",
 "issue": "Validity of 1988 Will under Indian Succession Act",
 "summary_v2": true
+},
+{
+"doc_id": "81534298",
+"title": "Rubi Devi vs Ritesh Kumar Gupta on 6 March, 2025",
+"court": "",
+"state": "",
+"seat": "",
+"bench": "",
+"date": "2025-03-06",
+"headnote": "6,11,000/- was due to be paid at the time of execution of the registered deed of sale, but as per undertaking dated 18.10.2005 the defendant no.",
+"holding": "",
+"statutes": [],
+"outcome": "unknown",
+"url": "https://indiankanoon.org/doc/81534298/",
+"verified": true,
+"practice_areas": [
+"property"
+],
+"paragraph_count": 0,
+"kind": "judgment",
+"source": "web_sweep"
 },
 {
 "doc_id": "81583340",
