@@ -16,7 +16,7 @@ const STAGES: { key: Stage; label: string; engine: string; tab: Tab; what: strin
   { key: 'search', label: 'Time-boxed search', engine: 'Insaaf Index 8s', tab: 'precedents', what: '20 judgments, 8s budget' },
   { key: 'rag', label: 'Authority lock', engine: 'Corpus Binding', tab: 'draft', what: 'no quote, no claim' },
   { key: 'citation_health', label: 'Citation health', engine: 'Downstream Check', tab: 'citations', what: 'overruled? distinguished?' },
-  { key: 'bias_firewall', label: 'Bias firewall', engine: '6-Identity Flip', tab: 'score', what: '6 identities, ε = 0.02' },
+  { key: 'bias_firewall', label: 'Bias firewall', engine: '10-Identity Flip', tab: 'score', what: '10 identities, ε = 0.02' },
   { key: 'score', label: 'Insaaf B score', engine: 'Court-Pooled ML', tab: 'score', what: 'calibrated band + shrinkage' },
   { key: 'advice', label: 'Settle or fight', engine: 'Statutory Rules', tab: 'advice', what: 's.12A · Lok Adalat · BNSS' },
   { key: 'draft', label: 'Draft pleading', engine: 'DOCX + Ledger', tab: 'draft', what: 'senior review required' },

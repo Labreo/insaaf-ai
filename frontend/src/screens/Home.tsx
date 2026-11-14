@@ -183,7 +183,7 @@ export default function Home() {
               Evidence-Based Outcome Prediction &amp; Bias Firewall
             </h2>
             <p className="text-[12.5px] leading-relaxed text-ink-2">
-              Inspect empirical case outcome probabilities blending proof readiness, precedent disposition rates, court-pooled priors, and 6-identity counterfactual invariance tests.
+              Inspect empirical case outcome probabilities blending proof readiness, precedent disposition rates, court-pooled priors, and 10-identity counterfactual invariance tests.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 pt-1">

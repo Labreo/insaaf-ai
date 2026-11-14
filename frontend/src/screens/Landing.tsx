@@ -45,7 +45,7 @@ const GUARANTEES = [
     summary:
       'Before scoring a matter, NER masks names, caste-coded surnames, religion, gender, tribe, and language markers. The model then re-runs across six protected counterfactual identities. If |S − S_swap| exceeds ε = 0.02, the score is withheld.',
     evidence: 'Addresses IndoCentric AI Bias Benchmark findings where reasoning models flipped legal outcomes up to 41.67% on marginalised groups.',
-    previewTitle: '6-Identity Invariance Matrix (ε = 0.02)',
+    previewTitle: '10-Identity Invariance Matrix (ε = 0.02)',
     previewRows: [
       { label: 'Baseline / Muslim / Dalit', status: '0.32 · Δ 0.00', ok: true },
       { label: 'Tribal / Female', status: '0.32 · Δ 0.00', ok: true },
@@ -80,7 +80,7 @@ const PIPELINE_STEPS = [
   { n: '05', name: 'Precedent Search', engine: '8s Time-Boxed', tab: 'precedents', desc: 'Verified corpus → top 20 judgments' },
   { n: '06', name: 'Authority Lock', engine: 'Corpus Binding', tab: 'draft', desc: 'No stored paragraph, no legal claim' },
   { n: '07', name: 'Citation Health', engine: 'Downstream Check', tab: 'citations', desc: 'Blocks overruled precedents' },
-  { n: '08', name: 'Bias Firewall', engine: '6-Identity Flip', tab: 'score', desc: 'ε = 0.02 counterfactual gate' },
+  { n: '08', name: 'Bias Firewall', engine: '10-Identity Flip', tab: 'score', desc: 'ε = 0.02 counterfactual gate' },
   { n: '09', name: 'Insaaf B-Score', engine: 'Court-Pooled ML', tab: 'score', desc: 'Calibrated band + shrinkage' },
   { n: '10', name: 'Settle / Fight', engine: 'Statutory Rules', tab: 'advice', desc: 's.12A, Lok Adalat, BNSS s.290' },
   { n: '11', name: 'Verified Draft', engine: 'DOCX + Ledger', tab: 'draft', desc: 'Senior sign-off & SHA-256 seal' },
@@ -103,7 +103,7 @@ const BENCHMARKS = [
     caseName: 'IndoCentric AI Bias Benchmark',
     court: 'Empirical Legal Eval',
     failure: 'Standard reasoning models flipped outcomes on marginalised identities up to 41.67% of the time.',
-    defence: '6-Identity Bias Firewall masks markers and withholds scores if Δ > 0.02.',
+    defence: '10-Identity Bias Firewall masks markers and withholds scores if Δ > 0.02.',
   },
   {
     caseName: 'BNS / BNSS / BSA Transition',
@@ -223,7 +223,7 @@ export default function Landing({ onReplayIntro }: { onReplayIntro: () => void }
             <p className="max-w-2xl text-[15px] leading-[1.65] text-fog">
               Insaaf AI turns raw client PDFs, DOCX briefs, and Indian-language voice notes into an
               authority-locked pleading. Every paragraph binds to a verified Insaaf Precedent Index judgment or statute,
-              passes a 6-identity counterfactual bias firewall, and logs every senior advocate decision onto
+              passes a 10-identity counterfactual bias firewall, and logs every senior advocate decision onto
               a SHA-256 hash-chained ledger.
             </p>
 
