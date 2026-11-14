@@ -7,7 +7,9 @@ rules:
     why: An agreement or power of attorney does not transfer title; a registered conveyance does.
     detect:
       present_any: ["registered sale deed", "conveyance deed registered", "sub-registrar"]
-      negative_any: ["not a registered sale deed", "unregistered", "agreement + power of attorney", "agreement of sale", "only an agreement"]
+      negative_any: ["not a registered sale deed", "unregistered", "agreement + power of attorney", "agreement of sale", "agreement for sale",
+                     "only an agreement", "no sale deed", "sale deed was never registered", "sale deed has not been registered",
+                     "sale deed never registered", "sale deed is not registered", "never registered", "not been registered"]
       weak_any: ["certified copy awaited", "copy of sale deed"]
     sources:
       - source_id: src_kanoon_1565619
@@ -32,7 +34,7 @@ rules:
     severity: high
     why: Unstamped instruments are inadmissible until duty and penalty are paid.
     detect:
-      present_any: ["full stamp duty paid", "duly stamped", "e-stamp certificate"]
+      present_any: ["full stamp duty paid", "duly stamped", "e-stamp certificate", "stamp duty was paid", "stamp duty has been paid", "stamp duty paid on the"]
       weak_any: ["insufficient stamp", "deficit stamp", "stamp duty deficit", "unregistered agreement", "agreement"]
       negative_any: ["unstamped", "no stamp duty"]
     sources:
@@ -61,6 +63,7 @@ rules:
     detect:
       present_any: ["form i & xiv", "form i and xiv", "record of rights", "survey no."]
       weak_any: ["mutation pending", "disputed entry"]
+      downgrade_any: ["never mutated in the client's name", "not mutated in the client's name", "still shows the names of"]
     sources: []
 
   - id: property.payment_trail

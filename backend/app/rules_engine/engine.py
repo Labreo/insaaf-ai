@@ -91,6 +91,9 @@ async def evaluate_proof_ledger(
         has_negative = any(k in corpus for k in negative_any)  # explicit "missing" phrases are matched as written
         has_weak = any(_evidence_hit(corpus, k) for k in weak_any)
         has_present = any(_evidence_hit(corpus, k) for k in present_any)
+        downgrade_any = [k.lower() for k in detect.get("downgrade_any", [])]
+        if has_present and any(k in corpus for k in downgrade_any):  # record exists but not in the client's favour
+            has_present, has_weak = False, True
 
         if has_negative:
             state = "missing"

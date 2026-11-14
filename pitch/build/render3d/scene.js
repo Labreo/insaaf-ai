@@ -226,7 +226,7 @@ const SCREEN_FILES = ['/img/panel_src_search.png', '/img/panel_src_score.png', '
 const screens = [];
 function makeScreen(tex) {
   const aspect = tex.image.width / tex.image.height;
-  const w = 2.9, h = w / aspect;
+  const w = Math.min(3.2, 1.72 * aspect), h = w / aspect;
   const g = new THREE.Group();
   const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false }));
   face.position.z = 0.012; g.add(face);
@@ -277,20 +277,20 @@ const K = [
   { cam: V(2.2, 2.4, 19.5), tgt: V(-3.4, 5.0, 0), fov: 34, tilt: 0.30, papers: 1.0, order: 0, piles: 1, stack: 1, warn: 0, key: 1, rim: 0.5, warm: 1, ring: 0, exposure: 1.0 },
   { cam: V(-7.8, 7.6, 8.5), tgt: V(-2.6, 5.4, -0.4), fov: 33, tilt: 0.30, papers: 0.65, order: 0, piles: 1, stack: 1, warn: 1, key: 1, rim: 0.6, warm: 1, ring: 0, exposure: 1.0 },
   { cam: V(6.5, 9.5, -12.5), tgt: V(-1.0, 4.4, 4.0), fov: 36, rays: 0.4, tilt: 0.16, papers: 0.3, order: 1, piles: 0.5, stack: 0.3, warn: 0, key: 0.85, rim: 1.2, warm: 0.6, ring: 0.6, exposure: 1.0 },
-  { cam: V(12.5, 5.6, 8.2), tgt: V(0.3, 5.0, 0), fov: 36, tilt: 0.08, papers: 0.12, order: 1, piles: 0.2, stack: 0, warn: 0, key: 0.9, rim: 1.2, warm: 0.6, ring: 0.8, exposure: 1.0, screens: 1 },
+  { cam: V(2.8, 3.2, 22), tgt: V(-6.4, 5.6, 0), fov: 34, tilt: 0.07, papers: 0.08, order: 1, piles: 0.15, stack: 0, warn: 0, key: 1.1, rim: 0.8, warm: 1.0, ring: 0.6, exposure: 1.05 },
   { cam: V(0, 6.4, 13.5), tgt: V(0, 6.2, 0), fov: 34, tilt: 0.04, papers: 0.05, order: 1, piles: 0, stack: 0, warn: 0, key: 0.9, rim: 1.0, warm: 0.7, ring: 0.8, exposure: 0.95 },
   { cam: V(2.4, 13.5, 6.8), tgt: V(0, 6.6, 0), fov: 36, rays: 0.0, tilt: 0.015, papers: 0, order: 1, piles: 0, stack: 0, warn: 0, key: 0.9, rim: 1.0, warm: 0.8, ring: 1, exposure: 0.95 },
-  { cam: V(2.8, 3.2, 22), tgt: V(-4.2, 5.6, 0), fov: 34, tilt: 0.0, papers: 0, order: 1, piles: 0, stack: 0, warn: 0, key: 1.25, rim: 0.7, warm: 1.2, ring: 1, exposure: 1.1 },
+  { cam: V(12.5, 5.6, 8.2), tgt: V(0.3, 5.0, 0), fov: 36, tilt: 0.0, papers: 0, order: 1, piles: 0, stack: 0, warn: 0, key: 1.05, rim: 1.1, warm: 1.2, ring: 1, exposure: 1.05, screens: 1 },
 ];
 
 // screen layout for slide 4: four panels around the monument facing the slide-4 camera
 function screenLayout() {
-  const k = K[4];
+  const k = K[7];
   const fwd = k.tgt.clone().sub(k.cam).normalize();
   const right = new THREE.Vector3().crossVectors(fwd, V(0, 1, 0)).normalize();
   const up = new THREE.Vector3().crossVectors(right, fwd).normalize();
   const at = (dx, dy, d) => k.cam.clone().add(fwd.clone().multiplyScalar(d)).add(right.clone().multiplyScalar(dx)).add(up.clone().multiplyScalar(dy));
-  return [at(-4.0, 0.9, 11.2), at(4.0, 0.9, 11.2), at(-3.8, -1.55, 10.6), at(3.8, -1.55, 10.6)];
+  return [at(-4.05, 0.95, 11.2), at(4.05, 0.95, 11.2), at(-3.85, -1.5, 10.6), at(3.85, -1.5, 10.6)];
 }
 
 const ease = (u) => u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;

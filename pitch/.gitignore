@@ -6,3 +6,9 @@ build/media/
 Insaaf_AI_3D_showreel.mp4
 # Full-page captures not used by the deck
 screenshots/*_full.png
+*.key
+flows/_video/
+flows/*.webm
+flows/*.mp4
+flows/screens/
+

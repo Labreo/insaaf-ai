@@ -16,7 +16,7 @@ from typing import Any
 from app.db import db_session
 from app.services.precedents import corpus
 from app.services.precedents.harvest import doc_id_from_url, is_boilerplate, fetch_judgment, record_from_serper, serper_key, serper_search
-from app.services.precedents.index import STATE_HC, precedent_index
+from app.services.precedents.index import STATE_HC, is_legal_query, precedent_index
 
 LEGAL_SITES = "site:indiankanoon.org/doc"
 
@@ -156,7 +156,7 @@ class PrecedentClient:
         hits = precedent_index.search(query, k=max_results, area=area, state=state, district=district, seat=seat)
         swept = 0
         weak = not hits or hits[0]["similarity_raw"] < 0.12 or len(hits) < min(5, max_results)
-        if sweep and weak:
+        if sweep and weak and is_legal_query(query):
             try:
                 recs = await asyncio.wait_for(self.web_sweep(query, area or "", state), timeout=budget_ms / 1000)
                 swept = len(recs)
@@ -255,7 +255,7 @@ class PrecedentClient:
         k = max(limit * 3, 30)
         hits = precedent_index.search(query, k=k, area=area, state=state, district=district)
         swept = 0
-        if sweep and (not hits or hits[0]["similarity_raw"] < 0.12):
+        if sweep and is_legal_query(query) and (not hits or hits[0]["similarity_raw"] < 0.12):
             try:
                 recs = await asyncio.wait_for(self.web_sweep(query, area or "", state), timeout=8.0)
                 swept = len(recs)

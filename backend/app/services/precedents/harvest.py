@@ -247,6 +247,15 @@ async def fetch_judgment(doc_id: str, timeout: float = 15.0) -> dict[str, Any] |
     }
 
 
+_STATUTE_TITLE = re.compile(r"^(section|article|rule|order|schedule|regulation)\s+[\w().-]+\s+in\s+|\bact,?\s*\d{4}\s*$|^the\s+.+\bact\b(?!.*\bvs?\.?\b)", re.I)
+
+
+def is_statute_title(title: str) -> bool:
+    """Indian Kanoon statute/section pages ("Section 9 in The Arbitration Act", "The Goa ... Act, 1968") are not judgments."""
+    t = (title or "").strip()
+    return bool(t) and " vs " not in t.lower() and " v. " not in t.lower() and bool(_STATUTE_TITLE.search(t))
+
+
 def record_from_serper(item: dict[str, Any], area: str = "") -> dict[str, Any] | None:
     """Lightweight record from a search hit alone (used when the page fetch fails)."""
     doc_id = doc_id_from_url(item.get("link", ""))
@@ -271,4 +280,5 @@ def record_from_serper(item: dict[str, Any], area: str = "") -> dict[str, Any] |
         "verified": True,
         "practice_areas": [area] if area else [],
         "paragraph_count": 0,
+        "kind": "statute" if is_statute_title(title) else "judgment",
     }

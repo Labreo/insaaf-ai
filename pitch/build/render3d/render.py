@@ -45,7 +45,7 @@ def grab(pg, path, png=False):
     Path(path).write_bytes(base64.b64decode(data.split(",", 1)[1]))
 
 
-def stills(w=2560, h=1440, keys=range(1, 8)):
+def stills(w=3200, h=1800, keys=range(1, 8)):
     with sync_playwright() as p:
         br, pg = open_page(p, w, h)
         for i in keys:

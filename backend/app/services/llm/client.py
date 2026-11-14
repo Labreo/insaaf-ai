@@ -143,7 +143,11 @@ class LLMClient:
     # ---- plumbing -------------------------------------------------------
     @staticmethod
     def _keys() -> list[str]:
-        return [k for k in (settings.gemini_api_key, settings.gemini_api_key_secondary) if k]
+        import os
+
+        keys = [settings.gemini_api_key, settings.gemini_api_key_secondary,
+                *(os.getenv(n, "") for n in ("GEMINI_API_KEY_TERTIARY", "GOOGLE_AI_API_KEY", "LLM_API_KEY"))]
+        return list(dict.fromkeys(k for k in keys if k))  # every distinct free-tier key, in priority order
 
     async def _discover(self) -> set[str]:
         if self._available is not None:

@@ -357,6 +357,13 @@ def _seed_demo_data(conn: sqlite3.Connection, restore_baseline: bool = False) ->
             """,
             matters,
         )
+        baseline_summaries = {
+            "mat_001": "Client has occupied a plot at Mapusa since 2009 under an agreement and a power of attorney; no registered sale deed. The vendor's side now claims title through the Form I & XIV entry.",
+            "mat_002": "Recovery of Rs 4.2 lakh for goods supplied against invoices; part payment of Rs 80,000 and a written balance confirmation on record.",
+            "mat_003": "Accused seeks to know whether plea bargaining is available for the offences charged.",
+        }
+        for mid, summ in baseline_summaries.items():  # reset also undoes edited summaries on the baseline matters
+            conn.execute("UPDATE matters SET summary = ? WHERE id = ?", (summ, mid))
 
         # Seed documents from demo/matters/
         demo_docs = [

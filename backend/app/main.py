@@ -36,5 +36,6 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/v1")
+app.add_api_route("/health", deep_health, methods=["GET"])
 app.add_api_route("/health/deep", deep_health, methods=["GET"])
 

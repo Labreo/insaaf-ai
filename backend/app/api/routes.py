@@ -566,14 +566,29 @@ async def set_client_language(matter_id: str, body: dict[str, Any], actor: Actor
     return _authorized_matter(matter_id, actor)
 
 
+def _audio_path(storage_path: str | None) -> Path | None:
+    """The playable recording for a voice note. Seeded notes are stored as a pre-transcribed .json with the
+    recording beside it (same stem, .wav/.m4a/.mp3/.webm)."""
+    if not storage_path:
+        return None
+    p = Path(storage_path)
+    if p.suffix.lower() != ".json":
+        return p if p.exists() else None
+    for ext in (".wav", ".m4a", ".mp3", ".webm", ".ogg"):
+        sib = p.with_suffix(ext)
+        if sib.exists() and sib.stat().st_size > 2000:
+            return sib
+    return None
+
+
 @router.get("/matters/{matter_id}/documents/{document_id}/audio")
 async def get_document_audio(matter_id: str, document_id: str, actor: Actor = Depends(get_actor)) -> Response:
     _authorized_matter(matter_id, actor)
     with db_session() as conn:
         row = conn.execute("SELECT storage_path, filename FROM documents WHERE id = ? AND matter_id = ?", (document_id, matter_id)).fetchone()
-    if not row or not Path(row["storage_path"]).exists() or Path(row["storage_path"]).suffix.lower() == ".json":
+    path = _audio_path(row["storage_path"]) if row else None
+    if path is None:
         raise _err(404, "not_found", "No audio recording stored for this document.")
-    path = Path(row["storage_path"])
     from app.services.bhashini.client import AUDIO_MIME_TYPES
 
     return Response(content=path.read_bytes(), media_type=AUDIO_MIME_TYPES.get(path.suffix.lower(), "application/octet-stream"))
@@ -586,7 +601,18 @@ async def retranscribe_document(matter_id: str, document_id: str, actor: Actor =
         row = conn.execute("SELECT * FROM documents WHERE id = ? AND matter_id = ?", (document_id, matter_id)).fetchone()
     if not row or row["kind"] != "audio":
         raise _err(404, "not_found", "Voice note not found.")
-    tr = await translation_client.translate_or_transcribe(file_path=Path(row["storage_path"]), source_lang=matter.get("client_language") or "en")
+    audio = _audio_path(row["storage_path"])
+    if audio is None or str(row["storage_path"]).lower().endswith(".json"):
+        try:  # seeded, advocate-reviewed transcript: return it rather than re-transcribe a demo recording
+            return json.loads(row["extracted_text"] or "{}")
+        except (TypeError, ValueError):
+            raise _err(404, "not_found", "No recording stored for this voice note.")
+    tr = await translation_client.translate_or_transcribe(file_path=audio, source_lang=matter.get("client_language") or "en")
+    if not (tr.get("original_text") or tr.get("english_translation")):
+        try:  # keep the reviewed transcript if the speech engine returns nothing
+            return json.loads(row["extracted_text"] or "{}")
+        except (TypeError, ValueError):
+            pass
     with db_session() as conn:
         conn.execute("UPDATE documents SET extracted_text = ? WHERE id = ?", (json.dumps(tr, ensure_ascii=False), document_id))
     clear_stage_results(matter_id)
@@ -1419,6 +1445,11 @@ async def _refresh_external_pings() -> None:
         _HEALTH_PING_CACHE["ts"] = time.time()
     finally:
         _HEALTH_PING_CACHE["running"] = False
+
+
+@router.get("/health")
+async def health_check() -> dict[str, str]:
+    return {"status": "ok"}
 
 
 @router.get("/health/deep", response_model=DeepHealthResponse)

@@ -1,6 +1,6 @@
-# Live Demo Runbook (between slides 4 and 5, ~2.5 min)
+# Live Demo Runbook (~3 min, from the final slide)
 
-The demo follows the same fictional matter as the deck: **`mat_001` Fernandes v. Naik**, a possession dispute over a plot in Mapusa (civil property). The full app runbook is [`../docs/DEMO_RUNBOOK.md`](../docs/DEMO_RUNBOOK.md); this file is the short version that matches the slides.
+The demo starts from the **sign-in page** so the judges see the full flow and our intro. Step-by-step actions, lines to say, expected results and a real screenshot of every step are in [`DEMO_FLOWS.md`](DEMO_FLOWS.md) and [`Insaaf_AI_Demo_Flows.pdf`](Insaaf_AI_Demo_Flows.pdf). Every step there was run end to end on 14 Nov 2026 (all flows passed).
 
 ## Before you go on stage (30 min before)
 
@@ -12,37 +12,38 @@ backend/scripts/start_demo.sh
 cd frontend && npm run build && npm run preview -- --port 4173
 ```
 
-1. Run `curl -s localhost:8000/v1/health/deep`. `db`, `kanoon` and `llm` should all be `ok`.
-2. Sign in as **Adv. Dhanshri** (`senior_1`). The password is in `backend/.demo_credentials`.
-3. Open `http://localhost:4173/matters/mat_001` and skip the intro. **Don't reload during the demo.**
-4. On the **Score & Bias Firewall** tab, the forum must read **Civil Judge Senior Division, Mapusa** and the band **Weak · 38%**. If it shows another court, click that forum button.
-5. Keep a second tab open on `/precedents`.
+1. `curl -s localhost:8000/v1/health/deep` → `db`, `llm`, `precedent_index` all `ok`.
+2. Open http://localhost:4173/ and stay **signed out** (sign out if needed). Keep the window 1440–1600 px wide.
+3. Keep `backend/.demo_credentials` open somewhere off-screen for the `senior_1` password.
+4. If you rehearsed: reset the demo (re-run `start_demo.sh`, or `POST /v1/demo/reset`). Rehearsals leave mat_001 approved.
+5. Optional live intake: have `pitch/demo_kit/` open in Finder.
 
-## The 2.5 minutes
+## The 3 minutes
 
-| Time | Do | Expect | Say |
+| Time | Flow | Do | Expect |
 |---|---|---|---|
-| 0:00 | `/precedents` tab. Paste: *Agreement for sale and power of attorney but no registered sale deed; buyer claims possession of ancestral plot in Goa*. State: `Goa`. Press **Search Precedents**. | Results load in about 0.1 s: "20 matched / 1,463", outcomes 3 allowed / 13 dismissed, a Bombay HC card tagged "binding High Court for Goa". | "Plain-language facts in, binding Goa authority first, and the real outcome of every similar case." |
-| 0:30 | On a result card, click **Read Paragraphs**. | A slide-over opens with the holding, the headnote and numbered paragraphs, plus an Indian Kanoon link. | "Every hit opens to the paragraph. Nothing is paraphrased away." |
-| 0:50 | Switch to the `mat_001` tab and open **Score & Bias Firewall**. | Weak · 38%; blend 50 / 30 / 20; "12 similar judgments"; factor bars led by "Registered sale deed: missing −0.37". | "This is the PS 29 prediction, with the reasons behind it." |
-| 1:15 | In the firewall grid, click **Religion: Muslim**, then **Caste: Dalit**. | Firewalled score Δ 0.00 for both; the unprotected comparison model shows −0.07. | "Identity can't move our score. If it moved more than 0.02, we'd withhold it." |
-| 1:40 | Open **Draft**. In the Authority Lock box, type `Held in Imaginary Case (2099) 1 SCC 1` and click **Verify & Insert**. | "No verified authority found." | "A case that doesn't exist cannot enter the draft." |
-| 1:55 | Type `Suraj Lamp & Industries v. State of Haryana` and click **Verify & Insert**. | "Verified against stored paragraph (… para 1)." | "The real one goes in, tied to its source." |
-| 2:10 | Open **Advice**. | **Mediate**, with Lok Adalat and s.89 CPC eligible. | "Rules, not a chatbot, turn the evidence into a strategy." |
-| 2:30 | Go back to the deck, slide 5. | | |
+| 0:00 | A | Click **▶ Live demo · sign in** on slide 7 → **Sign in** → `senior_1` + password → **Sign in**. Stay quiet for the intro. | Intro (Lady Justice → Insaaf AI) → Chamber Docket / Nyaya Queue |
+| 0:20 | A | Point at the queue. | |
+| 0:30 | B | **Precedent Discovery** → paste the Socorro facts query, state `Goa` → **Search** → **Read Paragraphs**. | Results in well under a second; power of attorney ≠ title; paragraph reader |
+| 1:00 | C | Open **Plot 7 purchaser v. Legal heir (Socorro)** → **Facts** → **Load Audio Player** (play the Konkani note) → **Proof Ledger**. | Voice plays; deed present, possession + payment missing |
+| 1:40 | C | **Score & Bias Firewall** → click **Religion: Muslim**, **Caste: Dalit**. | Uncertain 61%; Δ 0.00 each |
+| 2:10 | C | **Draft** → Authority Lock: fake case → twisted holding → real Suraj Lamp. | Refused, refused, verified |
+| 2:40 | C | **Advice** → Settle. Close: "She has a registered deed, but a power of attorney can't pass a title the vendors never had. Insaaf tells her advocate that in minutes, with the law behind it." | Settle; Lok Adalat / s.89 CPC |
+| 3:00 | — | "Thank you." | |
+
+Extras if judges ask: **Flow D** live intake with `demo_kit/` (~1 min pipeline), **Flow E** roles and Chamber B isolation, **Flow F** ledger tamper drill, **Flow G** approval gate on the fictional Mapusa matter.
+
+Right before going on stage, run `python3 pitch/build/scripts/run_flows.py H` (~2 min): it opens every matter, tab and voice note and fails on any error.
 
 ## If something breaks
 
 | Problem | Fallback |
 |---|---|
-| Backend down or a red banner appears | Play `Insaaf_AI_3D_showreel.mp4`, then present slides 5 and 6. Every number on them is a real app response. |
-| Indian Kanoon is slow | Search still runs on the local index of 1,463 judgments. Say "served from our index". |
-| Gemini/LLM quota is exhausted | Seeded matters are pre-computed. Skip any new upload. |
-| The score shows a different court | Click **Civil Judge Senior Division, Mapusa** under the forum buttons. |
-| Network is dead | Everything above runs on localhost. The deck itself needs no network. |
+| Backend down / red banner | Play [`flows/demo_walkthrough.webm`](flows/demo_walkthrough.webm) (real recording of every flow) or [`Insaaf_AI_3D_showreel.mp4`](Insaaf_AI_3D_showreel.mp4); slides 5–7 show real app responses. |
+| Intro doesn't play | You were already signed in: sign out, reload `/`, sign in again. |
+| Score shows another court | Click **Civil Judge Senior Division, Mapusa** under the forum buttons. |
+| LLM quota exhausted | Seeded matters are pre-computed; skip Flow D. |
+| Network dead | Everything runs on localhost; the deck needs no network. |
 
 > [!WARNING]
-> **Avoid these:**
-> - Re-running the pipeline on `mat_001` live (the band can change).
-> - Reloading the page mid-demo (the intro replays).
-> - Running `pytest` or `judge_acceptance.py` against the demo backend (it burns LLM quota).
+> Avoid during the demo: re-running the pipeline on mat_001, reloading mid-flow, and running `pytest` / `judge_acceptance.py` against the demo backend (burns LLM quota).

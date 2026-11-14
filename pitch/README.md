@@ -1,6 +1,8 @@
 # Insaaf AI — PS 29 Pitch
 
-A 7-slide cinematic pitch with 2 appendix slides. The camera orbits an original 3D Scales-of-Justice monument: the scales start **tipped under a storm of case files** and end **balanced**. Real app screens orbit the monument on the product slide.
+A 7-slide cinematic pitch with 2 appendix slides. The camera orbits an original 3D Scales-of-Justice monument: the scales start **tipped under a storm of case files** and end **balanced** on the final slide, where real app screens orbit the monument and the live demo starts from the sign-in page.
+
+Slide order: 1 crisis · 2 research gap · 3 meet Insaaf · 4 opportunity · 5 trust · 6 prediction · 7 the product (→ live demo).
 
 ## Deliverables
 
@@ -10,8 +12,11 @@ A 7-slide cinematic pitch with 2 appendix slides. The camera orbits an original 
 | [`Insaaf_AI_PS29_Pitch_static.pptx`](Insaaf_AI_PS29_Pitch_static.pptx) | Backup with the same slides as stills (no video). Use it in Keynote or Google Slides, or if video playback misbehaves. |
 | [`Insaaf_AI_PS29_Pitch.pdf`](Insaaf_AI_PS29_Pitch.pdf) | Submission / hand-out. |
 | [`Insaaf_AI_3D_showreel.mp4`](Insaaf_AI_3D_showreel.mp4) | All seven camera moves (25 s). Demo fallback or an intro loop. |
+| [`DEMO_FLOWS.md`](DEMO_FLOWS.md) / [`Insaaf_AI_Demo_Flows.pdf`](Insaaf_AI_Demo_Flows.pdf) | Every website flow (sign-in + intro, search, matter, live intake, roles, ledger drill): do / say / expect, with real screenshots. 39/39 steps tested. |
+| [`demo_kit/`](demo_kit/) | Fictional inputs for the live-intake demo: 3 PDFs, a case brief, a Hindi voice note (+ transcript), backup D'Souza files. |
+| [`flows/`](flows/) | Screenshots per step, `results.json`, and `demo_walkthrough.webm` (recording of the full run, demo fallback). |
 | [`PRESENTER_SCRIPT.md`](PRESENTER_SCRIPT.md) | Slide-by-slide talk track, timings and judge Q&A. |
-| [`LIVE_DEMO_RUNBOOK.md`](LIVE_DEMO_RUNBOOK.md) | 2.5-minute demo on `mat_001`, with fallbacks. |
+| [`LIVE_DEMO_RUNBOOK.md`](LIVE_DEMO_RUNBOOK.md) | 3-minute live demo starting from sign-in, with fallbacks. |
 | [`SOURCES.md`](SOURCES.md) | Where every number and image comes from. |
 
 > [!IMPORTANT]
@@ -62,6 +67,8 @@ python3 scripts/postprocess.py ../Insaaf_AI_PS29_Pitch_static.pptx --no-video
 ```bash
 soffice --headless --convert-to pdf --outdir .. ../Insaaf_AI_PS29_Pitch_static.pptx && mv ../Insaaf_AI_PS29_Pitch_static.pdf ../Insaaf_AI_PS29_Pitch.pdf
 ```
+
+**Flows & kit:** `python3 scripts/make_demo_kit.py` (inputs), `python3 scripts/run_flows.py` (drives every flow against :4173/:8000, screenshots + recording, resets after), `python3 scripts/make_flow_playbook.py` (MD + PDF).
 
 **Tweaking the 3D scene:** keyframes `K[1..7]` in `render3d/scene.js` set, per slide:
 - camera position, target and field of view;

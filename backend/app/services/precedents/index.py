@@ -45,6 +45,43 @@ STATE_HC = {
 }
 
 
+# A result must share real vocabulary with the query; char n-grams alone match anything ("pizza" ~ "prize").
+MIN_SIMILARITY = 0.06
+
+LEGAL_TERMS = set("""
+act acts section sec article clause rule order code court courts tribunal bench judge judgment judgement decree appeal
+appellant respondent petition petitioner plaintiff defendant accused complainant suit plaint writ revision review bail
+fir chargesheet ipc bns crpc bnss cpc bsa evidence witness prosecution conviction acquittal sentence offence offense
+cheating fraud theft murder assault cruelty dowry harassment rape kidnapping defamation forgery criminal civil
+contract agreement breach damages compensation injunction specific performance arbitration arbitrator award mediation
+lok adalat settlement limitation property land plot title deed sale registered unregistered registration stamp duty
+possession eviction tenant tenancy landlord lease rent licence license mortgage partition inheritance succession will
+probate heir heirs ancestral comunidade mundkar bhatkar encroachment easement boundary mutation survey
+cheque dishonour negotiable instruments recovery debt loan bank invoice payment insolvency ibc creditor
+divorce maintenance alimony custody guardianship marriage matrimonial adoption domestic violence
+accident motor mact insurance insurer claim claimant negligence injury death dependency multiplier
+consumer deficiency service defective warranty refund builder flat allotment rera
+employer employee workman termination retrenchment dismissal wages gratuity labour industrial service seniority
+promotion pension transfer disciplinary trademark patent copyright infringement passing design
+tax gst customs excise company director shareholder partnership firm constitution fundamental rights
+statute statutory legal law lawyer advocate litigation precedent ratio holding overruled liability
+attorney gpa forged forgery impersonation heirship inventory subdivided purchaser purchasers buyer buyers vendor vendors
+bona fide void voidable cancellation attachment pmla broker consideration conveyance gift ostensible owner fraudulent
+nominee vehicle gearbox repair workshop dealer flat apartment allotment interest delay arrears premises shop
+""".split())
+
+
+def query_signal(q: str) -> tuple[int, int]:
+    """(legal-term hits, word tokens) for a raw query."""
+    toks = re.findall(r"[a-z0-9]+", expand_query(q).lower())
+    return sum(1 for t in toks if t in LEGAL_TERMS or re.fullmatch(r"\d{2,4}[a-z]?", t)), len(toks)
+
+
+def is_legal_query(q: str) -> bool:
+    hits, _ = query_signal(q)
+    return hits >= 1
+
+
 def expand_query(q: str) -> str:
     extra = [exp for rx, exp in ALIASES if rx.search(q)]
     return q + (" " + " ".join(extra) if extra else "")
@@ -71,7 +108,9 @@ class PrecedentIndex:
 
     def _ensure(self) -> None:
         # Judgments only: statutes are cited through the rule packs, not returned as precedents.
-        records = [r for r in corpus.load_records() if r.get("kind", "judgment") == "judgment"]
+        from app.services.precedents.harvest import is_statute_title
+
+        records = [r for r in corpus.load_records() if r.get("kind", "judgment") == "judgment" and not is_statute_title(r.get("title", ""))]
         if len(records) == self._n and self._word is not None:
             return
         with self._lock:
@@ -113,13 +152,15 @@ class PrecedentIndex:
             return []
         q = expand_query(query)
         qw = self._word.transform([q])
+        if qw.nnz == 0 or not is_legal_query(query):
+            return []  # nothing in the query is legal vocabulary the index knows: no results, not noise
         qc = self._char.transform([q])
         sim = (self._Xw @ qw.T).toarray().ravel() * 0.75 + (self._Xc @ qc.T).toarray().ravel() * 0.25
         this_year = date.today().year
         scored: list[tuple[float, int, float, str]] = []
         for i in np.argsort(-sim)[: max(k * 6, 40)]:
             base = float(sim[i])
-            if base <= 0.02:
+            if base < MIN_SIMILARITY:
                 continue
             r = self._records[i]
             boost, why = self.locality(r, state, district, seat)

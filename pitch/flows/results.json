@@ -1,0 +1,338 @@
+[
+  {
+    "flow": "A",
+    "step": "Landing page",
+    "ok": true,
+    "note": "Insaaf AI \u00b7 Legal Workbench",
+    "secs": 12.6,
+    "shot": "screens/A01_landing_page.png"
+  },
+  {
+    "flow": "A",
+    "step": "Open sign-in dialog",
+    "ok": true,
+    "note": "",
+    "secs": 4.2,
+    "shot": "screens/A02_open_sign_in_dialog.png"
+  },
+  {
+    "flow": "A",
+    "step": "Enter senior advocate credentials",
+    "ok": true,
+    "note": "",
+    "secs": 1.7,
+    "shot": "screens/A03_enter_senior_advocate_credentials.png"
+  },
+  {
+    "flow": "A",
+    "step": "Intro starts (curtain)",
+    "ok": true,
+    "note": "",
+    "secs": 4.4,
+    "shot": "screens/A04_intro_starts_curtain.png"
+  },
+  {
+    "flow": "A",
+    "step": "Intro reveal",
+    "ok": true,
+    "note": "",
+    "secs": 5.7,
+    "shot": "screens/A05_intro_reveal.png"
+  },
+  {
+    "flow": "A",
+    "step": "Intro title card",
+    "ok": true,
+    "note": "",
+    "secs": 2.6,
+    "shot": "screens/A06_intro_title_card.png"
+  },
+  {
+    "flow": "A",
+    "step": "Lands on Nyaya Priority Queue",
+    "ok": true,
+    "note": "Nyaya Queue loaded",
+    "secs": 6.4,
+    "shot": "screens/A07_lands_on_nyaya_priority_queue.png"
+  },
+  {
+    "flow": "B",
+    "step": "Search by facts: the Socorro case",
+    "ok": true,
+    "note": "16 matched",
+    "secs": 4.8,
+    "shot": "screens/B01_search_by_facts_the_socorro_case.png"
+  },
+  {
+    "flow": "B",
+    "step": "Open paragraph reader",
+    "ok": true,
+    "note": "",
+    "secs": 3.6,
+    "shot": "screens/B02_open_paragraph_reader.png"
+  },
+  {
+    "flow": "B",
+    "step": "Irrelevant search returns no results",
+    "ok": true,
+    "note": "0 matched, clean empty state",
+    "secs": 2.3,
+    "shot": "screens/B03_irrelevant_search_returns_no_results.png"
+  },
+  {
+    "flow": "C",
+    "step": "Facts: play the Konkani voice note",
+    "ok": true,
+    "note": "Konkani voice note plays; transcript beside English",
+    "secs": 9.3,
+    "shot": "screens/C01_facts_play_the_konkani_voice_note.png"
+  },
+  {
+    "flow": "C",
+    "step": "Retry Transcription keeps the reviewed transcript",
+    "ok": true,
+    "note": "transcript kept",
+    "secs": 4.5,
+    "shot": "screens/C02_retry_transcription_keeps_the_reviewed_transcrip.png"
+  },
+  {
+    "flow": "C",
+    "step": "Proof Ledger: deed present, possession + payment missing",
+    "ok": true,
+    "note": "weak",
+    "secs": 2.8,
+    "shot": "screens/C03_proof_ledger_deed_present_possession_payment_mis.png"
+  },
+  {
+    "flow": "C",
+    "step": "Matter precedents (power of attorney \u2260 title)",
+    "ok": true,
+    "note": "",
+    "secs": 3.8,
+    "shot": "screens/C04_matter_precedents_power_of_attorney_title.png"
+  },
+  {
+    "flow": "C",
+    "step": "Score: band with factors (Mapusa forum)",
+    "ok": true,
+    "note": "Uncertain 61%",
+    "secs": 3.6,
+    "shot": "screens/C05_score_band_with_factors_mapusa_forum.png"
+  },
+  {
+    "flow": "C",
+    "step": "Bias Firewall: flip to Muslim",
+    "ok": true,
+    "note": "\u03940.00",
+    "secs": 4.5,
+    "shot": "screens/C06_bias_firewall_flip_to_muslim.png"
+  },
+  {
+    "flow": "C",
+    "step": "Bias Firewall: flip to Dalit",
+    "ok": true,
+    "note": "\u03940.00",
+    "secs": 4.2,
+    "shot": "screens/C07_bias_firewall_flip_to_dalit.png"
+  },
+  {
+    "flow": "C",
+    "step": "Advice: settle (Lok Adalat / mediation)",
+    "ok": true,
+    "note": "Settle",
+    "secs": 2.7,
+    "shot": "screens/C08_advice_settle_lok_adalat_mediation.png"
+  },
+  {
+    "flow": "C",
+    "step": "Authority Lock: fake case refused",
+    "ok": true,
+    "note": "No verified authority found",
+    "secs": 9.9,
+    "shot": "screens/C09_authority_lock_fake_case_refused.png"
+  },
+  {
+    "flow": "C",
+    "step": "Authority Lock: twisted holding refused",
+    "ok": true,
+    "note": "contradicts the stored holding",
+    "secs": 8.1,
+    "shot": "screens/C10_authority_lock_twisted_holding_refused.png"
+  },
+  {
+    "flow": "C",
+    "step": "Authority Lock: real case verified",
+    "ok": true,
+    "note": "Verified against stored paragraph",
+    "secs": 8.4,
+    "shot": "screens/C11_authority_lock_real_case_verified.png"
+  },
+  {
+    "flow": "D",
+    "step": "New matter form: property, Margao, Hindi client",
+    "ok": true,
+    "note": "",
+    "secs": 4.6,
+    "shot": "screens/D01_new_matter_form_property_margao_hindi_client.png"
+  },
+  {
+    "flow": "D",
+    "step": "Attach 3 PDFs + Hindi voice note",
+    "ok": true,
+    "note": "4 files staged",
+    "secs": 2.3,
+    "shot": "screens/D02_attach_3_pdfs_hindi_voice_note.png"
+  },
+  {
+    "flow": "D",
+    "step": "Create & run 11-stage pipeline",
+    "ok": true,
+    "note": "mat_25199b",
+    "secs": 32.0,
+    "shot": "screens/D03_create_run_11_stage_pipeline.png"
+  },
+  {
+    "flow": "D",
+    "step": "Facts from PDFs + Hindi transcript",
+    "ok": true,
+    "note": "",
+    "secs": 5.1,
+    "shot": "screens/D04_facts_from_pdfs_hindi_transcript.png"
+  },
+  {
+    "flow": "D",
+    "step": "Proof Ledger for the new matter",
+    "ok": true,
+    "note": "",
+    "secs": 3.2,
+    "shot": "screens/D05_proof_ledger_for_the_new_matter.png"
+  },
+  {
+    "flow": "D",
+    "step": "Precedents for the new matter",
+    "ok": true,
+    "note": "",
+    "secs": 3.5,
+    "shot": "screens/D06_precedents_for_the_new_matter.png"
+  },
+  {
+    "flow": "D",
+    "step": "Score + firewall for the new matter",
+    "ok": true,
+    "note": "",
+    "secs": 3.8,
+    "shot": "screens/D07_score_firewall_for_the_new_matter.png"
+  },
+  {
+    "flow": "D",
+    "step": "Statute clock for the new matter",
+    "ok": true,
+    "note": "",
+    "secs": 3.0,
+    "shot": "screens/D08_statute_clock_for_the_new_matter.png"
+  },
+  {
+    "flow": "D",
+    "step": "Draft for the new matter",
+    "ok": true,
+    "note": "",
+    "secs": 5.4,
+    "shot": "screens/D09_draft_for_the_new_matter.png"
+  },
+  {
+    "flow": "E",
+    "step": "Empty password refused",
+    "ok": true,
+    "note": "Sign in disabled until a password is entered",
+    "secs": 2.8,
+    "shot": "screens/E01_empty_password_refused.png"
+  },
+  {
+    "flow": "E",
+    "step": "Junior cannot approve (Send to Senior)",
+    "ok": true,
+    "note": "no Approve & Seal for junior (Send to Senior shown)",
+    "secs": 22.8,
+    "shot": "screens/E02_junior_cannot_approve_send_to_senior.png"
+  },
+  {
+    "flow": "E",
+    "step": "Law student: read-only docket",
+    "ok": true,
+    "note": "student read-only",
+    "secs": 44.7,
+    "shot": "screens/E03_law_student_read_only_docket.png"
+  },
+  {
+    "flow": "E",
+    "step": "Chamber B cannot see Chamber A",
+    "ok": true,
+    "note": "Chamber B isolated",
+    "secs": 12.0,
+    "shot": "screens/E04_chamber_b_cannot_see_chamber_a.png"
+  },
+  {
+    "flow": "F",
+    "step": "Simulate insider DB edit (chain breaks)",
+    "ok": true,
+    "note": "chain broken",
+    "secs": 10.4,
+    "shot": "screens/F01_simulate_insider_db_edit_chain_breaks.png"
+  },
+  {
+    "flow": "F",
+    "step": "Restore intact chain",
+    "ok": true,
+    "note": "restored",
+    "secs": 4.3,
+    "shot": "screens/F02_restore_intact_chain.png"
+  },
+  {
+    "flow": "G",
+    "step": "Citation Health: Koushal overruled",
+    "ok": true,
+    "note": "overruled shown",
+    "secs": 6.9,
+    "shot": "screens/G01_citation_health_koushal_overruled.png"
+  },
+  {
+    "flow": "G",
+    "step": "Approve & Seal refused (overruled citation)",
+    "ok": true,
+    "note": "refused: overruled authority",
+    "secs": 9.6,
+    "shot": "screens/G02_approve_seal_refused_overruled_citation.png"
+  },
+  {
+    "flow": "G",
+    "step": "Senior records reasoned override",
+    "ok": true,
+    "note": "",
+    "secs": 8.0,
+    "shot": "screens/G03_senior_records_reasoned_override.png"
+  },
+  {
+    "flow": "G",
+    "step": "Approve & Seal succeeds after override",
+    "ok": true,
+    "note": "sealed",
+    "secs": 7.7,
+    "shot": "screens/G04_approve_seal_succeeds_after_override.png"
+  },
+  {
+    "flow": "G",
+    "step": "Ledger: override + approval, hash chain intact",
+    "ok": true,
+    "note": "hash chain intact",
+    "secs": 3.9,
+    "shot": "screens/G05_ledger_override_approval_hash_chain_intact.png"
+  },
+  {
+    "flow": "H",
+    "step": "Every matter, every tab, every voice note",
+    "ok": true,
+    "note": "21 matters \u00d7 11 tabs + audio: no errors",
+    "secs": 305.8,
+    "shot": "screens/H01_every_matter_every_tab_every_voice_note.png"
+  }
+]

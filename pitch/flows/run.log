@@ -1,0 +1,60 @@
+
+=== Flow A: Landing → sign in → cinematic intro → Nyaya Queue.
+PASS A01_landing_page  Insaaf AI · Legal Workbench
+PASS A02_open_sign_in_dialog
+PASS A03_enter_senior_advocate_credentials
+PASS A04_intro_starts_curtain
+PASS A05_intro_reveal
+PASS A06_intro_title_card
+PASS A07_lands_on_nyaya_priority_queue  Nyaya Queue loaded
+
+=== Flow B: Precedent search by facts (real Socorro case) → paragraph reader → junk query returns nothing.
+PASS B01_search_by_facts_the_socorro_case  16 matched
+PASS B02_open_paragraph_reader
+PASS B03_irrelevant_search_returns_no_results  0 matched, clean empty state
+
+=== Flow C: Real case mat_025 (Socorro): facts + voice playback → proof → precedents → score/firewall → advice → Authority Lock.
+PASS C01_facts_play_the_konkani_voice_note  Konkani voice note plays; transcript beside English
+PASS C02_retry_transcription_keeps_the_reviewed_transcrip  transcript kept
+PASS C03_proof_ledger_deed_present_possession_payment_mis  weak
+PASS C04_matter_precedents_power_of_attorney_title
+PASS C05_score_band_with_factors_mapusa_forum  Uncertain 61%
+PASS C06_bias_firewall_flip_to_muslim  Δ0.00
+PASS C07_bias_firewall_flip_to_dalit  Δ0.00
+PASS C08_advice_settle_lok_adalat_mediation  Settle
+PASS C09_authority_lock_fake_case_refused  No verified authority found
+PASS C10_authority_lock_twisted_holding_refused  contradicts the stored holding
+PASS C11_authority_lock_real_case_verified  Verified against stored paragraph
+
+=== Flow D: Live intake: new Goa property matter from the demo kit (PDFs + Hindi voice note) → pipeline → results.
+PASS D01_new_matter_form_property_margao_hindi_client
+PASS D02_attach_3_pdfs_hindi_voice_note  4 files staged
+PASS D03_create_run_11_stage_pipeline  mat_25199b
+PASS D04_facts_from_pdfs_hindi_transcript
+PASS D05_proof_ledger_for_the_new_matter
+PASS D06_precedents_for_the_new_matter
+PASS D07_score_firewall_for_the_new_matter
+PASS D08_statute_clock_for_the_new_matter
+PASS D09_draft_for_the_new_matter
+
+=== Flow E: Roles & tenancy: empty password, junior, student, Chamber B.
+PASS E01_empty_password_refused  Sign in disabled until a password is entered
+PASS E02_junior_cannot_approve_send_to_senior  no Approve & Seal for junior (Send to Senior shown)
+PASS E03_law_student_read_only_docket  student read-only
+PASS E04_chamber_b_cannot_see_chamber_a  Chamber B isolated
+
+=== Flow F: Tamper-evident ledger drill.
+PASS F01_simulate_insider_db_edit_chain_breaks  chain broken
+PASS F02_restore_intact_chain  restored
+
+=== Flow G: Approval gate on mat_001 (fictional): overruled citation blocks sealing → senior override → seal → ledger.
+PASS G01_citation_health_koushal_overruled  overruled shown
+PASS G02_approve_seal_refused_overruled_citation  refused: overruled authority
+PASS G03_senior_records_reasoned_override
+PASS G04_approve_seal_succeeds_after_override  sealed
+PASS G05_ledger_override_approval_hash_chain_intact  hash chain intact
+
+=== Flow H: Click-everything sweep: every matter × every tab + voice-note buttons; fails on any HTTP error or error toast.
+PASS H01_every_matter_every_tab_every_voice_note  21 matters × 11 tabs + audio: no errors
+
+42/42 steps passed

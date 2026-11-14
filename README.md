@@ -9,6 +9,31 @@ The full plan is in [`docs/WORK_PLAN.md`](docs/WORK_PLAN.md): features, timeline
 
 ---
 
+## Live Deployment & Cloud Hosting
+
+| Component | Platform | Configuration File | Build & Deploy Target |
+|---|---|---|---|
+| **Frontend UI** | [Vercel](https://vercel.com) | [`vercel.json`](vercel.json) / [`frontend/vercel.json`](frontend/vercel.json) | React 19 + TypeScript + Vite (`frontend/dist`) |
+| **Backend API** | [Render](https://render.com) | [`render.yaml`](render.yaml) | Python 3.12 FastAPI (`backend/`, port `$PORT`) |
+
+### Deploying to Render (Backend API)
+1. Go to [dashboard.render.com](https://dashboard.render.com) and click **New > Blueprint**.
+2. Connect the GitHub repository `https://github.com/Labreo/insaaf-ai`.
+3. Render automatically reads [`render.yaml`](render.yaml) to provision the `insaaf-api` web service.
+4. Add your API keys (`GROQ_API_KEY`, `GEMINI_API_KEY`, etc.) in the Render Environment Variables tab.
+5. Your API will be live at `https://insaaf-api.onrender.com` (Health check: `/health`).
+
+### Deploying to Vercel (Frontend Web App)
+1. Go to [vercel.com/new](https://vercel.com/new) and import `https://github.com/Labreo/insaaf-ai`.
+2. Set **Root Directory** to `frontend` (Framework Preset: **Vite**).
+3. Under Environment Variables, add:
+   ```env
+   VITE_API_BASE=https://<your-render-service>.onrender.com/v1
+   ```
+4. Click **Deploy**. Vercel will build and host the responsive web app with seamless client-side SPA routing.
+
+---
+
 ## Who owns what
 
 | Area | Folder | Owners |

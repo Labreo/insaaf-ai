@@ -86,10 +86,10 @@ _QUERY_STOPWORDS = {
 }
 
 
-def _matter_specific_query(matter: dict[str, Any], facts: list[dict[str, Any]], max_terms: int = 5) -> str:
-    """F3: distinctive terms from this matter's title and evidenced facts (Kanoon ANDs terms, so keep it short)."""
-    texts = [matter.get("title", "")] + [
-        f.get("statement", "") for f in facts if f.get("status") in ("documented", "disputed")
+def _matter_specific_query(matter: dict[str, Any], facts: list[dict[str, Any]], max_terms: int = 10) -> str:
+    """F3: distinctive terms from this matter's title, summary and evidenced facts, so each matter gets its own search."""
+    texts = [matter.get("title") or "", matter.get("summary") or ""] + [
+        f.get("statement") or "" for f in facts if f.get("status") in ("documented", "disputed")
     ]
     counts: dict[str, int] = {}
     order: list[str] = []
@@ -102,7 +102,19 @@ def _matter_specific_query(matter: dict[str, Any], facts: list[dict[str, Any]], 
                 order.append(t)
             counts[t] = counts.get(t, 0) + 1
     ranked = sorted(order, key=lambda t: (-counts[t], order.index(t)))
-    return " ".join(ranked[:max_terms])
+    from app.services.precedents.index import LEGAL_TERMS
+
+    legal = [t for t in ranked if t in LEGAL_TERMS]  # party names and notes would only add noise to the ranking
+    if len(legal) < 2:
+        return " ".join(ranked[:max_terms])
+    # place words from the title's subject (after "—"/":"), never the party names before "v."
+    title = matter.get("title") or ""
+    subject = re.split(r"\s[—–:-]\s|:\s", title, maxsplit=1)[-1] if re.search(r"\s[—–:-]\s|:\s", title) else ""
+    first_party = {t.lower() for t in re.findall(r"[A-Za-z]{4,}", re.split(r"\s+vs?\.?\s+", title, maxsplit=1)[0])} if re.search(r"\s+vs?\.?\s+", title) else set()
+    recurring = [t for t in ranked if t not in LEGAL_TERMS and counts[t] >= 2 and t not in first_party]
+    subject_words = [t.lower() for t in re.findall(r"[A-Za-z]{4,}", subject) if t.lower() not in LEGAL_TERMS and t.lower() not in _QUERY_STOPWORDS]
+    places = list(dict.fromkeys(subject_words + recurring))[:2]
+    return " ".join((legal[: max_terms - len(places)] + places))
 
 
 def _compute_priority(days_left: int | None, case_type: str, proof_items: list[dict[str, Any]]) -> float:
@@ -273,14 +285,16 @@ async def run_pipeline_stream(matter_id: str, force_live: bool = False) -> Async
     loc = _locality(matter)
     searches = [precedent_client.search(query, max_results=20, budget_ms=settings.kanoon_budget_ms, area=matter["case_type"], **loc)]
     if specific_q:
-        searches.append(precedent_client.search(f"{query} {specific_q}", max_results=8, budget_ms=settings.kanoon_budget_ms, area=matter["case_type"], **loc))
+        searches.append(precedent_client.search(f"{specific_q} {query}", max_results=12, budget_ms=settings.kanoon_budget_ms, area=matter["case_type"], **loc))
     found = await asyncio.gather(*searches, return_exceptions=True)
     raw_search = found[0] if isinstance(found[0], dict) else {"docs": []}
     if len(found) > 1 and isinstance(found[1], dict) and found[1].get("docs"):
         # Matter-specific hits lead; the doctrinal anchor results keep the binding precedents in the set.
         anchor_ids = {str(d.get("doc_id")) for d in raw_search.get("docs", [])}
-        extra = [d for d in found[1]["docs"] if str(d.get("doc_id")) not in anchor_ids][:3]
-        raw_search = {**raw_search, "docs": extra + list(raw_search.get("docs", []))}
+        lead = list(found[1]["docs"])[:8]
+        lead_ids = {str(d.get("doc_id")) for d in lead}
+        raw_search = {**raw_search, "docs": lead + [d for d in raw_search.get("docs", []) if str(d.get("doc_id")) not in lead_ids]}
+        query = f"{specific_q} · {query}"
     yield {
         "stage": "search",
         "status": "running",
@@ -919,7 +933,9 @@ async def seed_fast_stage_results(matter_id: str | None = None, force: bool = Fa
         statute_clock = await evaluate_statute_clock(matter["case_type"], matter, docs_text)
         query = _build_search_query(matter, facts)
         specific = _matter_specific_query(matter, facts)
-        raw = await precedent_client.search(f"{query} {specific}".strip(), max_results=12, area=matter["case_type"], sweep=False, **_locality(matter))
+        raw = await precedent_client.search(f"{specific} {query}".strip(), max_results=12, area=matter["case_type"], sweep=False, **_locality(matter))
+        if specific:
+            query = f"{specific} · {query}"
         prec_results = await _build_prec_results(matter["case_type"], query, list(raw.get("docs", [])))
         precedents = {
             "outcome_stats": precedent_client.outcome_stats(raw.get("docs", [])),

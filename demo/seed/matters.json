@@ -564,5 +564,47 @@
    "undertrial_custody"
   ],
   "updated_at": "2026-11-12T10:00:00Z"
+ },
+ {
+  "id": "mat_025",
+  "org_id": "org_chamber_a",
+  "title": "Plot 7 purchaser v. Legal heir: title of a Socorro plot sold through a power of attorney (real case, Goa 2026)",
+  "case_type": "property",
+  "status": "ready",
+  "district": "Mapusa",
+  "state": "Goa",
+  "court_seat": "Goa",
+  "forum_hint": "Civil Judge Senior Division, Mapusa",
+  "cause_date": "2026-09-24",
+  "client_language": "kok",
+  "created_by": "senior_1",
+  "client_name": "Purchaser of Plot 7 (hypothetical client)",
+  "opposite_party": "Legal heir of the deceased landowner",
+  "summary": "Real case reported by Northeast News on 24 Sep 2026 (ED, Panaji): 11 plots at Socorro, Bardez sold to nine buyers through a power of attorney after an alleged forged heirship claim. Our client is a HYPOTHETICAL buyer of Plot 7 asking whether her title survives the legal heir's FIR and the ED's provisional attachment. Her registered sale deed was executed by the power-of-attorney holder; part of the price was paid in cash.",
+  "documents": [
+   {
+    "filename": "news_report_NortheastNews_2026-09-24_socorro.txt",
+    "text": "The Enforcement Directorate provisionally attached 11 subdivided plots covering 4,086 square metres, plus a 914 square metre common area, within a 5,000 square metre land parcel at Socorro village, Bardez taluka, North Goa, valued at Rs 4.20 crore, under the Prevention of Money Laundering Act, 2002.\nThe land belonged to a deceased landowner. It was allegedly taken over using forged documents and a false identity claim that the father of two sisters living in Pune was the deceased owner.\nThe property was mutated in the sisters' names on the basis of a court order in inventory proceedings before a civil court.\nOn 17 February 2018 the sisters and their husbands executed a power of attorney over the property in favour of a Socorro resident.\nA payment of Rs 9 lakh was made on 22 January 2018, before the power of attorney was executed and more than a year before the inventory proceedings.\nThe land was divided into 11 plots without planning permission and sold to nine buyers between 2018 and 2020 through brokers; the power-of-attorney holder executed the sale documents.\nFive sale deeds of 2018 referred to inheritance through inventory proceedings that had not yet taken place.\nThe sale deeds recorded a combined consideration of Rs 63.65 lakh, while about Rs 1.49 crore was allegedly paid, much of it in cash and by cheques with blank payee details.\nAn FIR for cheating, impersonation and use of forged documents was registered by Porvorim police on a complaint from a legal heir of the original owner; the Special Investigation Team of the Goa Crime Branch is investigating."
+   },
+   {
+    "filename": "client_sale_deed_extract_HYPOTHETICAL.txt",
+    "text": "Registered sale deed dated 14 March 2019 before the Sub-Registrar, Bardez, for Plot 7 admeasuring 372 square metres out of the Socorro land parcel.\nThe deed is executed by the power-of-attorney holder on behalf of the two sisters under the power of attorney dated 17 February 2018.\nThe deed recites that the vendors inherited the property through inventory proceedings; the inventory order was not annexed to the deed.\nStamp duty was paid on the consideration stated in the deed.\nThe deed records a consideration of Rs 7,10,000, but the client paid Rs 16,50,000: Rs 7,10,000 by cheque and the balance in cash, with no receipt for the cash.\nThe plot is undeveloped; the client has no electricity connection, house-tax receipt or other possession evidence for the plot.\nForm I and XIV still shows the names of the two sisters; the plot was never mutated in the client's name."
+   },
+   {
+    "filename": "client_instructions_HYPOTHETICAL.txt",
+    "text": "The client says she bought Plot 7 in good faith through a broker and relied on the power of attorney and the mutation in the sisters' names.\nShe learnt of the FIR and of the provisional attachment from the news report of 24 September 2026.\nShe is not named as an accused. She wants to know whether to defend her title, seek refund and damages from the vendors and the power-of-attorney holder, or settle."
+   }
+  ],
+  "voice": {
+   "language": "kok",
+   "original_text": "हांव ब्रोकराच्या वतीन प्लॉट विकतो घेतलो. मुखत्यारपत्र आनी फॉर्म एक चवदा पळयलो. आतां बातमेंत वाचलें की जमीन फटीन घेतली म्हूण.",
+   "english_translation": "I bought the plot through a broker. I checked the power of attorney and the Form I and XIV. Now I read in the news that the land was taken by fraud.",
+   "translation_confidence": "medium"
+  },
+  "moot": false,
+  "flags": [
+   "title_missing"
+  ],
+  "updated_at": "2026-11-14T10:00:00Z"
  }
 ]
