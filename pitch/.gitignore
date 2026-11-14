@@ -1,0 +1,8 @@
+build/node_modules/
+build/render3d/_frames/
+.DS_Store
+# Regenerable media (render3d/render.py + ffmpeg); the camera moves are embedded in the .pptx
+build/media/
+Insaaf_AI_3D_showreel.mp4
+# Full-page captures not used by the deck
+screenshots/*_full.png
