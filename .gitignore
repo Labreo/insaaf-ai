@@ -37,3 +37,6 @@ ml/data/cache/
 *.onnx
 *.pt
 *.json.tmp
+
+# Claude Code local settings
+.claude/settings.local.json
